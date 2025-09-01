@@ -1,0 +1,37 @@
+<?php
+session_start();
+if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
+    echo "<p>Acesso negado.</p>";
+    exit;
+}
+?>
+
+<link rel="stylesheet" href="../../css/fichas_colaboradores.css">
+
+<div class="page-header">
+    <h2>Gestão de Fichas de Colaboradores</h2>
+    <p>Selecione a ação que pretende realizar para gerir as fichas dos colaboradores.</p>
+</div>
+
+<div class="action-buttons">
+    <button id="ver_aprovacoes" type="button" class="gestao-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9,11 12,14 22,4"></polyline>
+            <path d="M21,12v7a2,2 0,0 1,-2,2H5a2,2 0,0 1,-2,-2V5a2,2 0,0 1,2,-2h11"></path>
+        </svg>
+        Aprovar Alterações de Colaboradores
+    </button>
+    <button id="visualizar_fichas" type="button" class="gestao-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14,2 14,8 20,8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10,9 9,9 8,9"></polyline>
+        </svg>
+        Lista de Colaboradores
+    </button>
+</div>
+
+<div id="gestao-content">
+</div>
