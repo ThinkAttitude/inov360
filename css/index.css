@@ -1,0 +1,56 @@
+/* Estilos específicos para a página de login */
+
+body {
+    background-color: var(--navy-blue);
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-box {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-box h1 {
+    color: var(--navy-blue);
+    margin-bottom: 10px;
+}
+
+.login-box p {
+    color: var(--text-light);
+    margin-bottom: 30px;
+}
+
+.input-group {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-gray);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Faz com que o botão ocupe 100% da largura no form de login */
+.login-box .btn {
+    width: 100%;
+}

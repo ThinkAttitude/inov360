@@ -1,0 +1,270 @@
+/* Criar Colaborador - Admin RH */
+/* Mantém consistência com dashboard_admin.css e marcacao_direta.css */
+
+/* Container Principal */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--background-gray);
+    min-height: 100vh;
+}
+
+/* Cabeçalho da Página */
+.container h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin-bottom: 1rem;
+    text-align: center;
+    background: linear-gradient(135deg, var(--navy-blue), var(--light-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+}
+
+.container h2::after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 3px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border-radius: 2px;
+}
+
+/* Card Container para o Formulário */
+.form-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-gray);
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.form-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--gradient-1), var(--gradient-2));
+}
+
+/* Layout do Formulário */
+.form-row {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Grupos de Formulário */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Labels */
+.form-label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+/* Inputs, Selects e Textareas */
+.form-control {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    color: var(--text-dark);
+    background: var(--white);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Select específico com seta customizada (CORREÇÃO DO PROBLEMA DAS SETAS) */
+select.form-control {
+    padding-right: 3rem; /* Espaço para a seta */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+}
+
+/* Estados de Foco */
+.form-control:focus {
+    outline: none;
+    border-color: var(--light-blue);
+    box-shadow: 0 0 0 3px rgba(62, 132, 242, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Select com foco - muda cor da seta */
+select.form-control:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233E84F2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Estados de Hover */
+.form-control:hover {
+    border-color: #c0c7d1;
+}
+
+/* Placeholder */
+.form-control::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}
+
+/* Botão de Submit */
+.btn {
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    color: var(--white);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(62, 132, 242, 0.3);
+    position: relative;
+    overflow: hidden;
+    min-width: 180px;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(62, 132, 242, 0.4);
+    background: linear-gradient(135deg, #3573D5, #4a8af7);
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(62, 132, 242, 0.3);
+}
+
+/* Botão de Sucesso */
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Texto do botão */
+.btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+/* Mensagem de Criação */
+#mensagem-criacao {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-align: center;
+    display: none;
+}
+
+#mensagem-criacao.success {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    display: block;
+}
+
+#mensagem-criacao.error {
+    background: linear-gradient(135deg, #fef2f2, #fecaca);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    display: block;
+}
+
+/* Responsividade */
+@media (min-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .form-group:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .form-card {
+        padding: 1.5rem;
+    }
+
+    .container h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animações de Entrada */
+.form-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estados de Validação */
+.form-control.invalid {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.form-control.valid {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}

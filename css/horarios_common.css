@@ -1,0 +1,332 @@
+/* Common Horarios Page Styles - Applied to all roles */
+.horarios-page {
+    padding: 0 !important;
+    background: #f8fafc !important;
+    min-height: 100vh;
+}
+
+.horarios-header {
+    background: white !important;
+    padding: 2rem 2.5rem !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.page-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 8px 24px rgba(62, 132, 242, 0.25);
+}
+
+.header-text h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.5px;
+}
+
+.header-text p {
+    color: var(--text-light);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.header-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    padding: 1.5rem 2rem;
+    border-radius: 16px;
+    border: 1px solid #dbeafe;
+    text-align: center;
+    min-width: 120px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--light-blue);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #1e40af;
+    font-weight: 500;
+}
+
+.horarios-content {
+    padding: 2rem 2.5rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+/* Calendar Section */
+.calendar-section, .events-section {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.section-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.section-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+    margin: 0;
+}
+
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.control-btn {
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-light);
+}
+
+.control-btn:hover {
+    background: var(--light-blue);
+    color: white;
+}
+
+.current-month {
+    font-weight: 600;
+    color: var(--navy-blue);
+    min-width: 120px;
+    text-align: center;
+}
+
+.calendar-container {
+    padding: 2rem;
+}
+
+#calendar {
+    min-height: 400px;
+}
+
+/* Events Section */
+.events-list {
+    padding: 1.5rem;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.event-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.event-card:hover {
+    border-color: var(--light-blue);
+    box-shadow: 0 4px 12px rgba(62, 132, 242, 0.1);
+}
+
+.event-date {
+    text-align: center;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    color: white;
+    padding: 0.75rem;
+    border-radius: 10px;
+    min-width: 60px;
+}
+
+.event-day {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.event-month {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+.event-details {
+    flex: 1;
+}
+
+.event-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+    margin-bottom: 0.5rem;
+}
+
+.event-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+}
+
+.event-description {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    line-height: 1.4;
+}
+
+.event-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+}
+
+/* Empty State */
+.empty-events {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    color: var(--light-blue);
+    margin-bottom: 1.5rem;
+}
+
+.empty-events h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+    margin-bottom: 0.5rem;
+}
+
+.empty-events p {
+    color: var(--text-light);
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .horarios-header {
+        padding: 1.5rem 2rem;
+    }
+
+    .horarios-content {
+        padding: 1.5rem 2rem;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .horarios-header {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .horarios-content {
+        padding: 1rem 1.5rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .calendar-controls {
+        order: -1;
+    }
+
+    .event-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+
+    .event-date {
+        align-self: center;
+    }
+}
+
+/* Calendar specific styles for single-column layout */
+.calendar-only .horarios-content {
+    grid-template-columns: 1fr;
+}
+
+.calendar-only .calendar-section {
+    grid-column: 1;
+}

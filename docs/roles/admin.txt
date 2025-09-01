@@ -1,0 +1,17 @@
+Admin
+
+Acesso
+- Entra com utilizador Admin.
+- O tema e o logotipo da empresa aparecem automaticamente.
+
+Menu e funcionalidades
+- Início: acesso rápido às secções.
+- Consulta de Horários: calendário onde vês férias e ausências já marcadas.
+- Pedidos de Férias/Ausências: faz pedidos (férias, baixa, consulta, etc.), define datas, adiciona justificação e anexa comprovativos (PDF/JPG/PNG). Acompanha o estado do pedido.
+- Aprovar Férias/Ausências: aceita/recusa pedidos de ausências de Intermédios.
+- Consulta Histórico de Pedidos: vê o historico de pedidos aceites/recusados, tanto por ti, como por outros Admins.
+- Lista de Intermédios: vê a lista completa de Intermédios e consulta algumas das suas informações de ficha.
+- A Minha Ficha: vê e edita os teus dados. Algumas alterações podem carecer de aprovação.
+
+Sessão
+- Terminar Sessão no rodapé do menu lateral.

@@ -1,0 +1,390 @@
+/* Marcação Direta de Férias/Ausências - Admin RH */
+/* Mantém consistência com dashboard_admin.css e criar_colaborador.css */
+
+/* Container Principal */
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--background-gray);
+    min-height: 100vh;
+}
+
+/* Cabeçalho da Página */
+.container h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin-bottom: 1rem;
+    text-align: center;
+    background: linear-gradient(135deg, var(--navy-blue), var(--light-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+}
+
+.container h2::after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 3px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border-radius: 2px;
+}
+
+/* Descrição */
+.container p {
+    font-size: 1rem;
+    color: var(--text-light);
+    text-align: center;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+/* Card Container para o Formulário */
+.form-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-gray);
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.form-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #f59e0b, #f97316);
+}
+
+/* Estilo do formulário */
+form {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Input Groups */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Inputs e Selects */
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    color: var(--text-dark);
+    background: var(--white);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* CORREÇÃO: Select com seta customizada (PROBLEMA DAS SETAS RESOLVIDO) */
+.input-group select {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    padding-right: 3rem; /* Espaço para a seta */
+    border: 2px solid var(--border-gray);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    color: var(--text-dark);
+    background-color: var(--white);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+    outline: none;
+    border-color: var(--light-blue);
+    box-shadow: 0 0 0 3px rgba(62, 132, 242, 0.1);
+    transform: translateY(-2px);
+}
+
+.input-group input:hover,
+.input-group select:hover,
+.input-group textarea:hover {
+    border-color: #c0c7d1;
+}
+
+/* Select com foco - muda cor da seta */
+.input-group select:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233E84F2' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Textarea específico */
+textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: var(--font-family);
+}
+
+/* Input de arquivo */
+input[type="file"] {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 2px dashed var(--border-gray);
+    cursor: pointer;
+    position: relative;
+}
+
+input[type="file"]:hover {
+    border-color: var(--light-blue);
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+input[type="file"]:focus {
+    border-color: var(--light-blue);
+    border-style: solid;
+}
+
+/* Grid responsivo para campos relacionados */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+/* Botão de Submit */
+.btn {
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: var(--white);
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    position: relative;
+    overflow: hidden;
+    min-width: 160px;
+    justify-self: center;
+    margin-top: 1rem;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #d97706, #ea580c);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Loading state para o botão */
+.btn.loading {
+    background: #9ca3af;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--white);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Estados de validação */
+.input-group.error input,
+.input-group.error select,
+.input-group.error textarea {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.input-group.success input,
+.input-group.success select,
+.input-group.success textarea {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Mensagens de feedback */
+.feedback-message {
+    margin-top: 1.5rem;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.feedback-message.success {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+    border: 1px solid #86efac;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.feedback-message.error {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    border: 1px solid #f87171;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .form-card {
+        padding: 1.5rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .container h2 {
+        font-size: 1.75rem;
+    }
+
+    .btn {
+        width: 100%;
+        justify-self: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .input-group input,
+    .input-group select,
+    .input-group textarea {
+        padding: 0.875rem 1rem;
+    }
+
+    .btn {
+        padding: 0.875rem 1.5rem;
+    }
+}
+
+/* Animações de entrada */
+.form-card {
+    animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Focus indicators para acessibilidade */
+.input-group input:focus-visible,
+.input-group select:focus-visible,
+.input-group textarea:focus-visible {
+    outline: 2px solid var(--light-blue);
+    outline-offset: 2px;
+}
+
+.btn:focus-visible {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
+}
+
+/* Estilos específicos para tipos de pedidos */
+.tipo-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tipo-ferias {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.tipo-baixa {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.tipo-licenca {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.tipo-pessoal {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}

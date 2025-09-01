@@ -1,0 +1,24 @@
+Admin RH
+
+Acesso
+- Entra com utilizador Admin RH.
+- O tema e o logotipo da empresa aparecem automaticamente.
+
+Menu e funcionalidades
+- Início: visão geral e atalhos.
+- Consulta de Horários: calendário onde vês férias e ausências já marcadas.
+- Férias/Ausências: faz pedidos (férias, baixa, consulta, etc.), define datas, adiciona justificação e anexa comprovativos (PDF/JPG/PNG). Acompanha o estado do pedido.
+- Gestão de Fichas: permite aceitar/recusar pedidos de alteração de ficha pessoal (em Aprovar Alterações de Colaboradores) e ver a Lista completa de Colaboradores. Dentro da Lista de Colaboradores é possivel alterar na totalidade, um a um, cada colaborador (Lista de Colaboradores -> Analisar Ficha -> Edição Completa)
+- Marcação Direta: permite marcar diretamente a qualquer colaborador (sem necessidade de autorização) Férias/Ausências (sempre com necessidade de comprovativos)
+- Criar Colaborador: cria uma nova ficha de colaborador.
+- Consulta de Pedidos: vê o historico de pedidos aceites/recusados.
+- Alterar Fichas: pesquisa e edita fichas existentes.
+- A Minha Ficha: vê e edita os teus dados.
+
+Fichas de Colaborador
+- Visualizar Ficha: consulta dados e valores.
+- Edição Simples: altera campos básicos (email, telefone, morada, NIB, etc.). Valores monetários aceitam vírgula ou ponto (ex.: 6,5 ou 8.5). O sistema guarda corretamente.
+- Edição Completa (modal): altera todos os campos. Após guardar, voltas a Início.
+
+Sessão
+- Terminar Sessão no rodapé do menu lateral.

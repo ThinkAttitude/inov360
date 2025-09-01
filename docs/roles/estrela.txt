@@ -1,0 +1,14 @@
+Estrela
+
+Acesso
+- Entra com utilizador Estrela.
+- O tema e o logotipo da empresa aparecem automaticamente.
+
+Menu e funcionalidades
+- Início: visão geral e atalhos.
+- Aprovação de Férias/Ausências: aprova/rejeita pedidos de ferias e ausências de Admins RH.
+- Consulta Histórico de Pedidos: vê o historico de pedidos aceites/rejeitados.
+- Consulta Lista de Colaboradores: vê a lista de todos os Admin e AdminRH e analisa a ficha de colaborador de cada um.
+
+Sessão
+- Terminar Sessão no rodapé do menu lateral.

@@ -1,0 +1,479 @@
+/* Page Login - Enhanced Modern UI/UX Styles */
+
+/* Login Container with Enhanced Glass Effect */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--navy-blue) 0%, #1a365d 40%, #2d5a87 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        radial-gradient(circle at 15% 25%, rgba(62, 132, 242, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 85% 75%, rgba(62, 132, 242, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.login-container::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(62, 132, 242, 0.05) 45deg, transparent 90deg, rgba(62, 132, 242, 0.05) 135deg, transparent 180deg);
+    animation: rotate 20s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Enhanced Login Box */
+.login-box {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 3.5rem 3rem;
+    border-radius: 24px;
+    box-shadow:
+        0 32px 64px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    width: 100%;
+    max-width: 440px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Enhanced Logo and Brand */
+.login-brand {
+    margin-bottom: 2.5rem;
+}
+
+.login-brand .logo {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2), #4a90e2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow:
+        0 12px 32px rgba(62, 132, 242, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-brand .logo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% {
+        transform: translateX(-100%);
+    }
+    50% {
+        transform: translateX(100%);
+    }
+}
+
+.login-brand .logo svg {
+    width: 36px;
+    height: 36px;
+    color: white;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.login-brand h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.8px;
+    background: linear-gradient(135deg, var(--navy-blue), #1a365d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.login-brand p {
+    color: var(--text-light);
+    font-size: 1rem;
+    margin-bottom: 0;
+    font-weight: 400;
+}
+
+.brand-divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--light-blue), transparent);
+    margin: 1.5rem auto 0;
+    border-radius: 1px;
+}
+
+/* Enhanced Form Styles */
+.login-form {
+    margin-top: 2.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.75rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.2px;
+}
+
+.input-wrapper {
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.input-wrapper .input-icon {
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1.25rem 1.25rem 1.25rem 3.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    background: linear-gradient(to bottom, #f8fafc, #ffffff);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--light-blue);
+    background: white;
+    box-shadow:
+        0 0 0 4px rgba(62, 132, 242, 0.1),
+        0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.form-input:focus + .input-icon,
+.input-wrapper:focus-within .input-icon {
+    color: var(--light-blue);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Enhanced Password Toggle */
+.password-toggle {
+    position: absolute;
+    right: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    z-index: 2;
+}
+
+.password-toggle:hover {
+    color: var(--text-dark);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Submit Button */
+.login-submit {
+    width: 100%;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2), #4a90e2);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 8px 24px rgba(62, 132, 242, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.login-submit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.login-submit:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 12px 32px rgba(62, 132, 242, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.login-submit:hover::before {
+    left: 100%;
+}
+
+.login-submit:active {
+    transform: translateY(-1px);
+}
+
+.login-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.login-submit .btn-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.login-submit .spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.login-submit.loading .btn-text {
+    display: none;
+}
+
+.login-submit.loading .spinner {
+    display: block;
+}
+
+/* Enhanced Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 1000;
+}
+
+.toast {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 0.75rem;
+    box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 320px;
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(0);
+    transition: transform 0.3s ease-out;
+}
+
+.toast.removing {
+    animation: slideOutRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.toast.success {
+    border-left-color: #10b981;
+}
+
+.toast.error {
+    border-left-color: #ef4444;
+}
+
+.toast.warning {
+    border-left-color: #f59e0b;
+}
+
+/* Neutralize variant backgrounds (avoid full green/red fill) and apply subtle tint only on left accent via border */
+.toast.success,
+.toast.error,
+.toast.warning {
+    background: rgba(255,255,255,0.95) !important; /* ensure no overriding solid color */
+}
+
+/* Optional very light inner shadow glow matching accent for depth without coloring whole card */
+.toast.success { box-shadow: 0 12px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.2), 0 0 0 3px rgba(16,185,129,0.08); }
+.toast.error { box-shadow: 0 12px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.2), 0 0 0 3px rgba(239,68,68,0.10); }
+.toast.warning { box-shadow: 0 12px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.2), 0 0 0 3px rgba(245,158,11,0.10); }
+
+.toast .toast-icon {
+    flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+    color: #10b981;
+}
+
+.toast.error .toast-icon {
+    color: #ef4444;
+}
+
+.toast.warning .toast-icon {
+    color: #f59e0b;
+}
+
+.toast .toast-content {
+    flex: 1;
+}
+
+.toast .toast-title {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.25rem;
+}
+
+.toast .toast-message {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.toast .toast-close {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.toast .toast-close:hover {
+    color: var(--text-dark);
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 480px) {
+    .login-box {
+        margin: 1.5rem;
+        padding: 2.5rem 2rem;
+        border-radius: 20px;
+    }
+
+    .login-brand h1 {
+        font-size: 2rem;
+    }
+
+    .login-brand .logo {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+    }
+
+    .login-brand .logo svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    .toast {
+        min-width: auto;
+        margin: 0 1rem 0.75rem;
+    }
+
+    .toast-container {
+        left: 0;
+        right: 0;
+        top: 1.5rem;
+    }
+}
+
+/* Focus styles for accessibility */
+.login-submit:focus-visible,
+.password-toggle:focus-visible {
+    outline: 2px solid var(--light-blue);
+    outline-offset: 2px;
+}

@@ -1,0 +1,14 @@
+Operador
+
+Acesso
+- Entra com utilizador Operador.
+- O tema e o logotipo da empresa aparecem automaticamente.
+
+Menu e funcionalidades
+- Início: acesso rápido às secções.
+- Consulta de Horários: calendário onde vês férias e ausências já marcadas.
+- Férias/Ausências: faz pedidos (férias, baixa, consulta, etc.), define datas, adiciona justificação e anexa comprovativos (PDF/JPG/PNG). Acompanha o estado do pedido.
+- A Minha Ficha: vê e edita os teus dados. Algumas alterações podem carecer de aprovação.
+
+Sessão
+- Terminar Sessão no rodapé do menu lateral.

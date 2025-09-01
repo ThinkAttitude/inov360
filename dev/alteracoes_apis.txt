@@ -1,0 +1,113 @@
+ALTERAÇÕES NAS APIS________________________
+
+
+1) alteracao na api arh_criar_colaborador.php
+
+Foi removido o * dos roles possiveis para adicionar
+erro: ❌ Erro: Role inválido.
+
+
+NOVAS APIS_________________________________
+
+Endpoint:
+GET /api/me.php
+
+Parâmetros de entrada:
+Nenhum (usa a sessão do utilizador autenticado).
+
+Resposta de sucesso:
+sucesso: true
+user:
+
+id: id do utilizador
+
+name: nome do utilizador
+
+email: email do utilizador
+
+role: perfil do utilizador
+
+company:
+
+name: nome da empresa associada
+
+slug: identificador curto da empresa
+
+logo: URL absoluto do logo da empresa
+
+Mensagens de erro possíveis:
+Não autenticado (se não existir sessão iniciada)
+Utilizador não encontrado
+Erro interno do servidor
+
+_____________________________________
+
+Endpoint:
+POST /api/arh_criar_colaborador.php
+
+Parâmetros de entrada:
+Requisição multipart/form-data com os seguintes campos:
+
+nome: Nome completo do colaborador
+
+email: Email do colaborador (tem de ser único e válido)
+
+senha: Senha de acesso
+
+role: Perfil do utilizador (opera, inter2, inter, admin)
+
+company_id: ID da empresa associada (deve existir na tabela company)
+
+Resposta de sucesso:
+
+sucesso: true
+
+mensagem: Colaborador criado com sucesso.
+
+Mensagens de erro possíveis:
+
+Todos os campos obrigatórios devem ser preenchidos
+
+Email inválido
+
+Já existe um utilizador com este email
+
+Role inválido
+
+Empresa não encontrada
+
+Erro ao criar utilizador na base de dados
+
+Erro ao criar dados do colaborador
+
+Erro interno do servidor
+
+__________________________________
+
+Endpoint:
+GET /api/listar_empresas.php
+
+Parâmetros de entrada:
+Nenhum (usa a sessão do utilizador autenticado)
+
+Resposta de sucesso:
+
+success: true
+
+empresas: lista de empresas ativas
+
+Cada empresa contém:
+
+id: ID interno da empresa
+
+name: Nome da empresa
+
+slug: identificador curto (ex: drawline-i)
+
+logo_path: caminho relativo do logo (/assets/logos/empresa.png)
+
+Mensagens de erro possíveis:
+
+Acesso negado (sem sessão ativa)
+
+Erro ao obter lista de empresas

@@ -1,0 +1,323 @@
+/* Definição de Variáveis de Cor e Fontes Globais */
+:root {
+    --navy-blue: #0A2240;
+    --light-blue: #3E84F2;
+    --white: #FFFFFF;
+    --background-gray: #F4F7FA;
+    --border-gray: #E0E0E0;
+    --text-dark: #333333;
+    --text-light: #777777;
+    --font-family: 'Roboto', sans-serif;
+    /* Gradiente padrão (substituir em temas) */
+    --gradient-1: var(--light-blue);
+    --gradient-2: #5a9ff7;
+}
+
+/* Company Theme Overrides (class-based – optional, JS sets variables)
+    Add custom selectors here if a company needs structural tweaks. */
+/* ================= THEME OVERRIDES ================= */
+/* Almalusa: Preto + Dourado */
+body.theme-almalusa .sidebar { background: linear-gradient(180deg,#000,#000); }
+body.theme-almalusa .welcome-card::before { background: linear-gradient(90deg,#d4af37,#b8860b); }
+body.theme-almalusa .welcome-card .card-icon { background: linear-gradient(135deg,#d4af37,#b8860b); box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
+body.theme-almalusa .status-badge.aprovado { background:#d4af37; color:#000; }
+body.theme-almalusa .logo:not(.has-company-logo) { background: linear-gradient(135deg,#d4af37,#b8860b); box-shadow: 0 8px 24px rgba(212,175,55,0.35); }
+body.theme-almalusa .role-indicator { background: rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.4); color:#d4af37; }
+body.theme-almalusa .sidebar-menu li.active a { background: linear-gradient(135deg,#d4af37,#b8860b); box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
+body.theme-almalusa .sidebar-menu li a::before { background:#d4af37; }
+/* Recolorizar logo PNG com letras pretas -> branco (sem alterar ficheiro) */
+body.theme-almalusa .sidebar-header .logo.has-company-logo img { 
+    filter: brightness(0) invert(1); /* preto -> branco, preserva transparência */
+}
+/* (Opcional) Se quiser usar o PNG apenas como máscara e colorir via background:
+body.theme-almalusa .sidebar-header .logo.has-company-logo { position:relative; }
+body.theme-almalusa .sidebar-header .logo.has-company-logo img { opacity:0; }
+body.theme-almalusa .sidebar-header .logo.has-company-logo::after {
+    content:""; position:absolute; inset:0; background:#fff; -webkit-mask: url(var(--company-logo-url)) center/contain no-repeat; mask: url(var(--company-logo-url)) center/contain no-repeat;
+}
+*/
+/* Stops de gradiente dinâmicos para reutilização em regras existentes */
+body.theme-almalusa { --gradient-1: #d4af37; --gradient-2: #b8860b; }
+/* Remove todos os gradientes azuis herdados em vários componentes para Almalusa */
+body.theme-almalusa .sidebar-menu a,
+body.theme-almalusa .welcome-card .card-icon,
+body.theme-almalusa .welcome-card::before,
+body.theme-almalusa .logo,
+body.theme-almalusa .btn,
+body.theme-almalusa .tabs button,
+body.theme-almalusa .tabs .tab,
+body.theme-almalusa .filter-group button,
+body.theme-almalusa .filter-group .filter-btn,
+body.theme-almalusa .status-badge,
+body.theme-almalusa .card-icon,
+body.theme-almalusa .menu-icon-wrapper,
+body.theme-almalusa .panel-header,
+body.theme-almalusa .stat-card .icon,
+body.theme-almalusa .stat-card .card-icon {
+    background-image: none !important;
+}
+/* Cabeçalhos que usam gradient text passam a dourado sólido */
+body.theme-almalusa h1, 
+body.theme-almalusa h2, 
+body.theme-almalusa .main-header h2 { 
+    background: none !important; 
+    -webkit-background-clip: initial; 
+    background-clip: initial;
+    -webkit-text-fill-color: initial; 
+    color: #d4af37 !important; 
+}
+/* Botões primários ficam dourado -> hover tom mais escuro */
+body.theme-almalusa .btn { background:#d4af37; color:#000; box-shadow:0 2px 6px rgba(212,175,55,0.4); }
+body.theme-almalusa .btn:hover { background:#b8860b; }
+/* Ícones pequenos default */
+body.theme-almalusa .card-icon, 
+body.theme-almalusa .stat-card .icon { background:#000; color:#d4af37; }
+/* Forçar ícones de secção (ex: calendário de eventos) a usar paleta dourada mesmo se CSS antigo estiver em cache */
+body.theme-almalusa .section-icon { 
+    background: linear-gradient(135deg,#d4af37,#b8860b) !important; 
+    color:#000 !important; 
+    box-shadow:0 4px 12px rgba(212,175,55,0.35) !important;
+}
+/* Restaurar ícones das cards iniciais (welcome-card) que perderam gradiente e ficaram invisíveis */
+body.theme-almalusa .welcome-card .card-icon {
+    background:#000 !important;
+    color:#d4af37 !important;
+    box-shadow:0 4px 12px rgba(212,175,55,0.35) !important;
+}
+/* Ajuste ícones: preservar detalhes (não preencher tudo) */
+body.theme-almalusa .welcome-card .card-icon svg { color:#d4af37; }
+body.theme-almalusa .welcome-card .card-icon svg [stroke] { stroke: currentColor; }
+body.theme-almalusa .welcome-card .card-icon svg [fill]:not([fill="none"]) { fill: currentColor; }
+/* Abas / tabs activos */
+body.theme-almalusa .tabs button.active, 
+body.theme-almalusa .tabs .tab.active { background:#000; color:#d4af37; border-color:#d4af37; }
+/* Badges estado genéricos */
+body.theme-almalusa .status-badge.pendente { background:#000; color:#d4af37; border:1px solid #d4af37; }
+body.theme-almalusa .status-badge.rejeitado { background:#3a3a3a; color:#fff; }
+/* Links activos em menus internos */
+body.theme-almalusa .sidebar-menu li a:hover { background:rgba(212,175,55,0.12); }
+/* Melhor contraste item ativo sidebar (antes ficava preto sobre preto) */
+body.theme-almalusa .sidebar-menu li a { color:#d0d0d0; }
+body.theme-almalusa .sidebar-menu li a svg { color:currentColor; }
+body.theme-almalusa .sidebar-menu li.active a {
+    background:rgba(212,175,55,0.18) !important;
+    box-shadow:0 0 0 1px rgba(212,175,55,0.35), 0 4px 14px -2px rgba(212,175,55,0.25) !important;
+    color:#ffffff !important;
+    backdrop-filter:blur(4px);
+    position:relative;
+}
+body.theme-almalusa .sidebar-menu li.active a::before { /* barra esquerda já existente ganha intensidade */
+    background:#d4af37 !important;
+    box-shadow:0 0 6px 1px rgba(212,175,55,0.6);
+    width:4px;
+}
+body.theme-almalusa .sidebar-menu li a:focus-visible { outline:2px solid rgba(212,175,55,.6); outline-offset:2px; }
+/* Linha de destaque em cards / barras */
+body.theme-almalusa .welcome-card::before { background:#d4af37; }
+/* Ajuste para qualquer gradiente inline em svg fill */
+body.theme-almalusa svg [fill*="url("] { fill:#d4af37 !important; }
+/* Garantir que nenhuma herança de gradient domine */
+body.theme-almalusa [style*="linear-gradient"],
+body.theme-almalusa .has-gradient { background:#000 !important; background-image:none !important; }
+/* Overrides específicos adicionais (fora dos dashboards originais) */
+body.theme-almalusa .btn-novo-pedido,
+body.theme-almalusa .btn-empty-action { background:#d4af37 !important; color:#000 !important; box-shadow:0 4px 14px rgba(212,175,55,.35) !important; }
+body.theme-almalusa .btn-novo-pedido:hover,
+body.theme-almalusa .btn-empty-action:hover { background:#b8860b !important; }
+body.theme-almalusa .page-icon { background:#000 !important; color:#d4af37 !important; box-shadow:0 6px 18px rgba(212,175,55,.25) !important; }
+body.theme-almalusa .stat-card.total .stat-icon { background:#000 !important; color:#d4af37 !important; }
+body.theme-almalusa .filter-btn { background:#fff !important; color:#555 !important; border:1px solid #e0e0e0 !important; box-shadow:none !important; }
+body.theme-almalusa .filter-btn.active { background:#000 !important; color:#d4af37 !important; border-color:#d4af37 !important; box-shadow:0 0 0 1px rgba(212,175,55,.4) !important; }
+body.theme-almalusa .filter-btn:hover { background:#f7f7f7 !important; }
+body.theme-almalusa .stat-card.pendente .stat-icon { background:#b8860b !important; }
+/* Garantir ícones dentro de botões com fill none continuam visíveis */
+body.theme-almalusa button svg, body.theme-almalusa .filter-btn svg { stroke: currentColor; }
+/* Cards de pedidos (ferias_ausencias) */
+body.theme-almalusa .pedido-card::before { background:#d4af37 !important; }
+body.theme-almalusa .pedido-card:hover { border-color:#d4af37 !important; }
+body.theme-almalusa .tipo-icon { background:#000 !important; color:#d4af37 !important; box-shadow:0 4px 10px rgba(212,175,55,.25) !important; }
+body.theme-almalusa .btn-comprovativo { background:#000 !important; color:#d4af37 !important; border:1px solid #d4af37 !important; }
+body.theme-almalusa .btn-comprovativo:hover { background:#1a1a1a !important; }
+/* Botão submit (edição ficha) */
+body.theme-almalusa .ef-submit-btn { 
+    background:#d4af37 !important; 
+    color:#000 !important; 
+    box-shadow:0 6px 18px rgba(212,175,55,.35) !important; 
+    border:none !important;
+}
+body.theme-almalusa .ef-submit-btn:hover { background:#b8860b !important; filter:none !important; }
+body.theme-almalusa .ef-submit-btn:active { background:#a67609 !important; box-shadow:0 4px 12px rgba(212,175,55,.4) !important; }
+body.theme-almalusa .ef-submit-btn:focus-visible { outline:3px solid rgba(212,175,55,.5) !important; outline-offset:3px; }
+/* Tabelas (remover gradiente azul nos cabeçalhos em fichas_colaboradores / comparação) */
+body.theme-almalusa .table thead,
+body.theme-almalusa .comparison-header {
+    background:#d4af37 !important; /* fundo dourado sólido */
+    background-image:none !important;
+    color:#000 !important; /* texto/icon preto para contraste */
+}
+body.theme-almalusa .table thead th,
+body.theme-almalusa .comparison-header { color:#000 !important; }
+body.theme-almalusa .table thead th svg,
+body.theme-almalusa .comparison-header svg { stroke: currentColor !important; color:#000 !important; }
+body.theme-almalusa .table thead { border-bottom:1px solid rgba(0,0,0,.15); }
+
+/* Think Attitude: Laranja / Branco */
+body.theme-think-attitude .sidebar { background: linear-gradient(180deg,#f59e0b,#b45309); }
+body.theme-think-attitude .welcome-card::before { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+body.theme-think-attitude .welcome-card .card-icon { background: linear-gradient(135deg,#f59e0b,#fbbf24); box-shadow:0 4px 12px rgba(245,158,11,0.35); }
+body.theme-think-attitude .logo:not(.has-company-logo) { background: linear-gradient(135deg,#f59e0b,#fbbf24); box-shadow:0 8px 24px rgba(245,158,11,0.35); }
+body.theme-think-attitude .role-indicator { background: rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4); color:#fcd34d; }
+body.theme-think-attitude .sidebar-menu li.active a { background: linear-gradient(135deg,#f59e0b,#fbbf24); box-shadow:0 4px 12px rgba(245,158,11,0.35); }
+body.theme-think-attitude .sidebar-menu li a::before { background:#f59e0b; }
+body.theme-think-attitude { --gradient-1: #f59e0b; --gradient-2: #fbbf24; }
+/* Forçar consistência ícones / section icons no Think Attitude (evitar fallback azul) */
+body.theme-think-attitude .section-icon,
+body.theme-think-attitude .welcome-card .card-icon { 
+    background: linear-gradient(135deg,#f59e0b,#fbbf24) !important; 
+    color:#fff !important; 
+    box-shadow:0 4px 12px rgba(245,158,11,0.35) !important; 
+}
+body.theme-think-attitude .section-icon svg, 
+body.theme-think-attitude .welcome-card .card-icon svg { color:#fff; }
+body.theme-think-attitude .page-icon { 
+    background: linear-gradient(135deg,#f59e0b,#fbbf24) !important;
+    box-shadow:0 8px 24px rgba(245,158,11,0.35) !important;
+    color:#fff !important;
+}
+/* Melhoria de contraste do logo Think Attitude (logo original mistura com gradiente) */
+body.theme-think-attitude .sidebar-header .logo.has-company-logo {
+    background: transparent !important; /* remover caixa */
+    border:none !important;
+    backdrop-filter:none !important;
+    border-radius:0 !important;
+    padding:0 !important;
+}
+body.theme-think-attitude .sidebar-header .logo.has-company-logo img {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)) contrast(1.1) brightness(1.05);
+}
+/* Alternativa (descomentar para forçar logo totalmente branco):
+body.theme-think-attitude .sidebar-header .logo.has-company-logo img { filter: brightness(0) invert(1); }
+*/
+/* ==================================================== */
+
+/* Dynamic company logo inside .logo container */
+/* Quando há logo da empresa, expandir e remover o "quadrado" */
+.sidebar-header .logo.has-company-logo {
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        width: 170px !important; /* largura generosa dentro dos 280px da sidebar */
+        height: 80px !important; /* altura visível sem ocupar demasiado */
+        border-radius: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.25rem !important;
+}
+.sidebar-header .logo.has-company-logo img {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        image-rendering: -webkit-optimize-contrast;
+}
+@media (max-height: 750px) { /* Em ecrãs muito baixos encolher um pouco */
+    .sidebar-header .logo.has-company-logo { width:140px; height:64px; margin-bottom:0.75rem !important; }
+}
+
+/* Reset Básico e Estilos Globais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-gray);
+    color: var(--text-dark);
+}
+
+/* Estilo de Botão Global (pode ser usado em qualquer página) */
+.btn {
+    display: inline-block;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--light-blue);
+    color: var(--white);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #3573D5;
+}
+
+/* Estilos para toasts */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    z-index: 10000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    animation: slideInRight 0.3s ease-out, fadeOut 0.3s ease-out 2.7s;
+    min-width: 300px;
+    max-width: 400px;
+    word-wrap: break-word;
+}
+
+.toast.success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-left: 4px solid #047857;
+}
+
+.toast.error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-left: 4px solid #b91c1c;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Responsivo para mobile */
+@media (max-width: 768px) {
+    .toast {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: none;
+    }
+}

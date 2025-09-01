@@ -1,0 +1,17 @@
+Intermédio 2
+
+Acesso
+- Entra com utilizador Intermédio 2.
+- O tema e o logotipo da empresa aparecem automaticamente.
+
+Menu e funcionalidades
+- Início: acesso rápido às secções.
+- Consulta de Horários: calendário onde vês férias e ausências já marcadas.
+- Pedido de Férias/Ausências: faz pedidos (férias, baixa, consulta, etc.), define datas, adiciona justificação e anexa comprovativos (PDF/JPG/PNG). Acompanha o estado do pedido.
+- Aprovação de Férias/Ausências: aceita/recusa pedidos de ausências de Operadores
+- Consulta de Pedidos: vê o historico de pedidos aceites/recusados, tanto por ti, como por outros Intermédio 2
+- Lista de Operadores: vê a lista completa de Operadores e consulta algumas das suas informações de ficha.
+- A Minha Ficha: vê e edita os teus dados. Algumas alterações podem carecer de aprovação.
+
+Sessão
+- Terminar Sessão no rodapé do menu lateral.
