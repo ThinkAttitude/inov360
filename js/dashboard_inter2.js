@@ -826,10 +826,12 @@ window.initializeHorariosCalendarInter2 = function() {
     const modal = document.getElementById('horariosModal');
     const closeBtn = document.querySelector('.close-modal');
     const cancelBtn = document.getElementById('cancelBtn');
+    const clearDayBtn = document.getElementById('clearDayBtn');
     const saveBtn = document.getElementById('saveBtn');
 
     if (closeBtn) closeBtn.addEventListener('click', closeModalInter2);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModalInter2);
+    if (clearDayBtn) clearDayBtn.addEventListener('click', clearDayDataInter2);
     if (saveBtn) saveBtn.addEventListener('click', saveHorariosInter2);
 
     // Event listeners para seleção múltipla
@@ -837,13 +839,13 @@ window.initializeHorariosCalendarInter2 = function() {
     const bulkModal = document.getElementById('bulkModal');
     const closeBulkBtn = document.querySelector('.close-bulk-modal');
     const cancelBulkBtn = document.getElementById('cancelBulkBtn');
-    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const clearRangeBtn = document.getElementById('clearRangeBtn');
     const applyBulkBtn = document.getElementById('applyBulkBtn');
 
     if (bulkSelectBtn) bulkSelectBtn.addEventListener('click', openBulkModalInter2);
     if (closeBulkBtn) closeBulkBtn.addEventListener('click', closeBulkModalInter2);
     if (cancelBulkBtn) cancelBulkBtn.addEventListener('click', closeBulkModalInter2);
-    if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearSelectionInter2);
+    if (clearRangeBtn) clearRangeBtn.addEventListener('click', clearRangeInter2);
     if (applyBulkBtn) applyBulkBtn.addEventListener('click', applyBulkSelectionInter2);
 
     // Fechar modals ao clicar fora
@@ -953,20 +955,77 @@ function renderCalendarInter2() {
         if (savedData) {
             const data = JSON.parse(savedData);
             dayElement.classList.add('has-data');
+            dayElement.classList.add('marked'); // Adicionar classe marked para cores de fundo
             
-            // Criar badge com informações
-            const badge = document.createElement('div');
-            badge.className = 'day-badge';
+            // Criar badges com horas diretas (mesmo sistema do operador)
+            let badges = '';
             
-            let badgeText = '';
-            const totalHoras = (parseFloat(data.horas_normais) || 0) + (parseFloat(data.horas_extra) || 0) + (parseFloat(data.horas_prevencao) || 0);
-            const km = parseFloat(data.km_viatura) || 0;
+            // Horas trabalhadas (verde)
+            if (data.horas_normais && data.horas_normais !== '00:00' && data.horas_normais !== '0') {
+                const [hours, minutes] = data.horas_normais.includes(':') ? data.horas_normais.split(':') : [data.horas_normais, '0'];
+                const h = parseInt(hours);
+                const m = parseInt(minutes);
+                let timeText = '';
+                if (h > 0 && m > 0) {
+                    timeText = `${h}h${m}m`;
+                } else if (h > 0) {
+                    timeText = `${h}h`;
+                } else if (m > 0) {
+                    timeText = `${m}m`;
+                }
+                if (timeText) {
+                    badges += `<span class="hour-badge work">${timeText}</span>`;
+                }
+            }
             
-            if (totalHoras > 0) badgeText += `${totalHoras}h`;
-            if (km > 0) badgeText += (badgeText ? ' | ' : '') + `${km}km`;
+            // Horas extra (amarelo)
+            if (data.horas_extra && data.horas_extra !== '00:00' && data.horas_extra !== '0') {
+                const [hours, minutes] = data.horas_extra.includes(':') ? data.horas_extra.split(':') : [data.horas_extra, '0'];
+                const h = parseInt(hours);
+                const m = parseInt(minutes);
+                let timeText = '';
+                if (h > 0 && m > 0) {
+                    timeText = `${h}h${m}m`;
+                } else if (h > 0) {
+                    timeText = `${h}h`;
+                } else if (m > 0) {
+                    timeText = `${m}m`;
+                }
+                if (timeText) {
+                    badges += `<span class="hour-badge extra">${timeText}</span>`;
+                }
+            }
             
-            badge.textContent = badgeText || 'Marcado';
-            dayElement.appendChild(badge);
+            // Horas de prevenção (vermelho)
+            if (data.horas_prevencao && data.horas_prevencao !== '00:00' && data.horas_prevencao !== '0') {
+                const [hours, minutes] = data.horas_prevencao.includes(':') ? data.horas_prevencao.split(':') : [data.horas_prevencao, '0'];
+                const h = parseInt(hours);
+                const m = parseInt(minutes);
+                let timeText = '';
+                if (h > 0 && m > 0) {
+                    timeText = `${h}h${m}m`;
+                } else if (h > 0) {
+                    timeText = `${h}h`;
+                } else if (m > 0) {
+                    timeText = `${m}m`;
+                }
+                if (timeText) {
+                    badges += `<span class="hour-badge prevention">${timeText}</span>`;
+                }
+            }
+            
+            // Quilómetros (azul)
+            if (data.km_viatura && data.km_viatura !== '0') {
+                badges += `<span class="hour-badge km">${data.km_viatura}km</span>`;
+            }
+
+            // Se há badges, adicionar ao dia
+            if (badges) {
+                const statusContent = document.createElement('div');
+                statusContent.className = 'day-details';
+                statusContent.innerHTML = `<div class="badges">${badges}</div>`;
+                dayElement.appendChild(statusContent);
+            }
         }
 
         // Número do dia
@@ -1071,13 +1130,11 @@ function openModalInter2(dateKey) {
         const horasExtra = document.getElementById('horasExtra');
         const horasPrevencao = document.getElementById('horasPrevencao');
         const kmViatura = document.getElementById('kmViatura');
-        const observacoes = document.getElementById('observacoes');
         
         if (horasNormais) horasNormais.value = data.horas_normais || '';
         if (horasExtra) horasExtra.value = data.horas_extra || '';
         if (horasPrevencao) horasPrevencao.value = data.horas_prevencao || '';
         if (kmViatura) kmViatura.value = data.km_viatura || '';
-        if (observacoes) observacoes.value = data.observacoes || '';
     } else {
         // Reset form
         const form = document.getElementById('horariosForm');
@@ -1098,6 +1155,36 @@ function closeModalInter2() {
     }
 }
 
+// Limpar dados do dia - inter2
+function clearDayDataInter2() {
+    const modal = document.getElementById('horariosModal');
+    const dateKey = modal.dataset.selectedDate;
+    
+    if (!dateKey) return;
+
+    // Confirmar ação
+    if (!confirm('Tem certeza que deseja limpar todas as horas deste dia?')) {
+        return;
+    }
+
+    // Remover dados do localStorage
+    const horariosKey = `horarios_inter2_${dateKey}`;
+    localStorage.removeItem(horariosKey);
+
+    // Limpar formulário
+    const form = document.getElementById('horariosForm');
+    if (form) form.reset();
+
+    // Atualizar calendário
+    renderCalendarInter2();
+
+    // Fechar modal
+    closeModalInter2();
+
+    // Mostrar notificação
+    showNotificationInter2('Dados do dia removidos com sucesso!', 'success');
+}
+
 // Salvar horários do inter2
 function saveHorariosInter2() {
     const modal = document.getElementById('horariosModal');
@@ -1111,7 +1198,6 @@ function saveHorariosInter2() {
         horas_extra: document.getElementById('horasExtra').value,
         horas_prevencao: document.getElementById('horasPrevencao').value,
         km_viatura: document.getElementById('kmViatura').value,
-        observacoes: document.getElementById('observacoes').value,
         data_marcacao: new Date().toISOString(),
         status: 'pendente_aprovacao_inter'
     };
@@ -1188,22 +1274,25 @@ function showNotificationInter2(message, type = 'info') {
 function openBulkModalInter2() {
     const bulkModal = document.getElementById('bulkModal');
     if (bulkModal) {
-        // Ativar modo de seleção múltipla
-        isBulkModeInter2 = true;
-        selectedDaysInter2.clear();
-        
-        // Adicionar classe ao body para indicar modo bulk
-        document.body.classList.add('bulk-mode');
-        
-        // Adicionar indicador visual
-        createBulkModeIndicator();
-        
-        // Re-renderizar calendário para mostrar modo de seleção
-        renderCalendarInter2();
-        
         // Limpar formulário
         document.getElementById('bulkForm').reset();
-        updateSelectedDaysDisplay();
+        
+        // Limpar date range
+        clearRangeInter2();
+        
+        // Configurar datas padrão (mês atual)
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        document.getElementById('bulkStartDate').value = firstDay.toISOString().split('T')[0];
+        document.getElementById('bulkEndDate').value = lastDay.toISOString().split('T')[0];
+        
+        // Configurar event listeners para os date pickers
+        setupDateRangeListeners();
+        
+        // Atualizar display do período
+        updateRangeDisplay();
         
         bulkModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -1213,22 +1302,64 @@ function openBulkModalInter2() {
 function closeBulkModalInter2() {
     const bulkModal = document.getElementById('bulkModal');
     if (bulkModal) {
-        // Desativar modo de seleção múltipla
-        isBulkModeInter2 = false;
-        selectedDaysInter2.clear();
-        
-        // Remover classe do body
-        document.body.classList.remove('bulk-mode');
-        
-        // Remover indicador visual
-        removeBulkModeIndicator();
-        
-        // Re-renderizar calendário
-        renderCalendarInter2();
-        
         bulkModal.style.display = 'none';
         document.body.style.overflow = '';
     }
+}
+
+// Configurar event listeners para date range
+function setupDateRangeListeners() {
+    const startDate = document.getElementById('bulkStartDate');
+    const endDate = document.getElementById('bulkEndDate');
+    
+    if (startDate) {
+        startDate.addEventListener('change', updateRangeDisplay);
+    }
+    if (endDate) {
+        endDate.addEventListener('change', updateRangeDisplay);
+    }
+}
+
+// Atualizar display do período selecionado
+function updateRangeDisplay() {
+    const startDate = document.getElementById('bulkStartDate').value;
+    const endDate = document.getElementById('bulkEndDate').value;
+    const rangeDisplay = document.getElementById('selectedRangeDisplay');
+    const rangeDetails = document.getElementById('selectedRangeDetails');
+    
+    if (!startDate || !endDate) {
+        rangeDisplay.textContent = 'Nenhum período selecionado';
+        rangeDetails.innerHTML = '';
+        return;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+        rangeDisplay.textContent = 'Período inválido';
+        rangeDetails.innerHTML = '<span style="color: #dc2626;">Data de início deve ser anterior à data de fim</span>';
+        return;
+    }
+    
+    // Calcular número de dias
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Formatar datas
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    const startFormatted = start.toLocaleDateString('pt-PT', options);
+    const endFormatted = end.toLocaleDateString('pt-PT', options);
+    
+    rangeDisplay.textContent = `${startFormatted} - ${endFormatted}`;
+    rangeDetails.innerHTML = `<strong>${diffDays}</strong> dias selecionados`;
+}
+
+// Limpar período selecionado
+function clearRangeInter2() {
+    document.getElementById('bulkStartDate').value = '';
+    document.getElementById('bulkEndDate').value = '';
+    updateRangeDisplay();
 }
 
 function createBulkModeIndicator() {
@@ -1304,8 +1435,20 @@ function clearSelectionInter2() {
 }
 
 function applyBulkSelectionInter2() {
-    if (selectedDaysInter2.size === 0) {
-        alert('Por favor, selecione pelo menos um dia.');
+    // Validar período selecionado
+    const startDate = document.getElementById('bulkStartDate').value;
+    const endDate = document.getElementById('bulkEndDate').value;
+    
+    if (!startDate || !endDate) {
+        alert('Por favor, selecione um período de datas.');
+        return;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+        alert('Data de início deve ser anterior à data de fim.');
         return;
     }
     
@@ -1315,7 +1458,6 @@ function applyBulkSelectionInter2() {
         horas_extra: document.getElementById('bulkHorasExtra').value,
         horas_prevencao: document.getElementById('bulkHorasPrevencao').value,
         km_viatura: document.getElementById('bulkKmViatura').value,
-        observacoes: document.getElementById('bulkObservacoes').value,
         data_marcacao: new Date().toISOString(),
         status: 'pendente_aprovacao_inter'
     };
@@ -1328,24 +1470,43 @@ function applyBulkSelectionInter2() {
         return;
     }
     
-    // Aplicar aos dias selecionados
+    // Aplicar a todos os dias do período
     let appliedCount = 0;
-    selectedDaysInter2.forEach(dateKey => {
+    let skippedCount = 0;
+    const currentDate = new Date(start);
+    
+    while (currentDate <= end) {
+        const dateKey = currentDate.toISOString().split('T')[0];
+        
         // Verificar se o dia não tem férias
         if (!feriasDataInter2[dateKey]) {
             const horariosKey = `horarios_inter2_${dateKey}`;
             localStorage.setItem(horariosKey, JSON.stringify(bulkData));
             appliedCount++;
+        } else {
+            skippedCount++;
         }
-    });
+        
+        // Avançar para o próximo dia
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
     
     console.log(`Marcação em lote aplicada a ${appliedCount} dias:`, bulkData);
     
-    // Fechar modal e atualizar calendário
+    // Atualizar calendário
+    renderCalendarInter2();
+    
+    // Fechar modal
     closeBulkModalInter2();
     
     // Mostrar confirmação
-    showNotificationInter2(`Marcação aplicada a ${appliedCount} dias com sucesso! Aguarde aprovação do Inter.`, 'success');
+    let message = `Marcação aplicada a ${appliedCount} dias com sucesso!`;
+    if (skippedCount > 0) {
+        message += ` ${skippedCount} dias foram ignorados (férias/ausências).`;
+    }
+    message += ' Aguarde aprovação do Inter.';
+    
+    showNotificationInter2(message, 'success');
 }
 
 // Expor funções globalmente

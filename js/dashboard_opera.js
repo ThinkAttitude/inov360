@@ -428,22 +428,20 @@ window.initializeHorariosCalendar = function() {
     window.marcacoes = JSON.parse(localStorage.getItem('marcacoes_horarios') || '{}');
     window.ferias = {}; // Férias aprovadas carregadas da API
 
-    // Variáveis para seleção múltipla
-    window.isBulkMode = false;
-    window.selectedDays = new Set();
-
     // Event listeners para seleção múltipla
+    console.log('Configurando event listeners...');
     const bulkSelectBtn = document.getElementById('bulkSelectBtn');
+    console.log('bulkSelectBtn encontrado:', bulkSelectBtn);
     const bulkModal = document.getElementById('bulkModal');
     const closeBulkBtn = document.querySelector('.close-bulk-modal');
     const cancelBulkBtn = document.getElementById('cancelBulkBtn');
-    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const clearSelectionBtn = document.getElementById('clearRangeBtn');
     const applyBulkBtn = document.getElementById('applyBulkBtn');
 
     if (bulkSelectBtn) bulkSelectBtn.addEventListener('click', window.openBulkModal);
     if (closeBulkBtn) closeBulkBtn.addEventListener('click', window.closeBulkModal);
     if (cancelBulkBtn) cancelBulkBtn.addEventListener('click', window.closeBulkModal);
-    if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', window.clearSelection);
+    if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearRange);
     if (applyBulkBtn) applyBulkBtn.addEventListener('click', window.applyBulkSelection);
 
     // Fechar modal ao clicar fora
@@ -658,25 +656,10 @@ window.initializeHorariosCalendar = function() {
             
             // Determinar se o dia pode ser clicado (não deve ser clicável se tem férias)
             
-            // Verificar se está selecionado para bulk
-            if (window.selectedDays.has(dateKey)) {
-                cellClass += ' bulk-selected';
-            }
-            
-            // Adicionar classe para modo bulk
-            if (window.isBulkMode && !hasFerias) {
-                cellClass += ' bulk-selectable';
-            }
-            
             let clickAction = '';
             if (!hasFerias) {
-                if (window.isBulkMode) {
-                    // No modo bulk, clique seleciona/deseleciona o dia
-                    clickAction = `onclick="window.toggleDaySelection('${dateKey}')"`;
-                } else {
-                    // Modo normal, clique abre modal
-                    clickAction = `onclick="window.openDayModal(${day})"`;
-                }
+                // Modo normal, clique abre modal
+                clickAction = `onclick="window.openDayModal(${day})"`;
             }
             
             const clickCursor = hasFerias ? 'cursor: default;' : '';
@@ -750,8 +733,9 @@ window.initializeHorariosCalendar = function() {
                         </div>
                         
                         <div class="form-actions">
-                            <button type="button" class="btn btn-primary" onclick="window.saveDayData(${day})">Guardar</button>
                             <button type="button" class="btn btn-secondary" onclick="window.closeDayModal()">Cancelar</button>
+                            <button type="button" class="btn btn-danger" onclick="window.clearDayData(${day})" style="background: #dc2626;">Limpar Dia</button>
+                            <button type="button" class="btn btn-primary" onclick="window.saveDayData(${day})">Guardar</button>
                         </div>
                     </form>
                 </div>
@@ -792,6 +776,29 @@ window.initializeHorariosCalendar = function() {
         
         // Mostrar confirmação
         alert(`Marcação guardada para o dia ${day}!\n\nResumo:\n• Horas trabalhadas: ${data.horasTrabalhadas || 'Não definido'}\n• Horas extra: ${data.horasExtra || 'Não definido'}\n• Horas prevenção: ${data.horasPrevencao || 'Não definido'}\n• KM viatura: ${data.kmViatura || '0'} km`);
+    };
+
+    // Função para limpar dados do dia - GLOBAL
+    window.clearDayData = function(day) {
+        console.log('Limpando dados para dia:', day);
+        
+        // Confirmar ação
+        if (!confirm('Tem certeza que deseja limpar todas as horas deste dia?')) {
+            return;
+        }
+
+        const dateKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        
+        // Remover dados do localStorage
+        delete window.marcacoes[dateKey];
+        localStorage.setItem('marcacoes_horarios', JSON.stringify(window.marcacoes));
+        
+        // Fechar modal e atualizar calendário
+        window.closeDayModal();
+        window.renderCalendar();
+        
+        // Mostrar confirmação
+        alert(`Dados do dia ${day} removidos com sucesso!`);
     };
 
     // Função para submeter mês - GLOBAL
@@ -851,163 +858,95 @@ window.initializeHorariosCalendar = function() {
         const bulkModal = document.getElementById('bulkModal');
         console.log('bulkModal encontrado:', bulkModal);
         if (bulkModal) {
-            // Ativar modo de seleção múltipla
-            window.isBulkMode = true;
-            window.selectedDays.clear();
-            
-            // Adicionar classe ao body para indicar modo bulk
-            document.body.classList.add('bulk-mode');
-            
-            // Adicionar indicador visual
-            window.createBulkModeIndicator();
-            
-            // Re-renderizar calendário para mostrar modo de seleção
-            window.renderCalendar();
-            
+            console.log('Configurando modal...');
             // Limpar formulário
             document.getElementById('bulkForm').reset();
-            window.updateSelectedDaysDisplay();
             
-            bulkModal.style.display = 'block';
+            // Configurar date range para o mês atual
+            const firstDay = new Date(window.currentYear, window.currentMonth, 1);
+            const lastDay = new Date(window.currentYear, window.currentMonth + 1, 0);
+            
+            document.getElementById('bulkStartDate').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('bulkEndDate').value = lastDay.toISOString().split('T')[0];
+            
+            // Configurar listeners e display
+            setupDateRangeListeners();
+            updateRangeDisplay();
+            
+            bulkModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
     };
 
     window.closeBulkModal = function() {
         const bulkModal = document.getElementById('bulkModal');
         if (bulkModal) {
-            // Desativar modo de seleção múltipla
-            window.isBulkMode = false;
-            window.selectedDays.clear();
-            
-            // Remover classe do body
-            document.body.classList.remove('bulk-mode');
-            
-            // Remover indicador visual
-            window.removeBulkModeIndicator();
-            
-            // Re-renderizar calendário
-            window.renderCalendar();
-            
             bulkModal.style.display = 'none';
             document.body.style.overflow = '';
         }
     };
 
-    window.createBulkModeIndicator = function() {
-        // Remover indicador existente
-        window.removeBulkModeIndicator();
-        
-        const indicator = document.createElement('div');
-        indicator.id = 'bulkModeIndicator';
-        indicator.className = 'bulk-mode-indicator';
-        indicator.innerHTML = `
-            <div>Modo Seleção Múltipla Ativo</div>
-            <div style="font-size: 0.8rem; opacity: 0.8;">Clique nos dias para selecionar</div>
-        `;
-        document.body.appendChild(indicator);
-    };
-
-    window.removeBulkModeIndicator = function() {
-        const indicator = document.getElementById('bulkModeIndicator');
-        if (indicator) {
-            indicator.remove();
-        }
-    };
-
-    window.toggleDaySelection = function(dateKey) {
-        if (window.selectedDays.has(dateKey)) {
-            window.selectedDays.delete(dateKey);
-        } else {
-            window.selectedDays.add(dateKey);
-        }
-        
-        // Re-renderizar apenas os dias afetados
-        window.renderCalendar();
-        window.updateSelectedDaysDisplay();
-    };
-
-    window.updateSelectedDaysDisplay = function() {
-        const countElement = document.getElementById('selectedDaysCount');
-        const listElement = document.getElementById('selectedDaysList');
-        
-        if (countElement) {
-            countElement.textContent = window.selectedDays.size;
-        }
-        
-        if (listElement) {
-            listElement.innerHTML = '';
-            
-            // Converter datas para array e ordenar
-            const sortedDays = Array.from(window.selectedDays).sort();
-            
-            sortedDays.forEach(dateKey => {
-                const [year, month, day] = dateKey.split('-');
-                const dayTag = document.createElement('div');
-                dayTag.className = 'selected-day-tag';
-                dayTag.innerHTML = `
-                    ${day}/${month}
-                    <span class="remove-day" onclick="window.removeSelectedDay('${dateKey}')">&times;</span>
-                `;
-                listElement.appendChild(dayTag);
-            });
-        }
-    };
-
-    window.removeSelectedDay = function(dateKey) {
-        window.selectedDays.delete(dateKey);
-        window.renderCalendar();
-        window.updateSelectedDaysDisplay();
-    };
-
-    window.clearSelection = function() {
-        window.selectedDays.clear();
-        window.renderCalendar();
-        window.updateSelectedDaysDisplay();
-    };
-
     window.applyBulkSelection = function() {
-        if (window.selectedDays.size === 0) {
-            alert('Por favor, selecione pelo menos um dia.');
+        const startDate = document.getElementById('bulkStartDate').value;
+        const endDate = document.getElementById('bulkEndDate').value;
+        
+        if (!startDate || !endDate) {
+            alert('Por favor, selecione um período válido.');
+            return;
+        }
+        
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        if (start > end) {
+            alert('Data de início deve ser anterior à data de fim.');
             return;
         }
         
         // Obter valores do formulário
-        const bulkData = {
-            horasTrabalhadas: document.getElementById('bulkHorasNormais').value,
-            horasExtra: document.getElementById('bulkHorasExtra').value,
-            horasPrevencao: document.getElementById('bulkHorasPrevencao').value,
-            kmViatura: document.getElementById('bulkKmViatura').value,
-            observacoes: document.getElementById('bulkObservacoes').value
-        };
+        const horasTrabalhadas = document.getElementById('bulkHorasNormais').value;
+        const horasExtra = document.getElementById('bulkHorasExtra').value;
+        const horasPrevencao = document.getElementById('bulkHorasPrevencao').value;
+        const kmViatura = document.getElementById('bulkKmViatura').value;
         
-        // Validar se pelo menos um campo está preenchido
-        const hasData = bulkData.horasTrabalhadas || bulkData.horasExtra || bulkData.horasPrevencao || bulkData.kmViatura;
-        
-        if (!hasData) {
-            alert('Por favor, preencha pelo menos um campo de horas ou quilómetros.');
+        if (!horasTrabalhadas && !horasExtra && !horasPrevencao && !kmViatura) {
+            alert('Por favor, preencha pelo menos um campo.');
             return;
         }
         
-        // Aplicar aos dias selecionados
-        let appliedCount = 0;
-        window.selectedDays.forEach(dateKey => {
-            // Verificar se o dia não tem férias
-            if (!window.ferias[dateKey]) {
-                window.marcacoes[dateKey] = bulkData;
-                appliedCount++;
+        // Aplicar aos dias do período
+        const current = new Date(start);
+        let diasAplicados = 0;
+        
+        while (current <= end) {
+            const dateKey = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}-${current.getDate().toString().padStart(2, '0')}`;
+            
+            // Verificar se o dia tem férias
+            if (!window.ferias || !window.ferias[dateKey]) {
+                // Criar/atualizar dados do dia
+                if (!window.marcacoes[dateKey]) {
+                    window.marcacoes[dateKey] = {};
+                }
+                
+                if (horasTrabalhadas) window.marcacoes[dateKey].horasTrabalhadas = horasTrabalhadas;
+                if (horasExtra) window.marcacoes[dateKey].horasExtra = horasExtra;
+                if (horasPrevencao) window.marcacoes[dateKey].horasPrevencao = horasPrevencao;
+                if (kmViatura) window.marcacoes[dateKey].kmViatura = kmViatura;
+                
+                diasAplicados++;
             }
-        });
+            
+            current.setDate(current.getDate() + 1);
+        }
         
         // Salvar no localStorage
         localStorage.setItem('marcacoes_horarios', JSON.stringify(window.marcacoes));
         
-        console.log(`Marcação em lote aplicada a ${appliedCount} dias:`, bulkData);
+        alert(`Marcação aplicada a ${diasAplicados} dias com sucesso!`);
         
-        // Fechar modal e atualizar calendário
+        // Fechar modal e re-renderizar calendário
         window.closeBulkModal();
-        
-        // Mostrar confirmação
-        window.showNotification(`Marcação aplicada a ${appliedCount} dias com sucesso!`, 'success');
+        window.renderCalendar();
     };
 
     window.showNotification = function(message, type = 'info') {
@@ -1045,3 +984,58 @@ window.initializeHorariosCalendar = function() {
     console.log('Renderizando calendário inicial...');
     window.renderCalendar();
 };
+
+// Configurar event listeners para date range
+function setupDateRangeListeners() {
+    const startDate = document.getElementById('bulkStartDate');
+    const endDate = document.getElementById('bulkEndDate');
+    
+    if (startDate) {
+        startDate.addEventListener('change', updateRangeDisplay);
+    }
+    if (endDate) {
+        endDate.addEventListener('change', updateRangeDisplay);
+    }
+}
+
+// Atualizar display do período selecionado
+function updateRangeDisplay() {
+    const startDate = document.getElementById('bulkStartDate').value;
+    const endDate = document.getElementById('bulkEndDate').value;
+    const rangeDisplay = document.getElementById('selectedRangeDisplay');
+    const rangeDetails = document.getElementById('selectedRangeDetails');
+    
+    if (!startDate || !endDate) {
+        rangeDisplay.textContent = 'Nenhum período selecionado';
+        rangeDetails.innerHTML = '';
+        return;
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+        rangeDisplay.textContent = 'Período inválido';
+        rangeDetails.innerHTML = '<span style="color: #dc2626;">Data de início deve ser anterior à data de fim</span>';
+        return;
+    }
+    
+    // Calcular número de dias
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Formatar datas
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    const startFormatted = start.toLocaleDateString('pt-PT', options);
+    const endFormatted = end.toLocaleDateString('pt-PT', options);
+    
+    rangeDisplay.textContent = `${startFormatted} - ${endFormatted}`;
+    rangeDetails.innerHTML = `<strong>${diffDays}</strong> dias selecionados`;
+}
+
+// Limpar período selecionado
+function clearRange() {
+    document.getElementById('bulkStartDate').value = '';
+    document.getElementById('bulkEndDate').value = '';
+    updateRangeDisplay();
+}
