@@ -35,6 +35,23 @@ document.addEventListener("DOMContentLoaded", function () {
                         </svg>
                     </a>
                 </div>
+
+                <div class="welcome-card">
+                    <div class="card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12,6 12,12 16,14"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Aprovação de Horários</h3>
+                    <p>Aprove ou rejeite as marcações de horários dos operadores da sua equipa.</p>
+                    <a href="#" class="card-link" data-content="aprovacao_horarios">
+                        Gerir Horários
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9,18 15,12 9,6"></polyline>
+                        </svg>
+                    </a>
+                </div>
                 
                 <div class="welcome-card">
                     <div class="card-icon">
@@ -162,10 +179,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 setTimeout(showWelcome, 300);
                 return;
             case "horarios":
-                url = "../inter2/horarios.php";
+                url = "../inter2/horarios_new.php";
                 break;
             case "aprovacao_ferias_ausencias":
                 url = "../inter2/aprovacao_ferias_ausencias.php";
+                break;
+            case "aprovacao_horarios":
+                url = "../inter2/aprovacao_horarios.php";
                 break;
             case "consulta_pedidos":
                 url = "../inter2/consulta_pedidos.php";
@@ -197,7 +217,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Tratamento especial para a página de horários (calendário)
                 if (content === "horarios") {
-                    initializeCalendar();
+                    if (typeof window.initializeHorariosCalendarInter2 === 'function') {
+                        window.initializeHorariosCalendarInter2();
+                    } else {
+                        initializeCalendar();
+                    }
                 }
 
                 // Tratamento especial para a página de ficha colaborador
@@ -759,3 +783,570 @@ window.initializeDynamicContent = function() {
         });
     });
 };
+
+// Funções globais para compatibilidade
+window.navigateMonthInter2 = navigateMonthInter2;
+window.goToTodayInter2 = goToTodayInter2;
+window.openModalInter2 = openModalInter2;
+window.closeModalInter2 = closeModalInter2;
+
+// Funções específicas para o sistema de horários do inter2
+let currentMonthInter2 = new Date().getMonth();
+let currentYearInter2 = new Date().getFullYear();
+let horariosDataInter2 = {};
+let feriasDataInter2 = {};
+
+// Variáveis para seleção múltipla
+let isBulkModeInter2 = false;
+let selectedDaysInter2 = new Set();
+
+// Função principal para inicializar o calendário de horários do inter2
+window.initializeHorariosCalendarInter2 = function() {
+    console.log('Sistema de horários inicializado para Inter2');
+    console.log('Verificando se elementos existem...');
+    
+    const calendarGrid = document.querySelector('.calendar-grid');
+    const monthYear = document.getElementById('monthYear');
+    console.log('Calendar grid:', calendarGrid);
+    console.log('Month year element:', monthYear);
+    
+    loadFeriasInter2();
+    renderCalendarInter2();
+    
+    // Event listeners para navegação
+    const prevBtn = document.getElementById('prevMonth');
+    const nextBtn = document.getElementById('nextMonth');
+    const todayBtn = document.getElementById('todayBtn');
+    
+    if (prevBtn) prevBtn.addEventListener('click', () => navigateMonthInter2(-1));
+    if (nextBtn) nextBtn.addEventListener('click', () => navigateMonthInter2(1));
+    if (todayBtn) todayBtn.addEventListener('click', goToTodayInter2);
+
+    // Event listeners para o modal
+    const modal = document.getElementById('horariosModal');
+    const closeBtn = document.querySelector('.close-modal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModalInter2);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModalInter2);
+    if (saveBtn) saveBtn.addEventListener('click', saveHorariosInter2);
+
+    // Event listeners para seleção múltipla
+    const bulkSelectBtn = document.getElementById('bulkSelectBtn');
+    const bulkModal = document.getElementById('bulkModal');
+    const closeBulkBtn = document.querySelector('.close-bulk-modal');
+    const cancelBulkBtn = document.getElementById('cancelBulkBtn');
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const applyBulkBtn = document.getElementById('applyBulkBtn');
+
+    if (bulkSelectBtn) bulkSelectBtn.addEventListener('click', openBulkModalInter2);
+    if (closeBulkBtn) closeBulkBtn.addEventListener('click', closeBulkModalInter2);
+    if (cancelBulkBtn) cancelBulkBtn.addEventListener('click', closeBulkModalInter2);
+    if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearSelectionInter2);
+    if (applyBulkBtn) applyBulkBtn.addEventListener('click', applyBulkSelectionInter2);
+
+    // Fechar modals ao clicar fora
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModalInter2();
+        });
+    }
+
+    if (bulkModal) {
+        bulkModal.addEventListener('click', (e) => {
+            if (e.target === bulkModal) closeBulkModalInter2();
+        });
+    }
+
+    // Carregar dados existentes
+    loadHorariosDataInter2();
+};
+
+// Carregar férias aprovadas do inter2
+function loadFeriasInter2() {
+    fetch('../../api/pedidos/listar_ferias_aprovadas_inter2.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                feriasDataInter2 = data.ferias;
+                console.log('Férias carregadas para Inter2:', feriasDataInter2);
+                renderCalendarInter2(); // Re-render para mostrar férias
+            }
+        })
+        .catch(error => console.error('Erro ao carregar férias Inter2:', error));
+}
+
+// Renderizar calendário do inter2
+function renderCalendarInter2() {
+    const monthNames = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    // Atualizar título
+    const monthYearDisplay = document.getElementById('monthYear');
+    if (monthYearDisplay) {
+        monthYearDisplay.textContent = `${monthNames[currentMonthInter2]} ${currentYearInter2}`;
+    }
+
+    // Gerar calendário
+    const calendarGrid = document.querySelector('.calendar-grid');
+    if (!calendarGrid) return;
+
+    // Limpar grid
+    calendarGrid.innerHTML = '';
+
+    // Adicionar cabeçalhos dos dias
+    dayNames.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day;
+        calendarGrid.appendChild(dayHeader);
+    });
+
+    // Calcular dias do mês
+    const firstDay = new Date(currentYearInter2, currentMonthInter2, 1);
+    const lastDay = new Date(currentYearInter2, currentMonthInter2 + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    // Adicionar dias vazios do início
+    for (let i = 0; i < startingDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty';
+        calendarGrid.appendChild(emptyDay);
+    }
+
+    // Adicionar dias do mês
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        
+        const dateKey = `${currentYearInter2}-${String(currentMonthInter2 + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Verificar se é hoje
+        if (dateKey === today) {
+            dayElement.classList.add('today');
+        }
+
+        // Verificar se há férias aprovadas
+        if (feriasDataInter2[dateKey]) {
+            const feriaType = feriasDataInter2[dateKey].tipo;
+            dayElement.classList.add('vacation-day');
+            
+            // Determinar classe baseada no tipo
+            if (feriaType === 'ferias') {
+                dayElement.classList.add('vacation-ferias');
+            } else {
+                dayElement.classList.add('vacation-ausencia');
+            }
+        }
+
+        // Verificar se há horários marcados
+        const horariosKey = `horarios_inter2_${dateKey}`;
+        const savedData = localStorage.getItem(horariosKey);
+        
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            dayElement.classList.add('has-data');
+            
+            // Criar badge com informações
+            const badge = document.createElement('div');
+            badge.className = 'day-badge';
+            
+            let badgeText = '';
+            const totalHoras = (parseFloat(data.horas_normais) || 0) + (parseFloat(data.horas_extra) || 0) + (parseFloat(data.horas_prevencao) || 0);
+            const km = parseFloat(data.km_viatura) || 0;
+            
+            if (totalHoras > 0) badgeText += `${totalHoras}h`;
+            if (km > 0) badgeText += (badgeText ? ' | ' : '') + `${km}km`;
+            
+            badge.textContent = badgeText || 'Marcado';
+            dayElement.appendChild(badge);
+        }
+
+        // Número do dia
+        const dayNumber = document.createElement('span');
+        dayNumber.className = 'day-number';
+        dayNumber.textContent = day;
+        dayElement.appendChild(dayNumber);
+
+        // Verificar se está selecionado para bulk
+        if (selectedDaysInter2.has(dateKey)) {
+            dayElement.classList.add('bulk-selected');
+        }
+
+        // Adicionar classe para modo bulk
+        if (isBulkModeInter2 && !feriasDataInter2[dateKey]) {
+            dayElement.classList.add('bulk-selectable');
+        }
+
+        // Event listener para abrir modal (apenas se não for férias)
+        if (!feriasDataInter2[dateKey]) {
+            if (isBulkModeInter2) {
+                // No modo bulk, clique seleciona/deseleciona o dia
+                dayElement.addEventListener('click', () => toggleDaySelectionInter2(dateKey));
+            } else {
+                // Modo normal, clique abre modal
+                dayElement.addEventListener('click', () => {
+                    console.log('Dia clicado:', dateKey);
+                    openModalInter2(dateKey);
+                });
+            }
+            dayElement.style.cursor = 'pointer';
+            // Alternativa: adicionar onclick diretamente
+            if (!isBulkModeInter2) {
+                dayElement.setAttribute('onclick', `window.openModalInter2('${dateKey}')`);
+            }
+        } else {
+            dayElement.style.cursor = 'not-allowed';
+            dayElement.title = `Dia de ${feriasDataInter2[dateKey].tipo}`;
+        }
+
+        calendarGrid.appendChild(dayElement);
+    }
+}
+
+// Navegação entre meses do inter2
+function navigateMonthInter2(direction) {
+    currentMonthInter2 += direction;
+    
+    if (currentMonthInter2 > 11) {
+        currentMonthInter2 = 0;
+        currentYearInter2++;
+    } else if (currentMonthInter2 < 0) {
+        currentMonthInter2 = 11;
+        currentYearInter2--;
+    }
+    
+    renderCalendarInter2();
+}
+
+// Ir para hoje do inter2
+function goToTodayInter2() {
+    const today = new Date();
+    currentMonthInter2 = today.getMonth();
+    currentYearInter2 = today.getFullYear();
+    renderCalendarInter2();
+}
+
+// Abrir modal do inter2
+function openModalInter2(dateKey) {
+    console.log('Abrindo modal inter2 para:', dateKey);
+    const modal = document.getElementById('horariosModal');
+    
+    if (!modal) {
+        console.error('Modal não encontrado!');
+        alert('Erro: Modal não encontrado');
+        return;
+    }
+    
+    const dateDisplay = document.getElementById('selectedDate');
+    if (dateDisplay) {
+        // Formatar data para exibição
+        const [year, month, day] = dateKey.split('-');
+        const date = new Date(year, month - 1, day);
+        const formattedDate = date.toLocaleDateString('pt-PT', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        dateDisplay.textContent = formattedDate;
+    }
+    
+    modal.dataset.selectedDate = dateKey;
+
+    // Carregar dados existentes
+    const horariosKey = `horarios_inter2_${dateKey}`;
+    const savedData = localStorage.getItem(horariosKey);
+    
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        const horasNormais = document.getElementById('horasNormais');
+        const horasExtra = document.getElementById('horasExtra');
+        const horasPrevencao = document.getElementById('horasPrevencao');
+        const kmViatura = document.getElementById('kmViatura');
+        const observacoes = document.getElementById('observacoes');
+        
+        if (horasNormais) horasNormais.value = data.horas_normais || '';
+        if (horasExtra) horasExtra.value = data.horas_extra || '';
+        if (horasPrevencao) horasPrevencao.value = data.horas_prevencao || '';
+        if (kmViatura) kmViatura.value = data.km_viatura || '';
+        if (observacoes) observacoes.value = data.observacoes || '';
+    } else {
+        // Reset form
+        const form = document.getElementById('horariosForm');
+        if (form) form.reset();
+    }
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    console.log('Modal aberto com sucesso');
+}
+
+// Fechar modal do inter2
+function closeModalInter2() {
+    const modal = document.getElementById('horariosModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Salvar horários do inter2
+function saveHorariosInter2() {
+    const modal = document.getElementById('horariosModal');
+    const dateKey = modal.dataset.selectedDate;
+    
+    if (!dateKey) return;
+
+    // Coletar dados do formulário
+    const data = {
+        horas_normais: document.getElementById('horasNormais').value,
+        horas_extra: document.getElementById('horasExtra').value,
+        horas_prevencao: document.getElementById('horasPrevencao').value,
+        km_viatura: document.getElementById('kmViatura').value,
+        observacoes: document.getElementById('observacoes').value,
+        data_marcacao: new Date().toISOString(),
+        status: 'pendente_aprovacao_inter'
+    };
+
+    // Validar se pelo menos um campo está preenchido
+    const hasData = data.horas_normais || data.horas_extra || data.horas_prevencao || data.km_viatura;
+    
+    if (!hasData) {
+        alert('Por favor, preencha pelo menos um campo de horas ou quilómetros.');
+        return;
+    }
+
+    // Salvar no localStorage
+    const horariosKey = `horarios_inter2_${dateKey}`;
+    localStorage.setItem(horariosKey, JSON.stringify(data));
+    
+    console.log(`Horários salvos para Inter2 em ${dateKey}:`, data);
+    
+    // Fechar modal e atualizar calendário
+    closeModalInter2();
+    renderCalendarInter2();
+    
+    // Mostrar confirmação
+    showNotificationInter2('Horários guardados com sucesso! Aguarde aprovação do Inter.', 'success');
+}
+
+// Carregar dados de horários do inter2
+function loadHorariosDataInter2() {
+    const allKeys = Object.keys(localStorage);
+    const horariosKeys = allKeys.filter(key => key.startsWith('horarios_inter2_'));
+    
+    horariosDataInter2 = {};
+    horariosKeys.forEach(key => {
+        const dateKey = key.replace('horarios_inter2_', '');
+        horariosDataInter2[dateKey] = JSON.parse(localStorage.getItem(key));
+    });
+    
+    console.log('Dados de horários carregados para Inter2:', horariosDataInter2);
+}
+
+// Mostrar notificação do inter2
+function showNotificationInter2(message, type = 'info') {
+    // Remover notificação existente
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    // Criar nova notificação
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-icon">
+                ${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}
+            </span>
+            <span class="notification-message">${message}</span>
+        </div>
+    `;
+
+    // Adicionar ao DOM
+    document.body.appendChild(notification);
+
+    // Remover após 4 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 4000);
+}
+
+// Funções para seleção múltipla
+function openBulkModalInter2() {
+    const bulkModal = document.getElementById('bulkModal');
+    if (bulkModal) {
+        // Ativar modo de seleção múltipla
+        isBulkModeInter2 = true;
+        selectedDaysInter2.clear();
+        
+        // Adicionar classe ao body para indicar modo bulk
+        document.body.classList.add('bulk-mode');
+        
+        // Adicionar indicador visual
+        createBulkModeIndicator();
+        
+        // Re-renderizar calendário para mostrar modo de seleção
+        renderCalendarInter2();
+        
+        // Limpar formulário
+        document.getElementById('bulkForm').reset();
+        updateSelectedDaysDisplay();
+        
+        bulkModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeBulkModalInter2() {
+    const bulkModal = document.getElementById('bulkModal');
+    if (bulkModal) {
+        // Desativar modo de seleção múltipla
+        isBulkModeInter2 = false;
+        selectedDaysInter2.clear();
+        
+        // Remover classe do body
+        document.body.classList.remove('bulk-mode');
+        
+        // Remover indicador visual
+        removeBulkModeIndicator();
+        
+        // Re-renderizar calendário
+        renderCalendarInter2();
+        
+        bulkModal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+function createBulkModeIndicator() {
+    // Remover indicador existente
+    removeBulkModeIndicator();
+    
+    const indicator = document.createElement('div');
+    indicator.id = 'bulkModeIndicator';
+    indicator.className = 'bulk-mode-indicator';
+    indicator.innerHTML = `
+        <div>Modo Seleção Múltipla Ativo</div>
+        <div style="font-size: 0.8rem; opacity: 0.8;">Clique nos dias para selecionar</div>
+    `;
+    document.body.appendChild(indicator);
+}
+
+function removeBulkModeIndicator() {
+    const indicator = document.getElementById('bulkModeIndicator');
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+function toggleDaySelectionInter2(dateKey) {
+    if (selectedDaysInter2.has(dateKey)) {
+        selectedDaysInter2.delete(dateKey);
+    } else {
+        selectedDaysInter2.add(dateKey);
+    }
+    
+    // Re-renderizar apenas os dias afetados
+    renderCalendarInter2();
+    updateSelectedDaysDisplay();
+}
+
+function updateSelectedDaysDisplay() {
+    const countElement = document.getElementById('selectedDaysCount');
+    const listElement = document.getElementById('selectedDaysList');
+    
+    if (countElement) {
+        countElement.textContent = selectedDaysInter2.size;
+    }
+    
+    if (listElement) {
+        listElement.innerHTML = '';
+        
+        // Converter datas para array e ordenar
+        const sortedDays = Array.from(selectedDaysInter2).sort();
+        
+        sortedDays.forEach(dateKey => {
+            const [year, month, day] = dateKey.split('-');
+            const dayTag = document.createElement('div');
+            dayTag.className = 'selected-day-tag';
+            dayTag.innerHTML = `
+                ${day}/${month}
+                <span class="remove-day" onclick="removeSelectedDay('${dateKey}')">&times;</span>
+            `;
+            listElement.appendChild(dayTag);
+        });
+    }
+}
+
+function removeSelectedDay(dateKey) {
+    selectedDaysInter2.delete(dateKey);
+    renderCalendarInter2();
+    updateSelectedDaysDisplay();
+}
+
+function clearSelectionInter2() {
+    selectedDaysInter2.clear();
+    renderCalendarInter2();
+    updateSelectedDaysDisplay();
+}
+
+function applyBulkSelectionInter2() {
+    if (selectedDaysInter2.size === 0) {
+        alert('Por favor, selecione pelo menos um dia.');
+        return;
+    }
+    
+    // Obter valores do formulário
+    const bulkData = {
+        horas_normais: document.getElementById('bulkHorasNormais').value,
+        horas_extra: document.getElementById('bulkHorasExtra').value,
+        horas_prevencao: document.getElementById('bulkHorasPrevencao').value,
+        km_viatura: document.getElementById('bulkKmViatura').value,
+        observacoes: document.getElementById('bulkObservacoes').value,
+        data_marcacao: new Date().toISOString(),
+        status: 'pendente_aprovacao_inter'
+    };
+    
+    // Validar se pelo menos um campo está preenchido
+    const hasData = bulkData.horas_normais || bulkData.horas_extra || bulkData.horas_prevencao || bulkData.km_viatura;
+    
+    if (!hasData) {
+        alert('Por favor, preencha pelo menos um campo de horas ou quilómetros.');
+        return;
+    }
+    
+    // Aplicar aos dias selecionados
+    let appliedCount = 0;
+    selectedDaysInter2.forEach(dateKey => {
+        // Verificar se o dia não tem férias
+        if (!feriasDataInter2[dateKey]) {
+            const horariosKey = `horarios_inter2_${dateKey}`;
+            localStorage.setItem(horariosKey, JSON.stringify(bulkData));
+            appliedCount++;
+        }
+    });
+    
+    console.log(`Marcação em lote aplicada a ${appliedCount} dias:`, bulkData);
+    
+    // Fechar modal e atualizar calendário
+    closeBulkModalInter2();
+    
+    // Mostrar confirmação
+    showNotificationInter2(`Marcação aplicada a ${appliedCount} dias com sucesso! Aguarde aprovação do Inter.`, 'success');
+}
+
+// Expor funções globalmente
+window.removeSelectedDay = removeSelectedDay;
