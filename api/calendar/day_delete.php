@@ -1,0 +1,91 @@
+<?php
+// api/calendar/day_delete.php  (versão simples: limpa TUDO do dia)
+declare(strict_types=1);
+session_start();
+header('Content-Type: application/json; charset=utf-8');
+
+/* ===== SEGURANÇA ===== */
+if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+}
+$role   = $_SESSION['user']['role'] ?? '';
+$selfId = (int)($_SESSION['user']['id'] ?? 0);
+if ($role === 'estrela') {
+    http_response_code(403);
+    echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit;
+}
+$isMgr = in_array($role, ['inter2','inter','admin','adminrh'], true);
+
+/* ===== DB ===== */
+require_once __DIR__ . '/../includes/db.php';
+$pdo = db_connect();
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+/* ===== HELPERS ===== */
+function json_input(): array {
+    $raw = file_get_contents('php://input');
+    $d = json_decode($raw, true);
+    return is_array($d) ? $d : [];
+}
+function is_valid_date(string $d): bool {
+    return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $d);
+}
+function period_is_locked(PDO $pdo, int $uid, string $date): bool {
+    // Se não usares timesheet_periods, devolve false
+    $sql = "SELECT 1 FROM timesheet_periods
+          WHERE user_id=:u AND :d BETWEEN period_start AND period_end
+            AND estado IN ('submitted','approved','locked')
+          LIMIT 1";
+    try { $st=$pdo->prepare($sql); $st->execute([':u'=>$uid, ':d'=>$date]); return (bool)$st->fetchColumn(); }
+    catch(Throwable $e){ return false; }
+}
+
+/* ===== VERBO ===== */
+if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+    http_response_code(405);
+    echo json_encode(["ok"=>false,"code"=>"METHOD_NOT_ALLOWED"]); exit;
+}
+
+/* ===== INPUT ===== */
+$in   = json_input();
+$date = $in['date'] ?? '';
+if (!is_valid_date($date)) {
+    http_response_code(400);
+    echo json_encode(["ok"=>false,"code"=>"INVALID_DATE"]);
+    exit;
+}
+
+/* User alvo: sessão por defeito; só manager pode indicar outro user_id */
+$userId = $selfId;
+if ($isMgr && isset($in['user_id']) && (int)$in['user_id'] > 0) {
+    $userId = (int)$in['user_id'];
+}
+
+if (period_is_locked($pdo, $userId, $date)) {
+    http_response_code(409);
+    echo json_encode(["ok"=>false,"code"=>"PERIOD_LOCKED"]);
+    exit;
+}
+
+/* ===== EXECUTA: limpa TUDO do dia (WORK, OVERTIME, ONCALL, KM) ===== */
+/* Se tens a coluna gerada `dia` em eventos, podes trocar DATE(inicio)=? por dia=? */
+try {
+    $sql = "DELETE FROM eventos
+           WHERE user_id = ?
+             AND DATE(inicio) = ?
+             AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+             AND status IN ('draft','rejected')";
+    $st = $pdo->prepare($sql);
+    $st->execute([$userId, $date]);
+
+    echo json_encode([
+        "ok"      => true,
+        "user_id" => $userId,
+        "date"    => $date,
+        "deleted" => $st->rowCount()
+    ]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+}
