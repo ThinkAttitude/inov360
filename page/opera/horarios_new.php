@@ -688,26 +688,7 @@ html body .horarios-close-btn:hover {
     }
 }
 
-.modal {
-    position: absolute;
-    top: 80px; /* Posiciona abaixo dos botões */
-    left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    min-width: 600px;
-    max-width: 800px;
-    background: white;
-    border-radius: 12px;
-    z-index: 1000;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    border: 1px solid #e5e7eb;
-}
 
-.modal-content {
-    background: white;
-    border-radius: 12px;
-    padding: 0;
-    width: 100%;
     max-width: 600px;
     max-height: 70vh;
     overflow-y: auto;
@@ -801,15 +782,63 @@ html body .horarios-close-btn:hover {
     border: 1px solid #e5e7eb !important;
 }
 
-#bulkModal .modal-content {
-    background: white !important;
-    border-radius: 12px !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-height: 70vh !important;
-    overflow-y: auto !important;
-    box-shadow: none !important;
-    position: relative !important;
+
+
+/* CSS para Date Range Picker */
+.date-range-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.date-input {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.date-separator {
+    font-weight: 500;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.selected-range-info {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.range-details {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+@media (max-width: 768px) {
+    .date-range-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .date-separator {
+        text-align: center;
+        margin: 0.5rem 0;
+    }
 }
 </style>
 
@@ -848,12 +877,19 @@ html body .horarios-close-btn:hover {
                 </div>
                 <div class="modal-body">
                     <div class="bulk-instructions">
-                        <p><strong>Passo 1:</strong> Preencha os valores que quer aplicar</p>
-                        <p><strong>Passo 2:</strong> Selecione os dias no calendário (clique para selecionar/desselecionar)</p>
-                        <p><strong>Passo 3:</strong> Clique em "Aplicar aos Dias Selecionados"</p>
+                        <p><strong>Instruções:</strong> Selecione o período de datas e preencha os campos desejados. Os valores serão aplicados a todos os dias do período selecionado.</p>
                     </div>
                     
                     <form id="bulkForm" class="horarios-form">
+                        <div class="form-group">
+                            <label for="bulkDateRange">Período de Datas:</label>
+                            <div class="date-range-container">
+                                <input type="date" id="bulkStartDate" class="date-input">
+                                <span class="date-separator">até</span>
+                                <input type="date" id="bulkEndDate" class="date-input">
+                            </div>
+                        </div>
+                        
                         <div class="form-group">
                             <label for="bulkHorasNormais">Horas Trabalhadas (HH:MM):</label>
                             <input type="text" id="bulkHorasNormais" placeholder="08:00">
@@ -874,20 +910,15 @@ html body .horarios-close-btn:hover {
                             <input type="number" id="bulkKmViatura" step="1" min="0" placeholder="0">
                         </div>
                         
-                        <div class="form-group">
-                            <label for="bulkObservacoes">Observações:</label>
-                            <textarea id="bulkObservacoes" rows="2" placeholder="Observações (opcional)"></textarea>
-                        </div>
-                        
-                        <div class="selected-days-info">
-                            <strong>Dias selecionados: <span id="selectedDaysCount">0</span></strong>
-                            <div id="selectedDaysList" class="selected-days-list"></div>
+                        <div class="selected-range-info">
+                            <strong>Período selecionado: <span id="selectedRangeDisplay">Nenhum período selecionado</span></strong>
+                            <div id="selectedRangeDetails" class="range-details"></div>
                         </div>
                         
                         <div class="modal-actions">
                             <button type="button" class="horarios-nav-btn" id="cancelBulkBtn">Cancelar</button>
-                            <button type="button" class="horarios-nav-btn" id="clearSelectionBtn" style="background: #f59e0b !important;">Limpar Seleção</button>
-                            <button type="button" class="horarios-nav-btn" id="applyBulkBtn" style="background: #065f46 !important;">Aplicar aos Dias Selecionados</button>
+                            <button type="button" class="horarios-nav-btn" id="clearRangeBtn" style="background: #f59e0b !important;">Limpar Período</button>
+                            <button type="button" class="horarios-nav-btn" id="applyBulkBtn" style="background: #065f46 !important;">Aplicar ao Período</button>
                         </div>
                     </form>
                 </div>
@@ -915,5 +946,19 @@ html body .horarios-close-btn:hover {
 
 <script>
 console.log('Página de horários carregada via AJAX');
-// A inicialização será feita pelo dashboard_opera.js
+
+// Inicializar calendário quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded - Inicializando calendário');
+    if (typeof window.initializeHorariosCalendar === 'function') {
+        window.initializeHorariosCalendar();
+    } else {
+        console.log('Função initializeHorariosCalendar não encontrada, tentando novamente...');
+        setTimeout(function() {
+            if (typeof window.initializeHorariosCalendar === 'function') {
+                window.initializeHorariosCalendar();
+            }
+        }, 100);
+    }
+});
 </script>

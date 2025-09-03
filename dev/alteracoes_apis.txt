@@ -1,113 +1,178 @@
-ALTERAÇÕES NAS APIS________________________
+PUT /api/calendar/day_put.php
+Parâmetros de entrada (JSON):
 
+date: data no formato YYYY-MM-DD (obrigatório)
 
-1) alteracao na api arh_criar_colaborador.php
+workMin: minutos de trabalho (opcional)
 
-Foi removido o * dos roles possiveis para adicionar
-erro: ❌ Erro: Role inválido.
+otMin: minutos de horas extra (opcional)
 
+oncallMin: minutos de prevenção (opcional)
 
-NOVAS APIS_________________________________
+km: quilómetros percorridos (opcional)
 
-Endpoint:
-GET /api/me.php
-
-Parâmetros de entrada:
-Nenhum (usa a sessão do utilizador autenticado).
-
-Resposta de sucesso:
-sucesso: true
-user:
-
-id: id do utilizador
-
-name: nome do utilizador
-
-email: email do utilizador
-
-role: perfil do utilizador
-
-company:
-
-name: nome da empresa associada
-
-slug: identificador curto da empresa
-
-logo: URL absoluto do logo da empresa
-
-Mensagens de erro possíveis:
-Não autenticado (se não existir sessão iniciada)
-Utilizador não encontrado
-Erro interno do servidor
-
-_____________________________________
-
-Endpoint:
-POST /api/arh_criar_colaborador.php
-
-Parâmetros de entrada:
-Requisição multipart/form-data com os seguintes campos:
-
-nome: Nome completo do colaborador
-
-email: Email do colaborador (tem de ser único e válido)
-
-senha: Senha de acesso
-
-role: Perfil do utilizador (opera, inter2, inter, admin)
-
-company_id: ID da empresa associada (deve existir na tabela company)
-
+clear: booleano, se true limpa tipos não enviados (opcional)
 Resposta de sucesso:
 
-sucesso: true
+ok: true
 
-mensagem: Colaborador criado com sucesso.
+user_id: id do utilizador alvo
 
-Mensagens de erro possíveis:
+date: data marcada
 
-Todos os campos obrigatórios devem ser preenchidos
+updated: lista de tipos atualizados
 
-Email inválido
+cleared: lista de tipos limpos
 
-Já existe um utilizador com este email
+status: estado dos registos (draft após gravação)
+Mensagens de erro possíveis: não autenticado, role sem permissão, data inválida, período bloqueado, erro de base de dados.
 
-Role inválido
+________________
 
-Empresa não encontrada
+DELETE /api/calendar/day_delete.php
+Parâmetros de entrada (JSON):
 
-Erro ao criar utilizador na base de dados
-
-Erro ao criar dados do colaborador
-
-Erro interno do servidor
-
-__________________________________
-
-Endpoint:
-GET /api/listar_empresas.php
-
-Parâmetros de entrada:
-Nenhum (usa a sessão do utilizador autenticado)
-
+date: data no formato YYYY-MM-DD (obrigatório)
 Resposta de sucesso:
 
-success: true
+ok: true
 
-empresas: lista de empresas ativas
+user_id: id do utilizador alvo
 
-Cada empresa contém:
+date: data limpa
 
-id: ID interno da empresa
+deleted: número de registos apagados
+Mensagens de erro possíveis: não autenticado, role sem permissão, data inválida, período bloqueado, erro de base de dados.
 
-name: Nome da empresa
+_________________
 
-slug: identificador curto (ex: drawline-i)
+POST /api/calendar/batch_apply.php
+Parâmetros de entrada (JSON):
 
-logo_path: caminho relativo do logo (/assets/logos/empresa.png)
+start: data inicial (YYYY-MM-DD, obrigatório)
 
-Mensagens de erro possíveis:
+end: data final (YYYY-MM-DD, obrigatório)
 
-Acesso negado (sem sessão ativa)
+workMin: minutos de trabalho a aplicar (opcional)
 
-Erro ao obter lista de empresas
+otMin: minutos de horas extra (opcional)
+
+oncallMin: minutos de prevenção (opcional)
+
+km: quilómetros percorridos (opcional)
+
+applyWeekend: booleano, se true inclui fins de semana (default false)
+
+overwrite: booleano, se true sobrescreve valores existentes (default true)
+Resposta de sucesso:
+
+ok: true
+
+user_id: id do utilizador alvo
+
+range: intervalo aplicado [start, end]
+
+summary: totais aplicados (daysApplied, workMin, otMin, oncallMin, km)
+
+skippedLocked: lista de dias ignorados por estarem em período bloqueado
+Mensagens de erro possíveis: não autenticado, role sem permissão, intervalo inválido, nenhum campo enviado, erro de base de dados.
+
+______
+
+DELETE /api/calendar/batch_clear.php
+Parâmetros de entrada (JSON):
+
+start: data inicial (YYYY-MM-DD, obrigatório)
+
+end: data final (YYYY-MM-DD, obrigatório)
+
+applyWeekend: booleano, se true inclui fins de semana (default true)
+Resposta de sucesso:
+
+ok: true
+
+user_id: id do utilizador alvo
+
+range: intervalo [start, end]
+
+deleted: número total de registos apagados
+
+skippedLocked: lista de dias ignorados por estarem em período bloqueado
+Mensagens de erro possíveis: não autenticado, role sem permissão, intervalo inválido, erro de base de dados.
+
+________________
+
+GET /api/calendar/get_month.php
+Parâmetros de entrada:
+
+month: mês no formato YYYY-MM (obrigatório, pode usar alternativamente date=YYYY-MM-DD)
+
+user_id: id de outro utilizador (apenas permitido para gestores)
+Resposta de sucesso:
+
+ok: true
+
+month: mês solicitado
+
+period: informação do período (id, estado, start, end) ou null se não existir
+
+days: lista de objetos por dia com
+
+date, workMin, otMin, oncallMin, km
+
+statuses: estado por tipo (WORK, OVERTIME, ONCALL, KM)
+
+leaves: férias/ausências que coincidem com o dia
+
+totals: somatório do mês (workMin, otMin, oncallMin, km)
+Mensagens de erro possíveis: não autenticado, intervalo inválido, erro interno do servidor.
+
+________________
+
+GET /api/calendar/month_status.php
+Parâmetros de entrada:
+
+month: mês no formato YYYY-MM (obrigatório, pode usar alternativamente date=YYYY-MM-DD)
+
+user_id: id de outro utilizador (apenas permitido para gestores)
+Resposta de sucesso:
+
+ok: true
+
+month: mês solicitado
+
+user_id: id do utilizador alvo
+
+period: informação do período (id, estado, start, end, decidido_por, decidido_em, comentário) ou null
+
+estado: estado textual do período (open, submitted, approved, rejected, locked)
+
+flags:
+
+canSubmit: booleano, indica se é possível submeter o mês
+
+isLocked: booleano, indica se está bloqueado
+
+hasDraft: booleano, indica se existem registos em rascunho
+
+summary: totais do mês (workedDays, workMin, otMin, oncallMin, km)
+
+range: intervalo de datas do mês
+Mensagens de erro possíveis: não autenticado, intervalo inválido, erro de base de dados.
+
+________________
+
+POST /api/calendar/submit_month.php
+Parâmetros de entrada (JSON):
+
+month: mês no formato YYYY-MM (obrigatório, pode usar alternativamente date=YYYY-MM-DD)
+
+user_id: id de outro utilizador (apenas permitido para gestores)
+Resposta de sucesso:
+
+ok: true
+
+period: informação do período (id, estado=submitted, start, end)
+
+summary: totais submetidos (workedDays, workMin, otMin, oncallMin, km)
+Mensagens de erro possíveis: não autenticado, role sem permissão, mês inválido, já submetido, erro de base de dados.
