@@ -114,27 +114,33 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "inter2") {
 class AprovacaoHorarios {
     constructor() {
         this.currentFilter = 'pending';
-        this.approvals = this.loadApprovals();
+        this.approvals = [];
         this.currentApprovalId = null;
         this.init();
     }
 
-    init() {
+    async init() {
+        this.approvals = await this.loadApprovals();
         this.populateMonthFilter();
         this.renderApprovals();
         this.updateCounts();
+    // Prefetch and correct operator names that may be missing or set to 'Operador'
+    this.prefetchUserNames().catch(() => {});
     }
 
-    loadApprovals() {
-        // Carregar dados de localStorage (simulação)
+    async loadApprovals() {
         const pendingApprovals = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
         const processedApprovals = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
-        
-        return [...pendingApprovals.map(a => ({...a, status: 'pending'})), ...processedApprovals];
+        return [
+            ...pendingApprovals.map(a => ({...a, status: 'pending'})),
+            ...processedApprovals
+        ];
     }
 
     populateMonthFilter() {
         const monthFilter = document.getElementById('month-filter');
+    // Clear all options except the first ("Todos os meses")
+    while (monthFilter.options.length > 1) monthFilter.remove(1);
         const months = new Set();
         
         this.approvals.forEach(approval => {
@@ -175,7 +181,7 @@ class AprovacaoHorarios {
     }
 
     createApprovalCard(approval) {
-        const userName = this.getUserName(approval.userId);
+    const userName = approval.userName || approval.submittedBy || this.getUserName(approval.userId);
         const statusClass = approval.status || 'pending';
         const statusLabel = this.getStatusLabel(approval.status);
         
@@ -281,7 +287,7 @@ class AprovacaoHorarios {
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
         if (searchTerm) {
             filtered = filtered.filter(a => 
-                this.getUserName(a.userId).toLowerCase().includes(searchTerm) ||
+                (a.userName || this.getUserName(a.userId)).toLowerCase().includes(searchTerm) ||
                 this.formatMonthYear(a.month).toLowerCase().includes(searchTerm)
             );
         }
@@ -301,7 +307,7 @@ class AprovacaoHorarios {
         document.getElementById('rejected-count').textContent = counts.rejected;
     }
 
-    showApprovalDetails(approvalId) {
+    async showApprovalDetails(approvalId) {
         const approval = this.findApproval(approvalId);
         if (!approval) return;
 
@@ -309,8 +315,86 @@ class AprovacaoHorarios {
         const body = document.getElementById('modal-details-body');
         const actions = document.getElementById('modal-actions');
 
-        // Criar calendário detalhado
-        body.innerHTML = this.createDetailedCalendar(approval);
+        // Loading state
+        body.innerHTML = '<div style="padding:1rem;">A carregar…</div>';
+
+    // Resolve name in background if missing/placeholder
+    try { this.ensureUserName(approval.userId).catch(()=>{}); } catch(e) {}
+
+    // Buscar detalhes do mês e férias/ausências do operador em paralelo
+        try {
+            const params = new URLSearchParams({ month: approval.month, user_id: String(approval.userId) });
+            const [resMonth, resFer] = await Promise.all([
+                fetch(`../../api/calendar/get_month.php?${params.toString()}`, { credentials: 'same-origin' }),
+                fetch(`../../api/pedidos/listar_ferias_aprovadas_inter2.php?user_id=${encodeURIComponent(String(approval.userId))}`, { credentials: 'same-origin' })
+            ]);
+
+            const data = await resMonth.json();
+            let feriasOverride = null;
+            try {
+                const ferJson = await resFer.json();
+                if (ferJson && (ferJson.success || ferJson.ok) && ferJson.ferias && typeof ferJson.ferias === 'object') {
+                    const labelMap = {
+                        licenca_paternidade: 'Lic. Paternidade',
+                        licenca_maternidade: 'Lic. Maternidade',
+                        baixa_medica: 'Baixa Médica',
+                        baixa_seguro: 'Baixa Seguro',
+                        casamento: 'Casamento',
+                        consulta_medica: 'Consulta Médica',
+                        luto: 'Luto',
+                        falta_justificada: 'Falta Justificada',
+                        ferias: 'Férias'
+                    };
+                    feriasOverride = {};
+                    Object.entries(ferJson.ferias).forEach(([date, v]) => {
+                        const tipoRaw = (v && v.tipo) ? String(v.tipo) : '';
+                        const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation';
+                        feriasOverride[date] = {
+                            tipo: isFerias ? 'vacation' : 'absence',
+                            label: isFerias ? 'Férias' : (labelMap[tipoRaw] || 'Ausência')
+                        };
+                    });
+                }
+            } catch (_) { /* ignore */ }
+
+            if (!data.ok) throw new Error(data.code || 'API_ERROR');
+            body.innerHTML = this.createDetailedCalendarFromApi(approval, data, feriasOverride);
+        } catch (e) {
+            console.error('Erro ao carregar detalhes do mês:', e);
+            if (approval.marcacoes) {
+                // Tentar ainda obter férias/ausências via API para o fallback local
+                let feriasOverride = null;
+                try {
+                    const resFer = await fetch(`../../api/pedidos/listar_ferias_aprovadas_inter2.php?user_id=${encodeURIComponent(String(approval.userId))}`, { credentials: 'same-origin' });
+                    const ferJson = await resFer.json();
+                    if (ferJson && (ferJson.success || ferJson.ok) && ferJson.ferias) {
+                        const labelMap = {
+                            licenca_paternidade: 'Lic. Paternidade',
+                            licenca_maternidade: 'Lic. Maternidade',
+                            baixa_medica: 'Baixa Médica',
+                            baixa_seguro: 'Baixa Seguro',
+                            casamento: 'Casamento',
+                            consulta_medica: 'Consulta Médica',
+                            luto: 'Luto',
+                            falta_justificada: 'Falta Justificada',
+                            ferias: 'Férias'
+                        };
+                        feriasOverride = {};
+                        Object.entries(ferJson.ferias).forEach(([date, v]) => {
+                            const tipoRaw = (v && v.tipo) ? String(v.tipo) : '';
+                            const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation';
+                            feriasOverride[date] = {
+                                tipo: isFerias ? 'vacation' : 'absence',
+                                label: isFerias ? 'Férias' : (labelMap[tipoRaw] || 'Ausência')
+                            };
+                        });
+                    }
+                } catch (_) {}
+                body.innerHTML = this.createDetailedCalendarLocal(approval, feriasOverride);
+            } else {
+                body.innerHTML = '<div style="padding:1rem;color:#b91c1c;">Erro ao carregar detalhes.</div>';
+            }
+        }
 
         // Configurar ações
         if (approval.status === 'pending') {
@@ -329,73 +413,12 @@ class AprovacaoHorarios {
         document.body.style.overflow = 'hidden';
     }
 
-    createDetailedCalendar(approval) {
-        const userName = this.getUserName(approval.userId);
-        const monthName = this.formatMonthYear(approval.month);
+    // removed old createDetailedCalendar (replaced by API-driven version)
 
-        let html = `
-            <div class="details-header">
-                <h4>${userName} - ${monthName}</h4>
-                <div class="summary-stats">
-                    <div class="stat">
-                        <span class="stat-label">Total de Horas:</span>
-                        <span class="stat-value">${approval.summary.horasTotais}h</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Horas Extra:</span>
-                        <span class="stat-value">${this.formatMinutes(approval.summary.horasExtra)}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Dias Trabalhados:</span>
-                        <span class="stat-value">${approval.summary.diasTrabalhados}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="detailed-calendar">
-                <div class="calendar-headers">
-                    <div class="header">Data</div>
-                    <div class="header">Horário</div>
-                    <div class="header">H. Extra</div>
-                    <div class="header">Prevenção</div>
-                    <div class="header">KM</div>
-                    <div class="header">Observações</div>
-                </div>
-        `;
-
-        Object.entries(approval.marcacoes).forEach(([date, marcacao]) => {
-            const dateObj = new Date(date);
-            const formattedDate = dateObj.toLocaleDateString('pt-PT', {
-                day: '2-digit',
-                month: '2-digit',
-                weekday: 'short'
-            });
-
-            html += `
-                <div class="calendar-row">
-                    <div class="cell date-cell">${formattedDate}</div>
-                    <div class="cell">
-                        ${marcacao.tipo === 'trabalho' ? 
-                            `${marcacao.horaInicio} - ${marcacao.horaFim}` : 
-                            'Descanso'
-                        }
-                    </div>
-                    <div class="cell">${marcacao.horasExtra ? this.formatMinutes(marcacao.horasExtra) : '-'}</div>
-                    <div class="cell">${marcacao.horasPrevencao ? this.formatMinutes(marcacao.horasPrevencao) : '-'}</div>
-                    <div class="cell">${marcacao.kmViatura || '-'}</div>
-                    <div class="cell observacoes">${marcacao.observacoes || '-'}</div>
-                </div>
-            `;
-        });
-
-        html += '</div>';
-        return html;
-    }
-
-    approveMarking(approvalId) {
-        if (confirm('Deseja aprovar estas marcações de horários?')) {
-            this.processApproval(approvalId, 'approved');
-        }
+    async approveMarking(approvalId) {
+        if (!confirm('Deseja aprovar estas marcações de horários?')) return;
+        this.processApprovalLocal(approvalId, 'approved');
+        await this.refresh();
     }
 
     rejectMarking(approvalId) {
@@ -404,57 +427,244 @@ class AprovacaoHorarios {
         document.body.style.overflow = 'hidden';
     }
 
-    confirmRejection() {
-        const reason = document.getElementById('rejection-reason').value.trim();
-        if (!reason) {
-            alert('Por favor, indique o motivo da rejeição.');
-            return;
-        }
-
-        this.processApproval(this.currentApprovalId, 'rejected', reason);
-        this.closeRejectionModal();
+    async confirmRejection() {
+    const reason = document.getElementById('rejection-reason').value.trim();
+    if (!reason) { alert('Por favor, indique o motivo da rejeição.'); return; }
+    // Remover imediatamente da lista visual (UX imediato)
+    try {
+        const card = document.querySelector(`[data-approval-id="${this.currentApprovalId}"]`);
+        if (card && card.parentNode) card.parentNode.removeChild(card);
+    } catch (e) {}
+    this.processApprovalLocal(this.currentApprovalId, 'rejected', reason);
+    closeRejectionModal();
+    await this.refresh();
     }
 
-    processApproval(approvalId, status, reason = null) {
-        const approval = this.findApproval(approvalId);
-        if (!approval) return;
-
-        // Atualizar status
-        approval.status = status;
-        approval.processedDate = new Date().toISOString();
-        approval.processedBy = this.getCurrentUserName();
-        
-        if (reason) {
-            approval.rejectionReason = reason;
-        }
-
-        // Mover para processados
-        let pendingApprovals = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
-        let processedApprovals = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
-
-        // Remover dos pendentes
-        pendingApprovals = pendingApprovals.filter(a => `${a.userId}-${a.month}` !== approvalId);
-        
-        // Adicionar aos processados
-        processedApprovals.push(approval);
-
-        // Salvar
-        localStorage.setItem('marcacoes_pending_approval', JSON.stringify(pendingApprovals));
-        localStorage.setItem('marcacoes_processed', JSON.stringify(processedApprovals));
-
-        // Atualizar interface
-        this.approvals = this.loadApprovals();
+    async refresh() {
+        this.approvals = await this.loadApprovals();
+    this.populateMonthFilter();
         this.renderApprovals();
         this.updateCounts();
+    }
 
-        // Feedback
-        const statusLabel = status === 'approved' ? 'aprovadas' : 'rejeitadas';
-        this.showToast(`Marcações ${statusLabel} com sucesso!`, status === 'approved' ? 'success' : 'info');
+    createDetailedCalendarFromApi(approval, data, feriasOverride = null) {
+        const userName = approval.userName || approval.submittedBy || this.getUserName(approval.userId);
+        const monthName = this.formatMonthYear(approval.month);
+        const fmtHM = (min) => this.formatMinutes(min || 0);
+        const [yearStr, monthStr] = approval.month.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10) - 1; // 0-based
+
+        // Index by YYYY-MM-DD
+        const byDate = {};
+        (data.days || []).forEach(d => { byDate[d.date] = d; });
+
+        // Férias/Ausências aprovadas para o utilizador e mês atual
+        const feriasMonth = (feriasOverride && Object.keys(feriasOverride).length)
+            ? feriasOverride
+            : this.getFeriasForMonth(approval.userId, year, month);
+
+        const dayNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startDow = firstDay.getDay();
+
+        const totalWork = data.totals?.workMin || 0;
+        const totalExtra = data.totals?.otMin || 0;
+        const diasTrabalhados = approval.summary?.diasTrabalhados ?? 0;
+    let html = `
+            <style>
+                .aprov-cal .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: #e2e8f0; border-radius: 12px; overflow: hidden; }
+                .aprov-cal .day-header { background: #0A2240; color: #fff; padding: 0.75rem; text-align: center; font-weight: 600; font-size: 0.9rem; }
+                .aprov-cal .day-cell { background: #fff; min-height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem; position: relative; }
+                .aprov-cal .day-cell.marked { background: #065f46; color: #fff; border: 2px solid #059669; }
+                .aprov-cal .day-number { font-weight: 700; }
+                .aprov-cal .day-details { margin-top: .25rem; display:flex; flex-direction:column; align-items:center; width:100%; }
+                .aprov-cal .badges { display:flex; flex-wrap:wrap; gap:.25rem; justify-content:center; }
+                .aprov-cal .hour-badge { font-size:.7rem; padding:.2rem .45rem; border-radius: 999px; font-weight:700; line-height:1; }
+                .aprov-cal .hour-badge.work { background:#10b981; color:#fff; }
+                .aprov-cal .hour-badge.extra { background:#f59e0b; color:#fff; }
+                .aprov-cal .hour-badge.prevention { background:#ef4444; color:#fff; }
+                .aprov-cal .hour-badge.km { background:#3b82f6; color:#fff; }
+                .aprov-cal .day-cell.ferias { background:#B91C1C; color:#fff; border: 2px solid #DC2626; }
+                .aprov-cal .ferias-badge { margin-top: .35rem; background: rgba(255,255,255,.15); color:#fff; font-size:.68rem; padding:.15rem .5rem; border-radius:999px; font-weight:700; text-transform: uppercase; letter-spacing:.02em; }
+            </style>
+            <div class="details-header">
+                <h4>${userName} - ${monthName}</h4>
+                <div class="summary-stats">
+                    <div class="stat"><span class="stat-label">Total de Horas:</span><span class="stat-value">${fmtHM(totalWork)}</span></div>
+                    <div class="stat"><span class="stat-label">Horas Extra:</span><span class="stat-value">${fmtHM(totalExtra)}</span></div>
+                    <div class="stat"><span class="stat-label">Dias Trabalhados:</span><span class="stat-value">${diasTrabalhados}</span></div>
+                </div>
+            </div>
+            <div class="aprov-cal">
+                <div class="calendar-grid">
+                    ${dayNames.map(d => `<div class=\"day-header\">${d}</div>`).join('')}
+        `;
+
+    for (let i = 0; i < startDow; i++) html += `<div class="day-cell empty"></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const d = byDate[dateKey];
+            const work = d ? (d.workMin||0) : 0;
+            const extra = d ? (d.otMin||0) : 0;
+            const prev = d ? (d.oncallMin||0) : 0;
+            const km = d && d.km ? d.km : 0;
+            const fer = feriasMonth[dateKey];
+            const has = work>0 || extra>0 || prev>0 || km>0;
+
+            if (fer) {
+                const label = fer.label || (fer.tipo === 'vacation' ? 'FÉRIAS' : 'AUSÊNCIA');
+                html += `<div class=\"day-cell ferias\">`
+                      + `<div class=\"day-number\">${day}</div>`
+                      + `<div class=\"ferias-badge\">${label.toUpperCase()}</div>`
+                      + `</div>`;
+            } else {
+                html += `<div class=\"day-cell ${has?'marked':''}\">`
+                      + `<div class=\"day-number\">${day}</div>`
+                      + `<div class=\"day-details\">`
+                      +   `<div class=\"badges\">`
+                      +     `${work?`<span class=\"hour-badge work\">${fmtHM(work)}</span>`:''}`
+                      +     `${extra?`<span class=\"hour-badge extra\">${fmtHM(extra)}</span>`:''}`
+                      +     `${prev?`<span class=\"hour-badge prevention\">${fmtHM(prev)}</span>`:''}`
+                      +     `${km?`<span class=\"hour-badge km\">${km}km</span>`:''}`
+                      +   `</div>`
+                      + `</div>`
+                      + `</div>`;
+            }
+        }
+
+        html += `</div></div>`;
+        return html;
     }
 
     // Funções auxiliares
     findApproval(approvalId) {
         return this.approvals.find(a => `${a.userId}-${a.month}` === approvalId);
+    }
+
+    processApprovalLocal(approvalId, status, reason = null) {
+        let pending = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
+        let processed = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
+
+        const idx = pending.findIndex(a => `${a.userId}-${a.month}` === approvalId);
+        let item;
+        if (idx !== -1) {
+            item = pending.splice(idx, 1)[0];
+        } else {
+            const j = processed.findIndex(a => `${a.userId}-${a.month}` === approvalId);
+            item = j !== -1 ? processed.splice(j, 1)[0] : null;
+        }
+        if (!item) return;
+
+        item.status = status;
+        item.processedDate = new Date().toISOString();
+        if (reason) item.rejectionReason = reason;
+        processed.push(item);
+
+        localStorage.setItem('marcacoes_pending_approval', JSON.stringify(pending));
+        localStorage.setItem('marcacoes_processed', JSON.stringify(processed));
+
+        const label = status === 'approved' ? 'aprovadas' : 'rejeitadas';
+        this.showToast(`Marcações ${label} (local)`, status === 'approved' ? 'success' : 'info');
+    }
+
+    createDetailedCalendarLocal(approval, feriasOverride = null) {
+        const userName = approval.userName || approval.submittedBy || this.getUserName(approval.userId);
+        const monthName = this.formatMonthYear(approval.month);
+        const [yearStr, monthStr] = approval.month.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10) - 1;
+
+        const toMinutes = (hhmm) => {
+            if (!hhmm || typeof hhmm !== 'string') return 0;
+            const parts = hhmm.split(':');
+            const h = parseInt(parts[0] || '0', 10);
+            const m = parseInt(parts[1] || '0', 10);
+            if (isNaN(h) && isNaN(m)) return 0;
+            return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+        };
+
+        const dayNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startDow = firstDay.getDay();
+
+        const totalWorkH = approval.summary?.horasTotais ?? 0; // horas
+        const totalExtraM = approval.summary?.horasExtra ?? 0; // minutos
+        const diasTrabalhados = approval.summary?.diasTrabalhados ?? 0;
+
+        // Férias/Ausências aprovadas para o utilizador e mês atual (fallback)
+        const feriasMonth = (feriasOverride && Object.keys(feriasOverride).length)
+            ? feriasOverride
+            : this.getFeriasForMonth(approval.userId, year, month);
+
+        let html = `
+            <style>
+                .aprov-cal .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: #e2e8f0; border-radius: 12px; overflow: hidden; }
+                .aprov-cal .day-header { background: #0A2240; color: #fff; padding: 0.75rem; text-align: center; font-weight: 600; font-size: 0.9rem; }
+                .aprov-cal .day-cell { background: #fff; min-height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem; position: relative; }
+                .aprov-cal .day-cell.marked { background: #065f46; color: #fff; border: 2px solid #059669; }
+                .aprov-cal .day-number { font-weight: 700; }
+                .aprov-cal .day-details { margin-top: .25rem; display:flex; flex-direction:column; align-items:center; width:100%; }
+                .aprov-cal .badges { display:flex; flex-wrap:wrap; gap:.25rem; justify-content:center; }
+                .aprov-cal .hour-badge { font-size:.7rem; padding:.2rem .45rem; border-radius: 999px; font-weight:700; line-height:1; }
+                .aprov-cal .hour-badge.work { background:#10b981; color:#fff; }
+                .aprov-cal .hour-badge.extra { background:#f59e0b; color:#fff; }
+                .aprov-cal .hour-badge.prevention { background:#ef4444; color:#fff; }
+                .aprov-cal .hour-badge.km { background:#3b82f6; color:#fff; }
+                .aprov-cal .day-cell.ferias { background:#B91C1C; color:#fff; border: 2px solid #DC2626; }
+                .aprov-cal .ferias-badge { margin-top: .35rem; background: rgba(255,255,255,.15); color:#fff; font-size:.68rem; padding:.15rem .5rem; border-radius:999px; font-weight:700; text-transform: uppercase; letter-spacing:.02em; }
+            </style>
+            <div class="details-header">
+                <h4>${userName} - ${monthName}</h4>
+                <div class="summary-stats">
+                    <div class="stat"><span class="stat-label">Total de Horas:</span><span class="stat-value">${Number(totalWorkH).toFixed(1)}h</span></div>
+                    <div class="stat"><span class="stat-label">Horas Extra:</span><span class="stat-value">${this.formatMinutes(totalExtraM)}</span></div>
+                    <div class="stat"><span class="stat-label">Dias Trabalhados:</span><span class="stat-value">${diasTrabalhados}</span></div>
+                </div>
+            </div>
+            <div class="aprov-cal">
+                <div class="calendar-grid">
+                    ${dayNames.map(d => `<div class=\"day-header\">${d}</div>`).join('')}
+        `;
+
+    for (let i = 0; i < startDow; i++) html += `<div class=\"day-cell empty\"></div>`;
+    for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const m = approval.marcacoes ? approval.marcacoes[dateKey] : null;
+            const workM = m ? toMinutes(m.horasTrabalhadas) : 0;
+            const extraM = m ? toMinutes(m.horasExtra) : 0;
+            const prevM = m ? toMinutes(m.horasPrevencao) : 0;
+            const km = m && m.kmViatura ? parseInt(m.kmViatura,10) : 0;
+            const fer = feriasMonth[dateKey];
+            const has = workM>0 || extraM>0 || prevM>0 || km>0;
+
+            if (fer) {
+                const label = fer.label || (fer.tipo === 'vacation' ? 'FÉRIAS' : 'AUSÊNCIA');
+                html += `<div class=\"day-cell ferias\">`
+                      + `<div class=\"day-number\">${day}</div>`
+                      + `<div class=\"ferias-badge\">${label.toUpperCase()}</div>`
+                      + `</div>`;
+            } else {
+                html += `<div class=\"day-cell ${has?'marked':''}\">`
+                      + `<div class=\"day-number\">${day}</div>`
+                      + `<div class=\"day-details\">`
+                      +   `<div class=\"badges\">`
+                      +     `${workM?`<span class=\"hour-badge work\">${this.formatMinutes(workM)}</span>`:''}`
+                      +     `${extraM?`<span class=\"hour-badge extra\">${this.formatMinutes(extraM)}</span>`:''}`
+                      +     `${prevM?`<span class=\"hour-badge prevention\">${this.formatMinutes(prevM)}</span>`:''}`
+                      +     `${km?`<span class=\"hour-badge km\">${km}km</span>`:''}`
+                      +   `</div>`
+                      + `</div>`
+                      + `</div>`;
+            }
+        }
+
+        html += `</div></div>`;
+        return html;
     }
 
     getUserName(userId) {
@@ -465,6 +675,96 @@ class AprovacaoHorarios {
             'user_3': 'Carlos Oliveira'
         };
         return users[userId] || `Operador ${userId.slice(-3)}`;
+    }
+
+    // ========= Name resolution & caching =========
+    async prefetchUserNames() {
+        try {
+            const need = Array.from(new Set(this.approvals
+                .filter(a => !a.userName || /^\s*operador\s*$/i.test(a.userName))
+                .map(a => a.userId)
+            ));
+            if (!need.length) return;
+            await Promise.allSettled(need.map(uid => this.ensureUserName(uid)));
+            // Reload approvals after patching storage
+            this.approvals = await this.loadApprovals();
+            this.renderApprovals();
+            this.updateCounts();
+        } catch (e) { /* ignore */ }
+    }
+
+    async ensureUserName(userId) {
+        const cached = this.getCachedUserName(userId);
+        if (cached) return cached;
+        const name = await this.resolveUserNameFromPage(userId);
+        if (name) {
+            this.cacheUserName(userId, name);
+            this.patchApprovalsWithName(userId, name);
+            // Update any rendered card for this user
+            try {
+                document.querySelectorAll(`[data-approval-id^="${CSS.escape(String(userId))}-"] .user-details h4`).forEach(el => el.textContent = name);
+                document.querySelectorAll(`[data-approval-id^="${CSS.escape(String(userId))}-"] .user-avatar`).forEach(el => el.textContent = name.charAt(0).toUpperCase());
+            } catch (_) {}
+            return name;
+        }
+        return null;
+    }
+
+    getCachedUserName(userId) {
+        try {
+            const map = JSON.parse(localStorage.getItem('user_names_map') || '{}');
+            return map[String(userId)] || null;
+        } catch { return null; }
+    }
+
+    cacheUserName(userId, name) {
+        try {
+            const key = 'user_names_map';
+            const map = JSON.parse(localStorage.getItem(key) || '{}');
+            map[String(userId)] = name;
+            localStorage.setItem(key, JSON.stringify(map));
+        } catch(_) {}
+    }
+
+    patchApprovalsWithName(userId, name) {
+        try {
+            const keyPending = 'marcacoes_pending_approval';
+            const keyProcessed = 'marcacoes_processed';
+            const pending = JSON.parse(localStorage.getItem(keyPending) || '[]');
+            const processed = JSON.parse(localStorage.getItem(keyProcessed) || '[]');
+            let changed = false;
+            pending.forEach(r => { if (String(r.userId) === String(userId) && (!r.userName || /^\s*operador\s*$/i.test(r.userName))) { r.userName = name; changed = true; } });
+            processed.forEach(r => { if (String(r.userId) === String(userId) && (!r.userName || /^\s*operador\s*$/i.test(r.userName))) { r.userName = name; changed = true; } });
+            if (changed) {
+                localStorage.setItem(keyPending, JSON.stringify(pending));
+                localStorage.setItem(keyProcessed, JSON.stringify(processed));
+            }
+        } catch (_) {}
+    }
+
+    async resolveUserNameFromPage(userId) {
+        try {
+            const res = await fetch(`../inter2/visualizar_lista_operadores.php?user_id=${encodeURIComponent(String(userId))}`, { credentials: 'same-origin' });
+            if (!res.ok) return null;
+            const html = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            // Primary: header h3
+            let name = (doc.querySelector('.ficha-header h3') || {}).textContent || '';
+            name = name ? name.trim() : '';
+            if (!name) {
+                // Fallback: Nome field value
+                const labelEls = Array.from(doc.querySelectorAll('.info-item .label'));
+                for (const lab of labelEls) {
+                    if (lab.textContent && lab.textContent.trim().toLowerCase() === 'nome') {
+                        const val = lab.parentElement && lab.parentElement.querySelector('.value');
+                        if (val && val.textContent) { name = val.textContent.trim(); break; }
+                    }
+                }
+            }
+            if (name) return name;
+        } catch (_) { /* ignore */ }
+        return null;
     }
 
     getCurrentUserName() {
@@ -530,6 +830,35 @@ class AprovacaoHorarios {
             toast.remove();
         }, 3000);
     }
+
+    // ======= Férias/Ausências helpers =======
+    getFeriasForMonth(userId, year, monthZeroBased) {
+        const monthKey = `${year}-${String(monthZeroBased + 1).padStart(2, '0')}`;
+        const all = this.getFeriasByUser(userId);
+        const filtered = {};
+        Object.entries(all).forEach(([date, obj]) => {
+            if (date.startsWith(monthKey)) filtered[date] = obj;
+        });
+        return filtered;
+    }
+
+    getFeriasByUser(userId) {
+        try {
+            if (window.integracaoFeriasHorarios && typeof window.integracaoFeriasHorarios.getUserFeriasAusencias === 'function') {
+                const data = window.integracaoFeriasHorarios.getUserFeriasAusencias(userId);
+                if (data && typeof data === 'object') return data;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Fallback ao localStorage cru
+        let all = {};
+        try { all = JSON.parse(localStorage.getItem('ferias_ausencias_aprovadas') || '{}'); } catch { all = {}; }
+        const result = {};
+        Object.entries(all).forEach(([date, v]) => {
+            if (v && v.userId === userId) result[date] = v;
+        });
+        return result;
+    }
 }
 
 // Funções globais
@@ -552,7 +881,7 @@ function filterApprovals(filter) {
     document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
     
     aprovacaoHorarios.currentFilter = filter;
-    aprovacaoHorarios.renderApprovals();
+    aprovacaoHorarios.refresh();
 }
 
 function filterByMonth() {

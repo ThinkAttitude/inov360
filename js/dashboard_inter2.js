@@ -215,6 +215,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Inicializar funcionalidades dinâmicas após carregar conteúdo
                 window.initializeDynamicContent();
 
+                // Executar scripts inline da página de aprovação de horários apenas uma vez (evitar redeclarações)
+                (function executePageScriptsOnce(container, content) {
+                    if (content === 'aprovacao_horarios') {
+                        if (!window.__aprovacao_horarios_inline_loaded__) {
+                            const inlineScripts = Array.from(container.querySelectorAll('script:not([src])'));
+                            inlineScripts.forEach(oldScript => {
+                                const newScript = document.createElement('script');
+                                newScript.textContent = oldScript.textContent;
+                                oldScript.parentNode.replaceChild(newScript, oldScript);
+                            });
+                            window.__aprovacao_horarios_inline_loaded__ = true;
+                        }
+                    }
+                    // Nunca reexecutar scripts com src para evitar "already been declared" (integracoes/dados)
+                })(mainContent, content);
+
                 // Tratamento especial para a página de horários (calendário)
                 if (content === "horarios") {
                     if (typeof window.initializeHorariosCalendarInter2 === 'function') {
@@ -222,6 +238,77 @@ document.addEventListener("DOMContentLoaded", function () {
                     } else {
                         initializeCalendar();
                     }
+                }
+
+                // Caso seja a página de aprovação de horários, se a função global existir, força um refresh inicial
+                if (content === 'aprovacao_horarios') {
+                    // Inicializa a instância e cria shims globais caso necessários
+                    const initScript = document.createElement('script');
+                    initScript.textContent = `
+                        try {
+                            // Garante instância
+                            if (typeof AprovacaoHorarios === 'function') {
+                                if (typeof aprovacaoHorarios === 'undefined' || !aprovacaoHorarios) {
+                                    aprovacaoHorarios = new AprovacaoHorarios();
+                                }
+                                if (typeof aprovacaoHorarios.refresh === 'function') {
+                                    aprovacaoHorarios.refresh();
+                                }
+                            }
+                            // Ligar pesquisa por texto sem depender do DOMContentLoaded da página injetada
+                            (function(){
+                                var si = document.getElementById('search-input');
+                                if (si && !si.__aprov_search_bound__) {
+                                    si.addEventListener('input', function(){ try { if (aprovacaoHorarios) aprovacaoHorarios.renderApprovals(); } catch(e){} });
+                                    si.__aprov_search_bound__ = true;
+                                }
+                            })();
+                            // Shims de funções globais caso não existam
+                            if (typeof filterApprovals !== 'function') {
+                                window.filterApprovals = function(filter){
+                                    try {
+                                        if (typeof aprovacaoHorarios === 'undefined' || !aprovacaoHorarios) {
+                                            if (typeof AprovacaoHorarios === 'function') aprovacaoHorarios = new AprovacaoHorarios();
+                                        }
+                                        if (aprovacaoHorarios) {
+                                            aprovacaoHorarios.currentFilter = filter;
+                                            if (typeof aprovacaoHorarios.refresh === 'function') aprovacaoHorarios.refresh();
+                                        }
+                                    } catch(e){}
+                                };
+                            }
+                            if (typeof filterByMonth !== 'function') {
+                                window.filterByMonth = function(){
+                                    try { if (aprovacaoHorarios) aprovacaoHorarios.renderApprovals(); } catch(e){}
+                                };
+                            }
+                            if (typeof showApprovalDetails !== 'function') {
+                                window.showApprovalDetails = function(id){ try { if (aprovacaoHorarios) aprovacaoHorarios.showApprovalDetails(id);} catch(e){} };
+                            }
+                            if (typeof approveMarking !== 'function') {
+                                window.approveMarking = function(id){ try { if (aprovacaoHorarios) aprovacaoHorarios.approveMarking(id);} catch(e){} };
+                            }
+                            if (typeof rejectMarking !== 'function') {
+                                window.rejectMarking = function(id){ try { if (aprovacaoHorarios) aprovacaoHorarios.rejectMarking(id);} catch(e){} };
+                            }
+                            if (typeof approveMarkingFromModal !== 'function') {
+                                window.approveMarkingFromModal = function(id){ try { if (aprovacaoHorarios) aprovacaoHorarios.approveMarking(id); closeDetailsModal(); } catch(e){} };
+                            }
+                            if (typeof rejectMarkingFromModal !== 'function') {
+                                window.rejectMarkingFromModal = function(id){ try { closeDetailsModal(); if (aprovacaoHorarios) aprovacaoHorarios.rejectMarking(id);} catch(e){} };
+                            }
+                            if (typeof closeDetailsModal !== 'function') {
+                                window.closeDetailsModal = function(){ try { document.getElementById('details-modal').style.display='none'; document.body.style.overflow=''; } catch(e){} };
+                            }
+                            if (typeof closeRejectionModal !== 'function') {
+                                window.closeRejectionModal = function(){ try { document.getElementById('rejection-modal').style.display='none'; var t=document.getElementById('rejection-reason'); if(t) t.value=''; document.body.style.overflow=''; } catch(e){} };
+                            }
+                            if (typeof confirmRejection !== 'function') {
+                                window.confirmRejection = function(){ try { if (aprovacaoHorarios) aprovacaoHorarios.confirmRejection(); } catch(e){} };
+                            }
+                        } catch (e) { /* noop */ }
+                    `;
+                    mainContent.appendChild(initScript);
                 }
 
                 // Tratamento especial para a página de ficha colaborador
