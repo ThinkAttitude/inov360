@@ -947,18 +947,14 @@ html body .horarios-close-btn:hover {
 <script>
 console.log('Página de horários carregada via AJAX');
 
-// Inicializar calendário quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - Inicializando calendário');
-    if (typeof window.initializeHorariosCalendar === 'function') {
-        window.initializeHorariosCalendar();
-    } else {
-        console.log('Função initializeHorariosCalendar não encontrada, tentando novamente...');
-        setTimeout(function() {
-            if (typeof window.initializeHorariosCalendar === 'function') {
-                window.initializeHorariosCalendar();
-            }
-        }, 100);
-    }
-});
+// Chamar diretamente sem timeout, pois o JS já está carregado
+console.log('Verificando se window.initializeHorariosCalendar existe:', typeof window.initializeHorariosCalendar);
+
+if (typeof window.initializeHorariosCalendar === 'function') {
+    console.log('Chamando initializeHorariosCalendar diretamente...');
+    window.initializeHorariosCalendar();
+} else {
+    console.error('window.initializeHorariosCalendar não existe!');
+    console.log('Funções disponíveis no window:', Object.keys(window).filter(key => key.includes('initialize')));
+}
 </script>
