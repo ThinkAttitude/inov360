@@ -115,6 +115,16 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
                 </a>
             </li>
             <li>
+                <a href="#" data-content="aprovacao_horarios">
+                    <div class="menu-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                    </div>
+                    Aprovação de Horários (Operadores)
+                </a>
+            </li>
+            <li>
                 <a href="#" data-content="aprovacao_ferias_ausencias">
                     <div class="menu-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -264,6 +264,9 @@ document.addEventListener("DOMContentLoaded", function () {
             case "consulta_pedidos":
                 url = "../admin_rh/consulta_pedidos.php";
                 break;
+            case "extracao_horarios":
+                url = "../admin_rh/extracao_horarios.php";
+                break;
             case "ficha_colab":
                 url = "../admin_rh/ficha_colaborador.php";
                 break;

@@ -438,11 +438,11 @@ window.initializeHorariosCalendar = function() {
     const clearSelectionBtn = document.getElementById('clearRangeBtn');
     const applyBulkBtn = document.getElementById('applyBulkBtn');
 
-    if (bulkSelectBtn) bulkSelectBtn.addEventListener('click', window.openBulkModal);
-    if (closeBulkBtn) closeBulkBtn.addEventListener('click', window.closeBulkModal);
-    if (cancelBulkBtn) cancelBulkBtn.addEventListener('click', window.closeBulkModal);
+    if (bulkSelectBtn) bulkSelectBtn.addEventListener('click', () => window.openBulkModal && window.openBulkModal());
+    if (closeBulkBtn) closeBulkBtn.addEventListener('click', () => window.closeBulkModal && window.closeBulkModal());
+    if (cancelBulkBtn) cancelBulkBtn.addEventListener('click', () => window.closeBulkModal && window.closeBulkModal());
     if (clearSelectionBtn) clearSelectionBtn.addEventListener('click', clearRange);
-    if (applyBulkBtn) applyBulkBtn.addEventListener('click', window.applyBulkSelection);
+    if (applyBulkBtn) applyBulkBtn.addEventListener('click', () => window.applyBulkSelection && window.applyBulkSelection());
 
     // Fechar modal ao clicar fora
     if (bulkModal) {
@@ -492,6 +492,40 @@ window.initializeHorariosCalendar = function() {
         
         // Atualizar cabeçalho do mês
         currentMonthEl.textContent = `${window.monthNames[window.currentMonth]} ${window.currentYear}`;
+        // Atualizar badge de estado de submissão para o mês atual
+        try {
+            const badge = document.getElementById('submission-status-badge');
+            const reasonEl = document.getElementById('submission-rejection-reason');
+            if (badge) {
+                const monthKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}`;
+                const userId = localStorage.getItem('current_user_id') || 'user_local';
+                const idKey = `${userId}-${monthKey}`;
+                const pending = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
+                const processed = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
+                const hasAnyMark = Object.keys(window.marcacoes).some(k => k.startsWith(monthKey));
+                let state = 'por_enviar';
+                if (!hasAnyMark) state = 'por_enviar';
+                if (pending.find(r => `${r.userId}-${r.month}` === idKey)) state = 'em_aprovacao';
+                const proc = processed.find(r => `${r.userId}-${r.month}` === idKey);
+                if (proc) state = proc.status === 'approved' ? 'aprovado' : 'rejeitado';
+                // Atualizar texto e classes
+                badge.classList.remove('badge-grey','badge-yellow','badge-green','badge-red');
+                if (state === 'por_enviar') { badge.textContent = 'Por enviar'; badge.classList.add('badge-grey'); }
+                if (state === 'em_aprovacao') { badge.textContent = 'Em aprovação'; badge.classList.add('badge-yellow'); }
+                if (state === 'aprovado') { badge.textContent = 'Aprovado'; badge.classList.add('badge-green'); }
+                if (state === 'rejeitado') { badge.textContent = 'Rejeitado'; badge.classList.add('badge-red'); }
+                // Motivo da rejeição (abaixo do badge, apenas quando rejeitado)
+                if (reasonEl) {
+                    if (state === 'rejeitado' && proc && proc.rejectionReason) {
+                        reasonEl.textContent = `Motivo: ${proc.rejectionReason}`;
+                        reasonEl.style.display = '';
+                    } else {
+                        reasonEl.textContent = '';
+                        reasonEl.style.display = 'none';
+                    }
+                }
+            }
+        } catch(e) { console.warn('Badge update failed', e); }
         
         const firstDay = new Date(window.currentYear, window.currentMonth, 1);
         const lastDay = new Date(window.currentYear, window.currentMonth + 1, 0);
@@ -847,9 +881,60 @@ window.initializeHorariosCalendar = function() {
         
         const confirmMsg = `Deseja submeter as marcações de ${window.monthNames[window.currentMonth]} ${window.currentYear}?\n\nResumo:\n• Dias trabalhados: ${diasTrabalhados}\n• Horas totais: ${horasTotais.toFixed(1)}h\n• Horas extra: ${horasExtra.toFixed(1)}h\n• Horas prevenção: ${horasPrevencao.toFixed(1)}h\n• KM total: ${kmTotal} km\n\nApós a submissão, as marcações não poderão ser alteradas.`;
         
-        if (confirm(confirmMsg)) {
-            alert('Marcações submetidas com sucesso!\n\nStatus: Aguardando aprovação do supervisor\nSerá notificado quando aprovado');
-        }
+        if (!confirm(confirmMsg)) return;
+
+        // Construir registo para aprovação local (Inter2)
+        const toMinutes = (hhmm) => {
+            if (!hhmm || typeof hhmm !== 'string') return 0;
+            const [h, m] = hhmm.split(':');
+            return (parseInt(h || '0', 10) * 60) + (parseInt(m || '0', 10));
+        };
+
+        const userId = localStorage.getItem('current_user_id') || 'user_local';
+        const userName = localStorage.getItem('current_user_name') || 'Operador';
+
+        // Calcular minutos de horas extra (para Inter2 formatar com formatMinutes)
+        let horasExtraMin = 0;
+        Object.values(monthMarcacoes).forEach(m => { horasExtraMin += toMinutes(m.horasExtra || '00:00'); });
+
+        const approvalRecord = {
+            userId,
+            userName,
+            month: monthKey,
+            status: 'pending',
+            summary: {
+                diasTrabalhados,
+                horasTotais: Number(horasTotais.toFixed(1)),
+                horasExtra: horasExtraMin, // minutos totais
+                kmTotal: kmTotal
+            },
+            dataExportacao: new Date().toISOString(),
+            marcacoes: monthMarcacoes
+        };
+
+        // Guardar no localStorage em marcacoes_pending_approval
+        const keyPending = 'marcacoes_pending_approval';
+        const keyProcessed = 'marcacoes_processed';
+        let pendingList = [];
+        let processedList = [];
+        try { pendingList = JSON.parse(localStorage.getItem(keyPending) || '[]'); } catch { pendingList = []; }
+        try { processedList = JSON.parse(localStorage.getItem(keyProcessed) || '[]'); } catch { processedList = []; }
+
+        // Remover duplicados do mesmo user/mês em pendentes e processados
+        const idKey = (rec) => `${rec.userId}-${rec.month}`;
+        pendingList = pendingList.filter(rec => idKey(rec) !== idKey(approvalRecord));
+        processedList = processedList.filter(rec => idKey(rec) !== idKey(approvalRecord));
+
+        pendingList.push(approvalRecord);
+        localStorage.setItem(keyPending, JSON.stringify(pendingList));
+        localStorage.setItem(keyProcessed, JSON.stringify(processedList));
+
+        // Feedback ao utilizador
+        window.showNotification('Marcações submetidas para aprovação do supervisor.', 'success');
+        alert('Marcações submetidas com sucesso!\n\nStatus: Aguardando aprovação do supervisor');
+
+    // Atualizar badge de estado
+    try { if (typeof window.renderCalendar === 'function') window.renderCalendar(); } catch(e){}
     };
     
     // Funções para seleção múltipla
@@ -860,18 +945,23 @@ window.initializeHorariosCalendar = function() {
         if (bulkModal) {
             console.log('Configurando modal...');
             // Limpar formulário
-            document.getElementById('bulkForm').reset();
+            const bulkForm = document.getElementById('bulkForm');
+            if (bulkForm && typeof bulkForm.reset === 'function') {
+                bulkForm.reset();
+            }
             
             // Configurar date range para o mês atual
             const firstDay = new Date(window.currentYear, window.currentMonth, 1);
             const lastDay = new Date(window.currentYear, window.currentMonth + 1, 0);
             
-            document.getElementById('bulkStartDate').value = firstDay.toISOString().split('T')[0];
-            document.getElementById('bulkEndDate').value = lastDay.toISOString().split('T')[0];
+            const startInput = document.getElementById('bulkStartDate');
+            const endInput = document.getElementById('bulkEndDate');
+            if (startInput) startInput.value = firstDay.toISOString().split('T')[0];
+            if (endInput) endInput.value = lastDay.toISOString().split('T')[0];
             
             // Configurar listeners e display
-            setupDateRangeListeners();
-            updateRangeDisplay();
+            if (typeof setupDateRangeListeners === 'function') setupDateRangeListeners();
+            if (typeof updateRangeDisplay === 'function') updateRangeDisplay();
             
             bulkModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';

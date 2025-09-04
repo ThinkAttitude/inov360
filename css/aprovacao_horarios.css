@@ -141,13 +141,20 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-#month-filter {
+#month-filter,
+#extract-month {
     padding: 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 0.875rem;
     background: white;
     min-width: 150px;
+}
+
+.actions-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 /* Cards de Aprovação */
@@ -514,7 +521,8 @@
 /* Botões */
 .btn-secondary,
 .btn-success,
-.btn-danger {
+.btn-danger,
+.btn-primary {
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     font-weight: 600;
@@ -552,6 +560,17 @@
 .btn-danger:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-primary {
+    /* Use CSS var with fallback to ensure styling even if variables are missing */
+    background: linear-gradient(135deg, var(--gradient-1, #3b82f6), var(--gradient-2, #1d4ed8));
+    color: #fff;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
 
 /* Form elements */
@@ -610,6 +629,38 @@
 .empty-state p {
     margin: 0;
     color: var(--text-light);
+}
+
+/* Generic cards and table helpers used in extraction page */
+.welcome-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.table-wrapper {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    color: var(--text-dark);
+}
+
+.data-table thead th {
+    background: #f8fafc;
+    font-weight: 600;
+    text-align: left;
+}
+
+.data-table tbody tr:hover {
+    background: #f8fafc;
 }
 
 /* Toast notifications */

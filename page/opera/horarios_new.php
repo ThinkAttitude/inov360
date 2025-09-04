@@ -401,7 +401,7 @@ html body .horarios-close-btn:hover {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 1000;
+    z-index: 5000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -488,6 +488,37 @@ html body .horarios-close-btn:hover {
 
 .btn-secondary:hover {
     background: #4b5563;
+}
+
+/* Badge de estado de submissão */
+.submission-badge {
+    display: inline-block;
+    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    user-select: none;
+}
+.badge-grey { background: #e5e7eb; color: #374151; }
+.badge-yellow { background: #fef3c7; color: #92400e; }
+.badge-green { background: #d1fae5; color: #065f46; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+
+.calendar-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+.submission-reason {
+    font-size: 0.8rem;
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 0.35rem 0.5rem;
+    max-width: 320px;
 }
 
 @media (max-width: 768px) {
@@ -766,21 +797,8 @@ html body .horarios-close-btn:hover {
     margin-top: 1.5rem;
 }
 
-/* CSS específico para o modal bulk do operador */
-#bulkModal {
-    position: absolute !important;
-    top: 80px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    width: auto !important;
-    min-width: 600px !important;
-    max-width: 800px !important;
-    background: white !important;
-    border-radius: 12px !important;
-    z-index: 1000 !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
-    border: 1px solid #e5e7eb !important;
-}
+/* Mantém o modal bulk com o comportamento padrão de overlay (igual ao inter2) */
+/* O estilo base de .modal já define position: fixed, fundo escuro e centralização */
 
 
 
@@ -864,7 +882,7 @@ html body .horarios-close-btn:hover {
         </button>
         
         <!-- Botão para seleção múltipla -->
-        <button class="horarios-nav-btn" id="bulkSelectBtn" style="background: #3b82f6 !important; margin-left: 1rem;">
+    <button class="horarios-nav-btn" id="bulkSelectBtn" style="background: #3b82f6 !important; margin-left: 1rem;" onclick="window.openBulkModal && window.openBulkModal()">
             Marcação em Lote
         </button>
 
@@ -873,7 +891,7 @@ html body .horarios-close-btn:hover {
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Marcação em Lote</h3>
-                    <button class="horarios-close-btn close-bulk-modal">&times;</button>
+                    <button class="horarios-close-btn close-bulk-modal" onclick="window.closeBulkModal && window.closeBulkModal()">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="bulk-instructions">
@@ -916,9 +934,9 @@ html body .horarios-close-btn:hover {
                         </div>
                         
                         <div class="modal-actions">
-                            <button type="button" class="horarios-nav-btn" id="cancelBulkBtn">Cancelar</button>
-                            <button type="button" class="horarios-nav-btn" id="clearRangeBtn" style="background: #f59e0b !important;">Limpar Período</button>
-                            <button type="button" class="horarios-nav-btn" id="applyBulkBtn" style="background: #065f46 !important;">Aplicar ao Período</button>
+                            <button type="button" class="horarios-nav-btn" id="cancelBulkBtn" onclick="window.closeBulkModal && window.closeBulkModal()">Cancelar</button>
+                            <button type="button" class="horarios-nav-btn" id="clearRangeBtn" style="background: #f59e0b !important;" onclick="typeof clearRange==='function' && clearRange()">Limpar Período</button>
+                            <button type="button" class="horarios-nav-btn" id="applyBulkBtn" style="background: #065f46 !important;" onclick="window.applyBulkSelection && window.applyBulkSelection()">Aplicar ao Período</button>
                         </div>
                     </form>
                 </div>
@@ -934,6 +952,10 @@ html body .horarios-close-btn:hover {
                 <div class="current-month" id="current-month">Setembro 2025</div>
                 <button class="horarios-nav-btn" onclick="window.navigateMonth(1)">Próximo →</button>
             </div>
+            <div class="calendar-status">
+                <div id="submission-status-badge" class="submission-badge badge-grey">Por enviar</div>
+                <div id="submission-rejection-reason" class="submission-reason" style="display:none;"></div>
+            </div>
         </div>
 
         <div class="calendar-grid" id="calendar-grid">
@@ -947,18 +969,14 @@ html body .horarios-close-btn:hover {
 <script>
 console.log('Página de horários carregada via AJAX');
 
-// Inicializar calendário quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded - Inicializando calendário');
-    if (typeof window.initializeHorariosCalendar === 'function') {
-        window.initializeHorariosCalendar();
-    } else {
-        console.log('Função initializeHorariosCalendar não encontrada, tentando novamente...');
-        setTimeout(function() {
-            if (typeof window.initializeHorariosCalendar === 'function') {
-                window.initializeHorariosCalendar();
-            }
-        }, 100);
-    }
-});
+// Chamar diretamente sem timeout, pois o JS já está carregado
+console.log('Verificando se window.initializeHorariosCalendar existe:', typeof window.initializeHorariosCalendar);
+
+if (typeof window.initializeHorariosCalendar === 'function') {
+    console.log('Chamando initializeHorariosCalendar diretamente...');
+    window.initializeHorariosCalendar();
+} else {
+    console.error('window.initializeHorariosCalendar não existe!');
+    console.log('Funções disponíveis no window:', Object.keys(window).filter(key => key.includes('initialize')));
+}
 </script>

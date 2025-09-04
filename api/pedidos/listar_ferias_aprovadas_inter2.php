@@ -11,6 +11,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "inter2") {
 header('Content-Type: application/json');
 
 $user_id = $_SESSION["user"]["id"];
+$target_user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : $user_id;
 
 try {
     $conn = db_connect();
@@ -26,7 +27,7 @@ try {
         WHERE user_id = ? AND estado = 'aprovado'
         ORDER BY data_inicio ASC
     ");
-    $stmt->execute([$user_id]);
+    $stmt->execute([$target_user_id]);
     $ferias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Criar um array com as datas de férias para facilitar a consulta no JavaScript
