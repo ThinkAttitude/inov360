@@ -217,7 +217,11 @@ if (isset($_GET['ajax'])) {
 </div>
 
 <script>
-// Endpoint base for this page's inline AJAX handlers
+// Timesheets APIs
+const LIST_ENDPOINT = "/api/timesheets/aval_periods.php";      // GET: state=submitted|approved|rejected|all, month=YYYY-MM
+const DETAILS_ENDPOINT = "/api/timesheets/aval_month.php";      // GET: user_id, month=YYYY-MM
+const DECIDE_ENDPOINT = "/api/timesheets/aval_decide.php";      // POST: { period_id, action: 'approve'|'reject', comment? }
+// Keep for compatibility if needed elsewhere
 const APPROVALS_ENDPOINT = "<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>";
 
 class AprovacaoHorarios {
@@ -241,24 +245,40 @@ class AprovacaoHorarios {
         try {
             const monthSelEl = document.getElementById('month-filter');
             const monthSel = monthSelEl ? monthSelEl.value : '';
+            // Fetch all states and filter client-side to keep tab counters accurate
             const params = new URLSearchParams();
+            params.set('state', 'all');
             if (monthSel) params.set('month', monthSel);
-            const url = `${APPROVALS_ENDPOINT}?ajax=list${params.toString()?('&'+params.toString()):''}`;
+            const url = `${LIST_ENDPOINT}?${params.toString()}`;
             const resp = await fetch(url, { credentials:'same-origin' });
             if (!resp.ok) return [];
             const data = await resp.json();
             if (!data || data.ok!==true || !Array.isArray(data.items)) return [];
-            return data.items.map(it => ({
-                periodId: it.periodId || null,
-                userId: it.userId,
-                userName: it.userName || null,
-                month: it.month,
-                status: it.estado==='submitted' ? 'pending' : (it.estado||'pending'),
-                dataExportacao: it.dataExportacao || new Date().toISOString(),
-                processedDate: (it.estado && it.estado !== 'submitted') ? (it.decididoEm || it.decidido_em || it.updatedAt || null) : null,
-                rejectionReason: (it.estado === 'rejected') ? (it.comentario || null) : null,
-                summary: it.summary || { diasTrabalhados:0, horasTotais:0, horasExtra:0, kmTotal:0 }
-            }));
+            return data.items.map(it => {
+                // aval_periods item shape
+                const periodId = it.period_id ?? it.periodId ?? null;
+                const userId = it.colaborador?.id ?? it.userId ?? null;
+                const userName = it.colaborador?.nome ?? it.userName ?? null;
+                const monthFromStart = (it.mes?.start || '').slice(0,7);
+                const estado = it.estado || 'submitted';
+                const resumo = it.resumo || {};
+                return {
+                    periodId,
+                    userId,
+                    userName,
+                    month: monthFromStart,
+                    status: estado === 'submitted' ? 'pending' : estado,
+                    dataExportacao: it.submetido_em || it.dataExportacao || new Date().toISOString(),
+                    processedDate: null, // not available in list response
+                    rejectionReason: null,
+                    summary: {
+                        diasTrabalhados: Number(resumo.workedDays || 0),
+                        horasTotais: Math.round(Number(resumo.workMin || 0) / 60),
+                        horasExtra: Number(resumo.otMin || 0),
+                        kmTotal: Number(resumo.km || 0)
+                    }
+                };
+            });
         } catch (e) { console.error('Erro a carregar aprovações:', e); return []; }
     }
 
@@ -450,10 +470,7 @@ class AprovacaoHorarios {
     // Buscar detalhes do mês e férias/ausências do operador em paralelo
         try {
             const params = new URLSearchParams({ month: approval.month, user_id: String(approval.userId) });
-            const [resMonth] = await Promise.all([
-                fetch(`/api/calendar/get_month.php?${params.toString()}`, { credentials: 'same-origin' })
-            ]);
-
+            const resMonth = await fetch(`${DETAILS_ENDPOINT}?${params.toString()}`, { credentials: 'same-origin' });
             const data = await resMonth.json();
             // Construir feriasOverride a partir do próprio get_month() para o utilizador alvo
             let feriasOverride = {};
@@ -475,7 +492,8 @@ class AprovacaoHorarios {
                                 falta_justificada: 'Falta Justificada',
                                 ferias: 'Férias'
                             };
-                            const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation';
+                            const titleTxt = (lv.title || lv.titulo || '').toString();
+                            const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation' || /\b(f[eé]rias|vacation)\b/i.test(titleTxt);
                             feriasOverride[d.date] = {
                                 tipo: isFerias ? 'vacation' : 'absence',
                                 label: isFerias ? 'Férias' : (labelMap[tipoRaw] || (lv.label || lv.title || 'Ausência'))
@@ -525,19 +543,14 @@ class AprovacaoHorarios {
         const a = this.findApproval(approvalId);
         if (!a) return;
         try {
-            let periodId = a.periodId;
+            const periodId = a.periodId;
             if (!periodId) {
-                const resp = await fetch(`/api/timesheets/summary.php?user_id=${encodeURIComponent(a.userId)}&month=${encodeURIComponent(a.month)}`, { credentials:'same-origin' });
-                const data = await resp.json();
-                if (!resp.ok || !data || data.ok!==true || !data.period || !data.period.id){
-                    this.showToast('Não foi possível localizar o período submetido.', 'error');
-                    return;
-                }
-                periodId = data.period.id;
+                this.showToast('Período inválido.', 'error');
+                return;
             }
-            const r2 = await fetch(`${APPROVALS_ENDPOINT}?ajax=decide`, {
+            const r2 = await fetch(DECIDE_ENDPOINT, {
                 method: 'POST', headers: { 'Content-Type':'application/json' }, credentials:'same-origin',
-                body: JSON.stringify({ period_id: periodId, acao: 'aprovar' })
+                body: JSON.stringify({ period_id: periodId, action: 'approve' })
             });
             const d2 = await r2.json();
             if (!r2.ok || !d2 || d2.ok!==true){
@@ -562,19 +575,14 @@ class AprovacaoHorarios {
         const a = this.findApproval(this.currentApprovalId);
         if (!a) { closeRejectionModal(); return; }
         try {
-            let periodId = a.periodId;
+            const periodId = a.periodId;
             if (!periodId) {
-                const resp = await fetch(`/api/timesheets/summary.php?user_id=${encodeURIComponent(a.userId)}&month=${encodeURIComponent(a.month)}`, { credentials:'same-origin' });
-                const data = await resp.json();
-                if (!resp.ok || !data || data.ok!==true || !data.period || !data.period.id){
-                    this.showToast('Não foi possível localizar o período submetido.', 'error');
-                    return;
-                }
-                periodId = data.period.id;
+                this.showToast('Período inválido.', 'error');
+                return;
             }
-            const r2 = await fetch(`${APPROVALS_ENDPOINT}?ajax=decide`, {
+            const r2 = await fetch(DECIDE_ENDPOINT, {
                 method: 'POST', headers: { 'Content-Type':'application/json' }, credentials:'same-origin',
-                body: JSON.stringify({ period_id: periodId, acao: 'rejeitar', comentario: reason })
+                body: JSON.stringify({ period_id: periodId, action: 'reject', comment: reason })
             });
             const d2 = await r2.json();
             if (!r2.ok || !d2 || d2.ok!==true){
@@ -798,7 +806,8 @@ class AprovacaoHorarios {
             'user_2': 'Maria Santos',
             'user_3': 'Carlos Oliveira'
         };
-        return users[userId] || `Operador ${userId.slice(-3)}`;
+    const key = String(userId);
+    return users[key] || `Operador ${key.slice(-3)}`;
     }
 
     // ========= Name resolution & caching =========
