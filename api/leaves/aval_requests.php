@@ -26,18 +26,12 @@ $subRoles = subordinate_roles($role);
 if (!$subRoles) { echo json_encode(["ok"=>true,"items"=>[]]); exit; }
 
 $type = $_GET['type'] ?? 'all'; // all|ferias|baixas|licencas
-
-// Mapear categorias → tipos do enum `pedidos_ferias.tipo`
 $map = [
     'ferias'   => ['ferias'],
     'baixas'   => ['baixa_medica','baixa_seguro'],
     'licencas' => ['licenca_paternidade','licenca_maternidade','casamento','consulta_medica','pessoal'],
 ];
-
-$filterTipos = [];
-if ($type !== 'all') {
-    $filterTipos = $map[$type] ?? [];
-}
+$filterTipos = $type === 'all' ? [] : ($map[$type] ?? []);
 
 require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
@@ -45,7 +39,6 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $params = [];
 $wheres = [];
-
 $wheres[] = "p.estado = 'pendente'";
 $phSub = implode(',', array_fill(0, count($subRoles), '?'));
 $wheres[] = "u.role IN ($phSub)";
@@ -56,14 +49,14 @@ if ($filterTipos) {
     $wheres[] = "p.tipo IN ($phTipos)";
     $params = array_merge($params, $filterTipos);
 }
-
 $whereSql = implode(' AND ', $wheres);
 
-$sql = "
+// base SQL (placeholders para o nome de colunas do utilizador)
+$sqlTpl = fn(string $nameCol) => "
   SELECT
     p.id,
     p.user_id,
-    u.nome        AS colaborador_nome,
+    u.$nameCol    AS colaborador_nome,
     u.role        AS colaborador_role,
     p.tipo,
     p.data_inicio,
@@ -72,15 +65,28 @@ $sql = "
     p.ficheiro,
     p.criado_em,
     p.responsavel_id,
-    ur.nome       AS responsavel_nome
+    ur.$nameCol   AS responsavel_nome
   FROM pedidos_ferias p
   JOIN user u  ON u.id  = p.user_id
   LEFT JOIN user ur ON ur.id = p.responsavel_id
   WHERE $whereSql
   ORDER BY p.criado_em ASC, p.id ASC
 ";
-$st = $pdo->prepare($sql);
-$st->execute($params);
+
+// tenta com `nome`; se falhar (1054), tenta com `name`
+try {
+    $st = $pdo->prepare($sqlTpl('nome'));
+    $st->execute($params);
+} catch (PDOException $e) {
+    if (strpos($e->getMessage(), '1054') !== false || strpos($e->getMessage(), 'Unknown column') !== false) {
+        $st = $pdo->prepare($sqlTpl('name'));
+        $st->execute($params);
+    } else {
+        http_response_code(500);
+        echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+        exit;
+    }
+}
 
 $baseUrl = rtrim(
     (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' .
@@ -93,8 +99,8 @@ while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
         "pedido_id"     => (int)$r['id'],
         "colaborador"   => [
             "id"   => (int)$r['user_id'],
-            "nome" => $r['colaborador_nome'],
-            "role" => $r['colaborador_role']
+            "nome" => $r['colaborador_nome'] ?? null,
+            "role" => $r['colaborador_role'] ?? null,
         ],
         "tipo"          => $r['tipo'],
         "inicio"        => $r['data_inicio'],
@@ -102,10 +108,10 @@ while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
         "justificacao"  => $r['justificacao'],
         "substituicao"  => $r['responsavel_id'] ? [
             "id"   => (int)$r['responsavel_id'],
-            "nome" => $r['responsavel_nome']
+            "nome" => $r['responsavel_nome'] ?? null,
         ] : null,
         "comprovativo"  => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
-        "pedido_em"     => $r['criado_em']
+        "pedido_em"     => $r['criado_em'],
     ];
 }
 
