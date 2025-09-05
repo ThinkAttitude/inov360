@@ -116,12 +116,20 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
         }
     }
 
+    function syncFromServer(){
+        notify('Sem API. Use "Importar do navegador" para carregar aprovações locais.', 'info');
+    }
+
     function loadFromLocalStorage(){
         // Ler do navegador (caso o fluxo de aprovação tenha ocorrido neste browser)
         let processed = [];
         try { processed = JSON.parse(localStorage.getItem('marcacoes_processed')||'[]'); } catch(_){}
         // Filtrar aprovados
-        const approved = processed.filter(r => r && r.status === 'approved');
+        const approved = processed.filter(r => {
+            if(!r) return false;
+            const s = (r.status==null? '': String(r.status)).toLowerCase().trim();
+            return s === 'approved' || s === 'aprovado';
+        });
         // Mapear para linhas da tabela
         state.rows = approved.map(r => ({
             id: `${r.userId}-${r.month}`,
@@ -283,7 +291,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
         if(search) search.addEventListener('input', render);
         if(monthSel) monthSel.addEventListener('change', render);
         if(btnLocal) btnLocal.addEventListener('click', ()=>{ loadFromLocalStorage(); notify('Registos carregados do navegador.', 'success'); });
-        if(btnRefresh) btnRefresh.addEventListener('click', ()=>{ notify('Sincronização com o servidor será adicionada em breve.', 'info'); });
+    if(btnRefresh) btnRefresh.addEventListener('click', ()=>{ syncFromServer(); });
         if(btnPdf) btnPdf.addEventListener('click', ()=>{ if(!state.selected.size) return notify('Selecione pelo menos um registo.', 'error'); notify('Geração de PDFs em construção.', 'info'); });
         if(btnZip) btnZip.addEventListener('click', ()=>{ if(!state.selected.size) return notify('Selecione pelo menos um registo.', 'error'); notify('Exportação ZIP em construção.', 'info'); });
         if(btnMark) btnMark.addEventListener('click', ()=>{
@@ -299,6 +307,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
     populateMonths();
     loadExtractedSet();
     bindTopActions();
-    render();
+    // Auto-carregar do localStorage (sem depender do botão) para evitar lista vazia
+    try { loadFromLocalStorage(); } catch(_) { render(); }
 })();
 </script>

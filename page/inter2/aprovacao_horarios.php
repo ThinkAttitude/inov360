@@ -416,9 +416,9 @@ class AprovacaoHorarios {
     // removed old createDetailedCalendar (replaced by API-driven version)
 
     async approveMarking(approvalId) {
-        if (!confirm('Deseja aprovar estas marcações de horários?')) return;
-        this.processApprovalLocal(approvalId, 'approved');
-        await this.refresh();
+    if (!confirm('Deseja aprovar estas marcações de horários?')) return;
+    this.processApprovalLocal(approvalId, 'approved');
+    await this.refresh();
     }
 
     rejectMarking(approvalId) {
@@ -435,7 +435,7 @@ class AprovacaoHorarios {
         const card = document.querySelector(`[data-approval-id="${this.currentApprovalId}"]`);
         if (card && card.parentNode) card.parentNode.removeChild(card);
     } catch (e) {}
-    this.processApprovalLocal(this.currentApprovalId, 'rejected', reason);
+        this.processApprovalLocal(this.currentApprovalId, 'rejected', reason);
     closeRejectionModal();
     await this.refresh();
     }

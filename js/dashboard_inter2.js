@@ -842,33 +842,7 @@ window.initializeDynamicContent = function() {
         });
     });
 
-    // Inicializar toggle de consulta pedidos
-    const toggleBtns = document.querySelectorAll('.toggle-btn');
-    const teamSection = document.querySelector('.requests-section:first-of-type');
-    const personalSection = document.getElementById('personal-section');
-
-    // Ensure sections are properly initialized
-    if (teamSection) teamSection.style.display = 'block';
-    if (personalSection) personalSection.style.display = 'none';
-
-    toggleBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const section = this.getAttribute('data-section');
-
-            // Update active button
-            toggleBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-
-            // Show/hide sections
-            if (section === 'team') {
-                if (teamSection) teamSection.style.display = 'block';
-                if (personalSection) personalSection.style.display = 'none';
-            } else {
-                if (teamSection) teamSection.style.display = 'none';
-                if (personalSection) personalSection.style.display = 'block';
-            }
-        });
-    });
+    // Toggle de consulta pedidos removido (sem separador Pessoais)
 };
 
 // Funções globais para compatibilidade
