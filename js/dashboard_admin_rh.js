@@ -659,6 +659,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Inicializar botões "Analisar Ficha"
     function initializeAnalisarFichaButtons() {
         const analisarBtns = document.querySelectorAll('.analisar-ficha-btn');
+        const analisarFinanceBtns = document.querySelectorAll('.analisar-ficha-financeira-btn');
 
         analisarBtns.forEach(btn => {
             btn.addEventListener('click', function() {
@@ -690,6 +691,32 @@ document.addEventListener("DOMContentLoaded", function () {
                             `;
                         });
                 }
+            });
+        });
+
+        // Abrir Ficha Financeira dentro do dashboard
+        analisarFinanceBtns.forEach(btn => {
+            if (btn.__boundFinance) return;
+            btn.__boundFinance = true;
+            btn.addEventListener('click', function(){
+                const userId = this.getAttribute('data-user-id');
+                if (!userId) return;
+                currentAnalyzedUserId = userId;
+                showLoading();
+                fetch(`../admin_rh/ficha_financeira.php?user_id=${userId}`)
+                    .then(r=>{ if(!r.ok) throw new Error('Erro ao carregar ficha financeira.'); return r.text(); })
+                    .then(html=>{
+                        mainContent.innerHTML = html;
+                        initializeFichaFinanceiraModule();
+                    })
+                    .catch(error=>{
+                        mainContent.innerHTML = `
+                            <div class="error-state">
+                                <h3>Erro ao carregar ficha financeira</h3>
+                                <p>${error.message}</p>
+                                <button onclick=\"location.reload()\" class=\"btn-retry\">Tentar Novamente</button>
+                            </div>`;
+                    });
             });
         });
     }
@@ -922,6 +949,92 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
             }, { once: true }); // garantir que não duplica listeners ao recarregar
         }
+    }
+
+    // --------- FICHA FINANCEIRA (in-dash) ---------
+    function initializeFichaFinanceiraModule(){
+        const container = document.getElementById('finance-form');
+        if(!container) return;
+        const uid = Number(container.dataset.userId || window.currentAnalyzedUserId || 0);
+        const btnGuardar = document.getElementById('btn-guardar');
+
+        function toast(msg, type){ if (typeof showToast==='function') showToast(msg, type==='error'?'error':'success'); else alert(msg); }
+
+        function setField(id, val){ const el = document.getElementById(id); if(!el) return; if(el.type==='checkbox') el.checked = String(val)==='1' || val===1 || val===true; else el.value = (val==null? '': val); }
+        function getField(id){ const el = document.getElementById(id); if(!el) return null; return el.type==='checkbox' ? (el.checked?1:0) : el.value; }
+
+        function parseJSONLoose(raw){
+            try { return JSON.parse(raw); } catch(_) {}
+            const start = raw.search(/\{[\s\r\n]*\"/);
+            if (start === -1) return null;
+            let depth = 0, inStr = false, esc = false;
+            for (let i=start; i<raw.length; i++){
+                const ch = raw[i];
+                if (inStr){
+                    if (esc){ esc=false; continue; }
+                    if (ch==='\\'){ esc=true; continue; }
+                    if (ch==='"'){ inStr=false; continue; }
+                    continue;
+                }
+                if (ch==='"'){ inStr=true; continue; }
+                if (ch==='{') depth++;
+                else if (ch==='}'){ depth--; if (depth===0){ const slice = raw.slice(start, i+1); try { return JSON.parse(slice); } catch(_) { return null; } } }
+            }
+            return null;
+        }
+
+        async function load(){
+            try{
+                const r = await fetch(`/api/finance/profile_get.php?user_id=${encodeURIComponent(uid)}`, { credentials:'same-origin', headers:{ 'Accept':'application/json' } });
+                const raw = await r.text();
+                const d = parseJSONLoose(raw) || { ok:false };
+                                if(!r.ok || !d || d.ok!==true){
+                    if (/^\s*</.test(raw) && raw.toLowerCase().includes('<html')) throw new Error('UNAUTHENTICATED');
+                    throw new Error((d&&d.code)||'API');
+                }
+                                const v = d.data||{};
+                                // Map keys from API to form when different
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_start')) setField('ferias_data_start', v['ferias_start']);
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_end')) setField('ferias_data_end', v['ferias_end']);
+                                if (Object.prototype.hasOwnProperty.call(v,'duodecimos_sn')) setField('duodecimos', v['duodecimos_sn'] ? 2 : 1);
+                [
+                                    'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','observacoes','ajustes_vencimento'
+                ].forEach(k=> setField(k, v[k]));
+            }catch(e){ console.error(e); toast('Falha ao carregar ficha financeira','error'); }
+        }
+
+                async function save(){
+                        const payload = { user_id: uid };
+                        const assign = (k)=>{
+                                const el = document.getElementById(k);
+                                if (!el) return;
+                                if (el.type==='checkbox'){ payload[k] = el.checked?1:0; return; }
+                                const v = (el.value ?? '').toString().trim();
+                                if (v==='') return; // skip empty
+                                if (el.type==='number') { const n = Number(v); if (!Number.isNaN(n)) payload[k] = n; } else { payload[k] = v; }
+                        };
+                        [
+                                        'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_dt','ferias_data_start','ferias_data_end','observacoes','ajustes_vencimento'
+                        ].forEach(assign);
+                                    // Map UI -> API names
+                                    const duoEl = document.getElementById('duodecimos');
+                                    if (duoEl){ const n = parseInt((duoEl.value||'').toString().trim(),10); if(!Number.isNaN(n)) payload.duodecimos_sn = (n===2?1:0); delete payload.duodecimos; }
+                                    if (payload.ferias_data_start){ payload.ferias_start = payload.ferias_data_start; delete payload.ferias_data_start; }
+                                    if (payload.ferias_data_end){ payload.ferias_end = payload.ferias_data_end; delete payload.ferias_data_end; }
+            try{
+                const r = await fetch('/api/finance/profile_update.php', { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, credentials:'same-origin', body: JSON.stringify(payload)});
+                const raw = await r.text();
+                const d = parseJSONLoose(raw) || { ok:false };
+                if(!r.ok || !d || d.ok!==true){
+                    if (/^\s*</.test(raw) && raw.toLowerCase().includes('<html')) throw new Error('UNAUTHENTICATED');
+                    throw new Error((d&&d.code)||'API');
+                }
+                toast('✅ Ficha financeira guardada.','success');
+            }catch(e){ console.error(e); toast('❌ Falha ao guardar: '+(e && e.message ? e.message : ''),'error'); }
+        }
+
+        if(btnGuardar && !btnGuardar.__bound){ btnGuardar.addEventListener('click', save); btnGuardar.__bound=true; }
+        load();
     }
 
     // Função para lidar com aprovação/rejeição de pedidos
