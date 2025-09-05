@@ -11,7 +11,7 @@ $role   = $_SESSION['user']['role'] ?? '';
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 function can_read(string $role, int $selfId, int $targetId): bool {
-    if (in_array($role, ['adminrh','estrela'], true)) return true;
+    if (in_array($role, ['admin_rh','*'], true)) return true;
     return $selfId === $targetId; // o próprio
 }
 
