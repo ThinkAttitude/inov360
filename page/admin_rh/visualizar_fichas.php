@@ -98,7 +98,15 @@ try {
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
-                            Analisar Ficha
+                            Analisar Ficha de Colaborador
+                        </button>
+                        <button class="btn analisar-ficha-financeira-btn" type="button" data-user-id="<?= $col["user_id"] ?>" style="margin-left:8px">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="2" y1="10" x2="22" y2="10"></line>
+                                <line x1="7" y1="15" x2="11" y2="15"></line>
+                            </svg>
+                            Analisar Ficha Financeira
                         </button>
                     </td>
                 </tr>
@@ -114,3 +122,26 @@ try {
         </div>
     </div>
 <?php endif; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.analisar-ficha-financeira-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            // placeholder action for now
+            const id = btn.getAttribute('data-user-id');
+            const note = document.createElement('div');
+            note.style.position = 'fixed';
+            note.style.bottom = '20px';
+            note.style.right = '20px';
+            note.style.background = '#0A2240';
+            note.style.color = '#fff';
+            note.style.padding = '10px 14px';
+            note.style.borderRadius = '8px';
+            note.style.boxShadow = '0 4px 14px rgba(0,0,0,.15)';
+            note.textContent = 'Em breve: Ficha Financeira do colaborador #' + id;
+            document.body.appendChild(note);
+            setTimeout(()=>note.remove(), 2500);
+        });
+    });
+});
+</script>
