@@ -297,7 +297,7 @@ try {
                     <h3>Novo Pedido</h3>
                     <button class="modal-close" type="button" onclick="fecharModalPedido()">&times;</button>
                 </div>
-                <form action="../../api/pedidos/arh_fa.php" method="POST" enctype="multipart/form-data" class="modal-form">
+                <form action="../../api/leaves/request.php" method="POST" enctype="multipart/form-data" class="modal-form">
             <div class="form-section">
                 <div class="input-group">
                     <label for="tipo">Tipo de Pedido *</label>

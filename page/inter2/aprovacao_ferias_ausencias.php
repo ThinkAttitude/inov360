@@ -190,10 +190,10 @@ try {
                                     Pedido em <?= date("d/m/Y", strtotime($p["criado_em"])) ?>
                                 </div>
                                 <div class="action-buttons">
-                                    <form action="../../api/pedidos/i2_aprovar_fa.php" method="POST" style="display:inline;">
+                                    <form action="#" method="POST" style="display:inline;">
                                         <input type="hidden" name="pedido_id" value="<?= $p["id"] ?>">
                                         <input type="hidden" name="novo_estado" value="rejeitado">
-                                        <button type="submit" class="btn-reject" onclick="return confirm('Tem certeza que deseja rejeitar este pedido?')">
+                                        <button type="button" class="btn-reject js-reject" data-pedido-id="<?= $p["id"] ?>" onclick="window.rejectLeave && window.rejectLeave(<?= (int)$p['id'] ?>)">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -202,10 +202,10 @@ try {
                                             Rejeitar
                                         </button>
                                     </form>
-                                    <form action="../../api/pedidos/i2_aprovar_fa.php" method="POST" style="display:inline;">
+                                    <form action="#" method="POST" style="display:inline;">
                                         <input type="hidden" name="pedido_id" value="<?= $p["id"] ?>">
                                         <input type="hidden" name="novo_estado" value="aprovado">
-                                        <button type="submit" class="btn-approve" onclick="return confirm('Tem certeza que deseja aprovar este pedido?')">
+                                        <button type="button" class="btn-approve js-approve" data-pedido-id="<?= $p["id"] ?>" onclick="window.approveLeave && window.approveLeave(<?= (int)$p['id'] ?>)">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <polyline points="20,6 9,17 4,12"></polyline>
                                             </svg>
@@ -705,3 +705,14 @@ try {
         }
     }
 </style>
+<script src="/js/leaves_approval.js?v=20250905"></script>
+<script>
+// Quick runtime check: ensure approval script loaded
+window.addEventListener('DOMContentLoaded', function(){
+    if (window.showToast) {
+        console.log('leaves_approval loaded');
+    } else {
+        console.warn('leaves_approval not loaded');
+    }
+});
+</script>

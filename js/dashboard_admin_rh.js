@@ -14,6 +14,30 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
     }
 
+    // Badge de pendentes (avaliador)
+    async function updatePendingBadge(){
+        try{
+            // Tenta preferencialmente um link explícito de aprovação; caso não exista, usa o de pedidos_ferias
+            const link = document.querySelector(
+                '.sidebar-menu a[data-content="aprovacao_ferias_ausencias"], .sidebar-menu a[data-content="aprovar_ferias"], .sidebar-menu a[data-content="pedidos_ferias"]'
+            );
+            if(!link) return;
+            const resp = await fetch('../../api/leaves/aval_summary.php', { credentials: 'include' });
+            if(!resp.ok) return;
+            const data = await resp.json();
+            if(!data || data.ok!==true || typeof data.pending !== 'number') return;
+            let badge = link.querySelector('.pending-badge');
+            if(!badge){
+                badge = document.createElement('span');
+                badge.className = 'pending-badge';
+                badge.style.cssText = 'margin-left:8px;display:inline-flex;min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:12px;line-height:18px;align-items:center;justify-content:center;font-weight:700;';
+                link.appendChild(badge);
+            }
+            badge.textContent = String(data.pending);
+            badge.style.display = data.pending>0 ? 'inline-flex' : 'none';
+        }catch(_){ /* ignore */ }
+    }
+
     // ---------- EDIÇÃO COMPLETA FICHA (ADMIN RH) ----------
     function buildFichaEditarUrl(){
         // tenta usar user id do botão clicado anteriormente ou global
@@ -205,7 +229,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
         // Reaplicar event listeners aos novos card-links
-        attachCardLinkListeners();
+    attachCardLinkListeners();
+    updatePendingBadge();
     }
 
     // Função para anexar listeners aos card-links
@@ -214,6 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
         cardLinks.forEach(link => {
             link.addEventListener("click", handleNavigation);
         });
+    updatePendingBadge();
     }
 
     // Função principal de navegação
@@ -392,7 +418,26 @@ document.addEventListener("DOMContentLoaded", function () {
                         day: 'Dia'
                     },
                     height: 'auto',
-                    events: '../../api/eventos/listar_eventos.php',
+                    events: function(fetchInfo, successCallback, failureCallback) {
+                        const start = fetchInfo.start;
+                        const monthKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2,'0')}`;
+                        fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials: 'same-origin' })
+                          .then(r => r.json())
+                          .then(data => {
+                            if (!data || data.ok !== true || !Array.isArray(data.days)) { failureCallback(new Error('Resposta inesperada')); return; }
+                            const events = [];
+                            data.days.forEach(d => {
+                                const dateStr = d.date;
+                                const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                                leaves.forEach(lv => {
+                                    const title = (lv.label || lv.titulo || lv.title || lv.tipo || lv.type || 'Ausência');
+                                    events.push({ title, start: dateStr, allDay: true, extendedProps: { type: 'LEAVE', raw: lv } });
+                                });
+                            });
+                            successCallback(events);
+                          })
+                          .catch(err => failureCallback(err));
+                    },
                     eventClick: function(info) {
                         alert('Evento: ' + info.event.title + '\nData: ' + info.event.start.toLocaleDateString());
                     }
@@ -614,6 +659,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Inicializar botões "Analisar Ficha"
     function initializeAnalisarFichaButtons() {
         const analisarBtns = document.querySelectorAll('.analisar-ficha-btn');
+        const analisarFinanceBtns = document.querySelectorAll('.analisar-ficha-financeira-btn');
 
         analisarBtns.forEach(btn => {
             btn.addEventListener('click', function() {
@@ -645,6 +691,32 @@ document.addEventListener("DOMContentLoaded", function () {
                             `;
                         });
                 }
+            });
+        });
+
+        // Abrir Ficha Financeira dentro do dashboard
+        analisarFinanceBtns.forEach(btn => {
+            if (btn.__boundFinance) return;
+            btn.__boundFinance = true;
+            btn.addEventListener('click', function(){
+                const userId = this.getAttribute('data-user-id');
+                if (!userId) return;
+                currentAnalyzedUserId = userId;
+                showLoading();
+                fetch(`../admin_rh/ficha_financeira.php?user_id=${userId}`)
+                    .then(r=>{ if(!r.ok) throw new Error('Erro ao carregar ficha financeira.'); return r.text(); })
+                    .then(html=>{
+                        mainContent.innerHTML = html;
+                        initializeFichaFinanceiraModule();
+                    })
+                    .catch(error=>{
+                        mainContent.innerHTML = `
+                            <div class="error-state">
+                                <h3>Erro ao carregar ficha financeira</h3>
+                                <p>${error.message}</p>
+                                <button onclick=\"location.reload()\" class=\"btn-retry\">Tentar Novamente</button>
+                            </div>`;
+                    });
             });
         });
     }
@@ -879,6 +951,92 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // --------- FICHA FINANCEIRA (in-dash) ---------
+    function initializeFichaFinanceiraModule(){
+        const container = document.getElementById('finance-form');
+        if(!container) return;
+        const uid = Number(container.dataset.userId || window.currentAnalyzedUserId || 0);
+        const btnGuardar = document.getElementById('btn-guardar');
+
+        function toast(msg, type){ if (typeof showToast==='function') showToast(msg, type==='error'?'error':'success'); else alert(msg); }
+
+        function setField(id, val){ const el = document.getElementById(id); if(!el) return; if(el.type==='checkbox') el.checked = String(val)==='1' || val===1 || val===true; else el.value = (val==null? '': val); }
+        function getField(id){ const el = document.getElementById(id); if(!el) return null; return el.type==='checkbox' ? (el.checked?1:0) : el.value; }
+
+        function parseJSONLoose(raw){
+            try { return JSON.parse(raw); } catch(_) {}
+            const start = raw.search(/\{[\s\r\n]*\"/);
+            if (start === -1) return null;
+            let depth = 0, inStr = false, esc = false;
+            for (let i=start; i<raw.length; i++){
+                const ch = raw[i];
+                if (inStr){
+                    if (esc){ esc=false; continue; }
+                    if (ch==='\\'){ esc=true; continue; }
+                    if (ch==='"'){ inStr=false; continue; }
+                    continue;
+                }
+                if (ch==='"'){ inStr=true; continue; }
+                if (ch==='{') depth++;
+                else if (ch==='}'){ depth--; if (depth===0){ const slice = raw.slice(start, i+1); try { return JSON.parse(slice); } catch(_) { return null; } } }
+            }
+            return null;
+        }
+
+        async function load(){
+            try{
+                const r = await fetch(`/api/finance/profile_get.php?user_id=${encodeURIComponent(uid)}`, { credentials:'same-origin', headers:{ 'Accept':'application/json' } });
+                const raw = await r.text();
+                const d = parseJSONLoose(raw) || { ok:false };
+                                if(!r.ok || !d || d.ok!==true){
+                    if (/^\s*</.test(raw) && raw.toLowerCase().includes('<html')) throw new Error('UNAUTHENTICATED');
+                    throw new Error((d&&d.code)||'API');
+                }
+                                const v = d.data||{};
+                                // Map keys from API to form when different
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_start')) setField('ferias_data_start', v['ferias_start']);
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_end')) setField('ferias_data_end', v['ferias_end']);
+                                if (Object.prototype.hasOwnProperty.call(v,'duodecimos_sn')) setField('duodecimos', v['duodecimos_sn'] ? 2 : 1);
+                [
+                                    'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','observacoes','ajustes_vencimento'
+                ].forEach(k=> setField(k, v[k]));
+            }catch(e){ console.error(e); toast('Falha ao carregar ficha financeira','error'); }
+        }
+
+                async function save(){
+                        const payload = { user_id: uid };
+                        const assign = (k)=>{
+                                const el = document.getElementById(k);
+                                if (!el) return;
+                                if (el.type==='checkbox'){ payload[k] = el.checked?1:0; return; }
+                                const v = (el.value ?? '').toString().trim();
+                                if (v==='') return; // skip empty
+                                if (el.type==='number') { const n = Number(v); if (!Number.isNaN(n)) payload[k] = n; } else { payload[k] = v; }
+                        };
+                        [
+                                        'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_dt','ferias_data_start','ferias_data_end','observacoes','ajustes_vencimento'
+                        ].forEach(assign);
+                                    // Map UI -> API names
+                                    const duoEl = document.getElementById('duodecimos');
+                                    if (duoEl){ const n = parseInt((duoEl.value||'').toString().trim(),10); if(!Number.isNaN(n)) payload.duodecimos_sn = (n===2?1:0); delete payload.duodecimos; }
+                                    if (payload.ferias_data_start){ payload.ferias_start = payload.ferias_data_start; delete payload.ferias_data_start; }
+                                    if (payload.ferias_data_end){ payload.ferias_end = payload.ferias_data_end; delete payload.ferias_data_end; }
+            try{
+                const r = await fetch('/api/finance/profile_update.php', { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, credentials:'same-origin', body: JSON.stringify(payload)});
+                const raw = await r.text();
+                const d = parseJSONLoose(raw) || { ok:false };
+                if(!r.ok || !d || d.ok!==true){
+                    if (/^\s*</.test(raw) && raw.toLowerCase().includes('<html')) throw new Error('UNAUTHENTICATED');
+                    throw new Error((d&&d.code)||'API');
+                }
+                toast('✅ Ficha financeira guardada.','success');
+            }catch(e){ console.error(e); toast('❌ Falha ao guardar: '+(e && e.message ? e.message : ''),'error'); }
+        }
+
+        if(btnGuardar && !btnGuardar.__bound){ btnGuardar.addEventListener('click', save); btnGuardar.__bound=true; }
+        load();
+    }
+
     // Função para lidar com aprovação/rejeição de pedidos
     function handleAprovacaoPedido(pedidoId, acao) {
         const formData = new FormData();
@@ -1105,6 +1263,51 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Mostrar página inicial por padrão
     setTimeout(showWelcome, 100);
+
+    // Captura global para impedir navegação para /api/leaves/request.php em conteúdos carregados via AJAX
+    try {
+        if (!window.__leavesSubmitCapture__) {
+            document.addEventListener('submit', function(ev){
+                const form = ev.target;
+                if (form && form.action && form.action.includes('/api/leaves/request.php')){
+                    ev.preventDefault();
+                    if (form.__leavesSubmitting) return;
+                    form.__leavesSubmitting = true;
+                    const fd = new FormData(form);
+                    // Normalizar datas
+                    try {
+                        const di = form.querySelector('#data_inicio');
+                        const df = form.querySelector('#data_fim');
+                        const norm = v => (/^\d{2}\/\d{2}\/\d{4}$/.test(v) ? `${v.slice(6,10)}-${v.slice(3,5)}-${v.slice(0,2)}` : v);
+                        if (di && di.value) fd.set('data_inicio', norm(di.value));
+                        if (df && df.value) fd.set('data_fim', norm(df.value));
+                    } catch(_) {}
+                    const btn = form.querySelector('button[type="submit"], .btn-submit');
+                    const original = btn ? btn.innerHTML : '';
+                    if (btn){ btn.disabled = true; btn.innerText = 'A enviar...'; }
+                    fetch(form.action, { method:'POST', body: fd, credentials: 'same-origin' })
+                      .then(async resp => {
+                          const ct = resp.headers.get('content-type')||'';
+                          let data=null;
+                          if (ct.includes('application/json')) data = await resp.json();
+                          else { const txt = await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||'Erro ao processar resposta.'}; } }
+                          if (!resp.ok || !data || data.ok===false){
+                              const code = data && (data.code || data.error || data.message);
+                              const map = { MISSING_FIELDS:'Preencha todos os campos obrigatórios.', INVALID_DATE:'Data inválida.', RANGE_ERROR:'Data de início deve ser anterior à data de fim.', DOC_REQUIRED:'Este tipo exige comprovativo (PDF/JPG/PNG).', BAD_FILETYPE:'Tipo de ficheiro inválido (PDF, JPG, PNG).', FILE_TOO_LARGE:'Ficheiro maior que 5MB.', FILE_MOVE_ERROR:'Erro ao guardar o ficheiro no servidor.', UNAUTHENTICATED:'Sessão expirada. Faça login novamente.', FORBIDDEN_ROLE:'Perfil sem permissão para criar pedidos.', DB_ERROR:'Erro interno ao gravar o pedido.' };
+                              if (typeof showToast === 'function') showToast('❌ '+(map[code] || code || ('HTTP '+resp.status)), 'error'); else alert(map[code] || code || ('HTTP '+resp.status));
+                          } else {
+                              if (typeof showToast === 'function') showToast('✅ Pedido submetido com sucesso.', 'success'); else alert('Pedido submetido com sucesso');
+                              window.fecharModalPedido && window.fecharModalPedido();
+                              setTimeout(()=>window.location.reload(), 1200);
+                          }
+                      })
+                      .catch(err => { if (typeof showToast === 'function') showToast('❌ '+(err && err.message ? err.message : err), 'error'); else alert(err && err.message ? err.message : String(err)); })
+                      .finally(()=>{ if (btn){ btn.disabled=false; btn.innerHTML = original || 'Submeter Pedido'; } form.__leavesSubmitting=false; });
+                }
+            }, true);
+            window.__leavesSubmitCapture__ = true;
+        }
+    } catch (_) { /* noop */ }
 });
 
 // Funções globais para compatibilidade

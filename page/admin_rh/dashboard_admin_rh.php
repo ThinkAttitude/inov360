@@ -326,8 +326,9 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
     </main>
 </div>
 
-<script src="../../js/dashboard_admin_rh.js?v=20250825"></script>
+<script src="../../js/dashboard_admin_rh.js?v=20250825&b=20250905"></script>
 <script src="../../js/theme.js?v=20250825"></script>
+<script src="../../js/ferias_ausencias.js?v=20250825&b=20250905"></script>
 <script>
 // Mostrar toast após marcação direta bem sucedida
 document.addEventListener('DOMContentLoaded', function(){

@@ -302,6 +302,45 @@ window.fecharModalPedido = function() {
 
 // Função para inicializar eventos após carregamento dinâmico de conteúdo
 window.initializeDynamicContent = function() {
+    // Garantir infra de toast disponível
+    (function ensureToastInfra(){
+        if (!document.getElementById('toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+            .toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+            .toast{min-width:260px;max-width:420px;padding:12px 14px;border-radius:10px;color:#0b1220;background:#0b1220;box-shadow:0 6px 16px rgba(0,0,0,.18);display:flex;align-items:flex-start;gap:10px;opacity:0;transform:translateY(-6px);animation:toast-in .2s ease forwards}
+            .toast.success{background:linear-gradient(135deg,#10b981,#34d399);color:#062d1f}
+            .toast.error{background:linear-gradient(135deg,#ef4444,#f59e0b);color:#2b0b0b}
+            .toast.info{background:linear-gradient(135deg,#3e84f2,#7aa8f9);color:#041935}
+            .toast .t-icon{font-size:18px;line-height:18px;margin-top:2px}
+            .toast .t-msg{flex:1;font-weight:600}
+            .toast .t-close{background:transparent;border:none;color:inherit;cursor:pointer;font-size:16px;opacity:.8}
+            @keyframes toast-in{to{opacity:1;transform:translateY(0)}}
+            @keyframes toast-out{to{opacity:0;transform:translateY(-6px)}}`;
+            document.head.appendChild(style);
+        }
+        if (!document.querySelector('.toast-container')){
+            const c = document.createElement('div');
+            c.className = 'toast-container';
+            document.body.appendChild(c);
+        }
+        if (!window.showToast){
+            window.showToast = function(type, message, opts={}){
+                const container = document.querySelector('.toast-container');
+                const t = document.createElement('div');
+                t.className = `toast ${type||'info'}`;
+                const icon = type==='success'?'✓':type==='error'?'✗':'ℹ';
+                t.innerHTML = `<span class="t-icon">${icon}</span><div class="t-msg">${message}</div><button class="t-close" aria-label="Fechar">×</button>`;
+                container.appendChild(t);
+                const ttl = Number(opts.duration||2500);
+                const close = ()=>{ t.style.animation = 'toast-out .18s ease forwards'; setTimeout(()=>t.remove(), 200); };
+                t.querySelector('.t-close').addEventListener('click', close);
+                setTimeout(close, ttl);
+                return t;
+            };
+        }
+    })();
     // Inicializar filtros de férias/ausências
     const filterBtns = document.querySelectorAll('.filter-btn');
     const pedidoCards = document.querySelectorAll('.pedido-card');
@@ -395,6 +434,72 @@ window.initializeDynamicContent = function() {
         });
     }
 
+    // Interceptar submissão do formulário de Férias/Ausências (quando carregado dinamicamente)
+    try {
+        // Captura global como rede de segurança
+        if (!window.__leavesSubmitCapture__) {
+            document.addEventListener('submit', function(ev){
+                const form = ev.target;
+                if (form && form.action && form.action.includes('/api/leaves/request.php')){
+                    ev.preventDefault();
+                    if (form.__leavesSubmitting) return;
+                    form.__leavesSubmitting = true;
+                    const fd = new FormData(form);
+                    // Normalizar datas caso venham como dd/mm/yyyy
+                    try {
+                        const diEl = form.querySelector('#data_inicio');
+                        const dfEl = form.querySelector('#data_fim');
+                        const norm = v => (/^\d{2}\/\d{2}\/\d{4}$/.test(v) ? `${v.slice(6,10)}-${v.slice(3,5)}-${v.slice(0,2)}` : v);
+                        if (diEl && diEl.value) fd.set('data_inicio', norm(diEl.value));
+                        if (dfEl && dfEl.value) fd.set('data_fim', norm(dfEl.value));
+                    } catch(_) {}
+                    const submitBtn = form.querySelector('button[type="submit"], .btn-submit');
+                    const originalText = submitBtn ? submitBtn.innerHTML : '';
+                    if (submitBtn){ submitBtn.disabled = true; submitBtn.innerText = 'A enviar...'; }
+                    fetch(form.action, { method:'POST', body: fd })
+                        .then(async resp => {
+                            const ct = resp.headers.get('content-type')||'';
+                            let data=null;
+                            if (ct.includes('application/json')) data = await resp.json();
+                            else { const txt = await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||'Erro ao processar resposta.'}; } }
+                            if (!resp.ok || !data || data.ok===false){
+                                const code = data && (data.code || data.error || data.message);
+                                const codeMap = {
+                                    MISSING_FIELDS: 'Preencha todos os campos obrigatórios.',
+                                    INVALID_DATE: 'Data inválida.',
+                                    RANGE_ERROR: 'Data de início deve ser anterior à data de fim.',
+                                    DOC_REQUIRED: 'Este tipo exige comprovativo (PDF/JPG/PNG).',
+                                    BAD_FILETYPE: 'Tipo de ficheiro inválido (PDF, JPG, PNG).',
+                                    FILE_TOO_LARGE: 'Ficheiro maior que 5MB.',
+                                    FILE_MOVE_ERROR: 'Erro ao guardar o ficheiro no servidor.',
+                                    UNAUTHENTICATED: 'Sessão expirada. Faça login novamente.',
+                                    FORBIDDEN_ROLE: 'Perfil sem permissão para criar pedidos.',
+                                    DB_ERROR: 'Erro interno ao gravar o pedido.'
+                                };
+                                const friendly = codeMap[code] || (code ? String(code) : `HTTP ${resp.status}`);
+                                showToast('error', `Falha ao submeter pedido: ${friendly}`);
+                            } else {
+                                showToast('success', 'Pedido submetido com sucesso.');
+                                window.fecharModalPedido && window.fecharModalPedido();
+                                setTimeout(()=>window.location.reload(), 1200);
+                            }
+                        })
+                        .catch(err => showToast('error', `Erro inesperado: ${err && err.message ? err.message : err}`))
+                        .finally(()=>{ if (submitBtn){ submitBtn.disabled=false; submitBtn.innerHTML = originalText || 'Submeter Pedido'; } form.__leavesSubmitting = false; });
+                }
+            }, true);
+            window.__leavesSubmitCapture__ = true;
+        }
+
+        // Listener específico do formulário do modal (quando presente)
+        const modal = document.getElementById('modalPedido');
+        const form = modal ? modal.querySelector('form.modal-form') : null;
+        if (form && !form.__wired__) {
+            form.__wired__ = true;
+            form.addEventListener('submit', function(e){ /* será tratado pelo capturador global */ }, true);
+        }
+    } catch (e) { /* noop */ }
+
     // Prevenir envio de form com Enter (exceto textarea)
     document.querySelectorAll('input, select').forEach(input => {
         input.addEventListener('keydown', function(e) {
@@ -425,8 +530,26 @@ window.initializeHorariosCalendar = function() {
     // Variáveis globais
     window.currentMonth = new Date().getMonth();
     window.currentYear = new Date().getFullYear();
-    window.marcacoes = JSON.parse(localStorage.getItem('marcacoes_horarios') || '{}');
+    window.marcacoes = {}; // mapa YYYY-MM-DD -> { horasTrabalhadas, horasExtra, horasPrevencao, kmViatura }
     window.ferias = {}; // Férias aprovadas carregadas da API
+    window.isMonthLocked = false; // bloqueio de edição (submitted/aprovado/locked)
+
+    // Helpers de conversão
+    const minToHHMM = (min) => {
+        const m = Math.max(0, parseInt(min || 0, 10));
+        const h = Math.floor(m / 60);
+        const r = m % 60;
+        return `${String(h).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+    };
+    const hhmmToMin = (hhmm) => {
+        if (!hhmm || typeof hhmm !== 'string') return 0;
+        const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return 0;
+        const h = parseInt(m[1], 10);
+        const mi = parseInt(m[2], 10);
+        if (Number.isNaN(h) || Number.isNaN(mi)) return 0;
+        return Math.max(0, h) * 60 + Math.max(0, mi);
+    };
 
     // Event listeners para seleção múltipla
     console.log('Configurando event listeners...');
@@ -451,26 +574,113 @@ window.initializeHorariosCalendar = function() {
         });
     }
 
-    // Carregar férias aprovadas
+    // Carregar férias aprovadas para o mês atual (nova API calendar/get_month)
     window.loadFerias = function() {
-        fetch('../../api/pedidos/listar_ferias_aprovadas.php')
-            .then(response => response.json())
+        const monthKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}`;
+        return fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials: 'same-origin' })
+            .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    window.ferias = data.ferias;
-                    console.log('Férias carregadas:', window.ferias);
-                    window.renderCalendar(); // Re-renderizar calendário com férias
-                } else {
-                    console.error('Erro ao carregar férias:', data.error);
+                if (!data || data.ok !== true || !Array.isArray(data.days)) {
+                    console.warn('Resposta inesperada de get_month.php', data);
+                    window.ferias = {};
+                    // não renderiza ainda; render será chamado por carregamento de dados
+                    return;
                 }
+                const feriasMap = {};
+                data.days.forEach(d => {
+                    // days[].leaves: férias/ausências que coincidem com o dia
+                    const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                    if (leaves.length > 0) {
+                        const lv = leaves[0] || {};
+                        feriasMap[d.date] = {
+                            tipo: lv.tipo || lv.type || 'ferias',
+                            label: lv.label || lv.titulo || lv.title || null
+                        };
+                    }
+                });
+                window.ferias = feriasMap;
+                console.log('Férias carregadas (calendar):', window.ferias);
+                // deixar render para quando dados de horários também estiverem prontos
             })
-            .catch(error => {
-                console.error('Erro na requisição de férias:', error);
+            .catch(err => {
+                console.error('Erro ao carregar calendário/leaves:', err);
+                window.ferias = {};
+                // render será disparado por loadMonthData
             });
     };
 
-    // Carregar férias na inicialização
+    // Carregar dados de horários (WORK/OT/ONCALL/KM) do mês atual
+    window.loadMonthData = function() {
+        const monthKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}`;
+        return fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(data => {
+                if (!data || data.ok !== true || !Array.isArray(data.days)) {
+                    console.warn('Resposta inesperada de get_month.php', data);
+                    window.marcacoes = {};
+                    return;
+                }
+                const map = {};
+                data.days.forEach(d => {
+                    const hasAny = (d.workMin||0) > 0 || (d.otMin||0) > 0 || (d.oncallMin||0) > 0 || (d.km||0) > 0;
+                    if (hasAny) {
+                        map[d.date] = {
+                            horasTrabalhadas: minToHHMM(d.workMin||0),
+                            horasExtra: minToHHMM(d.otMin||0),
+                            horasPrevencao: minToHHMM(d.oncallMin||0),
+                            kmViatura: (d.km||0)
+                        };
+                    }
+                });
+                window.marcacoes = map;
+            })
+            .catch(err => {
+                console.error('Erro ao carregar dados do mês:', err);
+                window.marcacoes = {};
+            })
+            .finally(() => {
+                // após ambos (ferias e dados) terem sido chamados, renderiza
+                try { window.renderCalendar(); } catch(e){}
+            });
+    };
+
+    // Estado do período (badge e bloqueio)
+    window.refreshMonthStatus = function(){
+        const monthKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}`;
+        return fetch(`../../api/calendar/month_status.php?month=${encodeURIComponent(monthKey)}`, { credentials:'same-origin' })
+            .then(r=>r.json())
+            .then(data=>{
+                if (!data || data.ok!==true) return;
+                const badge = document.getElementById('submission-status-badge');
+                const reasonEl = document.getElementById('submission-rejection-reason');
+                const estado = data.estado || 'open';
+                const isLocked = data.flags && data.flags.isLocked ? true : false;
+                window.isMonthLocked = !!isLocked;
+                if (badge){
+                    badge.classList.remove('badge-grey','badge-yellow','badge-green','badge-red');
+                    // map estados
+                    // open/rejected -> Por enviar (se sem draft) ou Por enviar (simplificado)
+                    // submitted -> Em aprovação, approved -> Aprovado
+                    if (estado === 'submitted') { badge.textContent = 'Em aprovação'; badge.classList.add('badge-yellow'); }
+                    else if (estado === 'approved' || estado === 'locked') { badge.textContent = 'Aprovado'; badge.classList.add('badge-green'); }
+                    else if (estado === 'rejected') { badge.textContent = 'Rejeitado'; badge.classList.add('badge-red'); }
+                    else { badge.textContent = 'Por enviar'; badge.classList.add('badge-grey'); }
+                }
+                if (reasonEl){
+                    if (estado === 'rejected' && data.period && data.period.comentario) {
+                        reasonEl.textContent = `Motivo: ${data.period.comentario}`;
+                        reasonEl.style.display = '';
+                    } else { reasonEl.textContent=''; reasonEl.style.display='none'; }
+                }
+            })
+            .catch(()=>{})
+            .finally(()=>{ try { window.renderCalendar(); } catch(e){} });
+    };
+
+    // Carregar na inicialização (depende do mês atual)
     window.loadFerias();
+    window.loadMonthData();
+    window.refreshMonthStatus();
 
     // Nomes dos meses
     window.monthNames = [
@@ -490,42 +700,9 @@ window.initializeHorariosCalendar = function() {
             return;
         }
         
-        // Atualizar cabeçalho do mês
+    // Atualizar cabeçalho do mês
         currentMonthEl.textContent = `${window.monthNames[window.currentMonth]} ${window.currentYear}`;
-        // Atualizar badge de estado de submissão para o mês atual
-        try {
-            const badge = document.getElementById('submission-status-badge');
-            const reasonEl = document.getElementById('submission-rejection-reason');
-            if (badge) {
-                const monthKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}`;
-                const userId = localStorage.getItem('current_user_id') || 'user_local';
-                const idKey = `${userId}-${monthKey}`;
-                const pending = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
-                const processed = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
-                const hasAnyMark = Object.keys(window.marcacoes).some(k => k.startsWith(monthKey));
-                let state = 'por_enviar';
-                if (!hasAnyMark) state = 'por_enviar';
-                if (pending.find(r => `${r.userId}-${r.month}` === idKey)) state = 'em_aprovacao';
-                const proc = processed.find(r => `${r.userId}-${r.month}` === idKey);
-                if (proc) state = proc.status === 'approved' ? 'aprovado' : 'rejeitado';
-                // Atualizar texto e classes
-                badge.classList.remove('badge-grey','badge-yellow','badge-green','badge-red');
-                if (state === 'por_enviar') { badge.textContent = 'Por enviar'; badge.classList.add('badge-grey'); }
-                if (state === 'em_aprovacao') { badge.textContent = 'Em aprovação'; badge.classList.add('badge-yellow'); }
-                if (state === 'aprovado') { badge.textContent = 'Aprovado'; badge.classList.add('badge-green'); }
-                if (state === 'rejeitado') { badge.textContent = 'Rejeitado'; badge.classList.add('badge-red'); }
-                // Motivo da rejeição (abaixo do badge, apenas quando rejeitado)
-                if (reasonEl) {
-                    if (state === 'rejeitado' && proc && proc.rejectionReason) {
-                        reasonEl.textContent = `Motivo: ${proc.rejectionReason}`;
-                        reasonEl.style.display = '';
-                    } else {
-                        reasonEl.textContent = '';
-                        reasonEl.style.display = 'none';
-                    }
-                }
-            }
-        } catch(e) { console.warn('Badge update failed', e); }
+    // Badge é atualizado via refreshMonthStatus
         
         const firstDay = new Date(window.currentYear, window.currentMonth, 1);
         const lastDay = new Date(window.currentYear, window.currentMonth + 1, 0);
@@ -691,7 +868,7 @@ window.initializeHorariosCalendar = function() {
             // Determinar se o dia pode ser clicado (não deve ser clicável se tem férias)
             
             let clickAction = '';
-            if (!hasFerias) {
+            if (!hasFerias && !window.isMonthLocked) {
                 // Modo normal, clique abre modal
                 clickAction = `onclick="window.openDayModal(${day})"`;
             }
@@ -721,7 +898,14 @@ window.initializeHorariosCalendar = function() {
             window.currentMonth = 11;
             window.currentYear--;
         }
-        window.renderCalendar();
+        // Recarregar dados e estado do novo mês, depois renderizar
+        Promise.all([
+            window.loadFerias(),
+            window.loadMonthData(),
+            window.refreshMonthStatus()
+        ]).then(() => {
+            try { window.renderCalendar(); } catch(e){}
+        });
     };
 
     // Função para abrir modal do dia - GLOBAL
@@ -732,6 +916,10 @@ window.initializeHorariosCalendar = function() {
         // Verificar se o dia tem férias aprovadas
         if (window.ferias && window.ferias[dateKey]) {
             alert('Não é possível marcar horários em dias com férias/ausências aprovadas.');
+            return;
+        }
+        if (window.isMonthLocked) {
+            alert('Este mês está bloqueado. Não é possível editar.');
             return;
         }
         
@@ -792,24 +980,44 @@ window.initializeHorariosCalendar = function() {
         console.log('Guardando dados para dia:', day);
         const dateKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
         
-        const data = {
-            horasTrabalhadas: document.getElementById('horas-trabalhadas').value,
-            horasExtra: document.getElementById('horas-extra').value,
-            horasPrevencao: document.getElementById('horas-prevencao').value,
-            kmViatura: document.getElementById('km-viatura').value,
-            dataModificacao: new Date().toISOString()
+        const horasTrabalhadas = document.getElementById('horas-trabalhadas').value.trim();
+        const horasExtra = document.getElementById('horas-extra').value.trim();
+        const horasPrevencao = document.getElementById('horas-prevencao').value.trim();
+        const kmStr = document.getElementById('km-viatura').value.trim();
+
+        const payload = {
+            date: dateKey,
+            workMin: horasTrabalhadas ? hhmmToMin(horasTrabalhadas) : null,
+            otMin: horasExtra ? hhmmToMin(horasExtra) : null,
+            oncallMin: horasPrevencao ? hhmmToMin(horasPrevencao) : null,
+            km: kmStr ? Number(kmStr) : null,
+            clear: true // limpa tipos não enviados
         };
-        
-        // Guardar no localStorage
-        window.marcacoes[dateKey] = data;
-        localStorage.setItem('marcacoes_horarios', JSON.stringify(window.marcacoes));
-        
-        // Fechar modal e atualizar calendário
-        window.closeDayModal();
-        window.renderCalendar();
-        
-        // Mostrar confirmação
-        alert(`Marcação guardada para o dia ${day}!\n\nResumo:\n• Horas trabalhadas: ${data.horasTrabalhadas || 'Não definido'}\n• Horas extra: ${data.horasExtra || 'Não definido'}\n• Horas prevenção: ${data.horasPrevencao || 'Não definido'}\n• KM viatura: ${data.kmViatura || '0'} km`);
+
+        fetch('../../api/calendar/day_put.php', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+        .then(({httpOk, data}) => {
+            if (!httpOk || !data || data.ok!==true) {
+                const code = data && (data.code || data.msg || data.error);
+                window.showNotification(`Falha ao guardar: ${code||'Erro'}`, 'error');
+                return;
+            }
+            window.showNotification('Dia guardado com sucesso.', 'success');
+            window.closeDayModal();
+            // Recarregar dados do mês
+            Promise.all([window.loadMonthData(), window.refreshMonthStatus()]).then(()=>{
+                try { window.renderCalendar(); } catch(e){}
+            });
+        })
+        .catch(err => {
+            console.error('Erro ao guardar dia:', err);
+            window.showNotification('Erro de rede ao guardar dia.', 'error');
+        });
     };
 
     // Função para limpar dados do dia - GLOBAL
@@ -822,119 +1030,59 @@ window.initializeHorariosCalendar = function() {
         }
 
         const dateKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        
-        // Remover dados do localStorage
-        delete window.marcacoes[dateKey];
-        localStorage.setItem('marcacoes_horarios', JSON.stringify(window.marcacoes));
-        
-        // Fechar modal e atualizar calendário
-        window.closeDayModal();
-        window.renderCalendar();
-        
-        // Mostrar confirmação
-        alert(`Dados do dia ${day} removidos com sucesso!`);
+
+        fetch('../../api/calendar/day_delete.php', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ date: dateKey })
+        })
+        .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+        .then(({httpOk, data})=>{
+            if (!httpOk || !data || data.ok!==true) {
+                const code = data && (data.code || data.msg || data.error);
+                window.showNotification(`Falha ao limpar: ${code||'Erro'}`, 'error');
+                return;
+            }
+            window.showNotification(`Dados do dia ${day} removidos.`, 'success');
+            window.closeDayModal();
+            Promise.all([window.loadMonthData(), window.refreshMonthStatus()]).then(()=>{
+                try { window.renderCalendar(); } catch(e){}
+            });
+        })
+        .catch(err=>{
+            console.error('Erro ao limpar dia:', err);
+            window.showNotification('Erro de rede ao limpar dia.', 'error');
+        });
     };
 
     // Função para submeter mês - GLOBAL
     window.submitMonth = function() {
         console.log('Submetendo mês...');
         const monthKey = `${window.currentYear}-${(window.currentMonth + 1).toString().padStart(2, '0')}`;
-        const monthMarcacoes = {};
-        
-        // Filtrar marcações do mês atual
-        Object.keys(window.marcacoes).forEach(dateKey => {
-            if (dateKey.startsWith(monthKey)) {
-                monthMarcacoes[dateKey] = window.marcacoes[dateKey];
+        // Confirmação simples
+        if (!confirm(`Deseja submeter as marcações de ${window.monthNames[window.currentMonth]} ${window.currentYear}?\n\nApós a submissão, as marcações não poderão ser alteradas.`)) return;
+
+        fetch('../../api/calendar/submit_month.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ month: monthKey })
+        })
+        .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+        .then(({httpOk, data})=>{
+            if (!httpOk || !data || data.ok!==true) {
+                const code = data && (data.code || data.msg || data.error);
+                window.showNotification(`Falha ao submeter mês: ${code||'Erro'}`, 'error');
+                return;
             }
+            window.showNotification('Mês submetido com sucesso.', 'success');
+            window.refreshMonthStatus();
+        })
+        .catch(err=>{
+            console.error('Erro ao submeter mês:', err);
+            window.showNotification('Erro de rede ao submeter mês.', 'error');
         });
-        
-        if (Object.keys(monthMarcacoes).length === 0) {
-            alert('Não há marcações para submeter neste mês.');
-            return;
-        }
-        
-        // Calcular resumo
-        let diasTrabalhados = 0;
-        let horasTotais = 0;
-        let horasExtra = 0;
-        let horasPrevencao = 0;
-        let kmTotal = 0;
-        
-        Object.values(monthMarcacoes).forEach(marcacao => {
-            if (marcacao.horasTrabalhadas) {
-                diasTrabalhados++;
-                const [h, m] = marcacao.horasTrabalhadas.split(':');
-                horasTotais += parseInt(h) + parseInt(m || 0) / 60;
-            }
-            if (marcacao.horasExtra) {
-                const [h, m] = marcacao.horasExtra.split(':');
-                horasExtra += parseInt(h) + parseInt(m || 0) / 60;
-            }
-            if (marcacao.horasPrevencao) {
-                const [h, m] = marcacao.horasPrevencao.split(':');
-                horasPrevencao += parseInt(h) + parseInt(m || 0) / 60;
-            }
-            if (marcacao.kmViatura) {
-                kmTotal += parseInt(marcacao.kmViatura);
-            }
-        });
-        
-        const confirmMsg = `Deseja submeter as marcações de ${window.monthNames[window.currentMonth]} ${window.currentYear}?\n\nResumo:\n• Dias trabalhados: ${diasTrabalhados}\n• Horas totais: ${horasTotais.toFixed(1)}h\n• Horas extra: ${horasExtra.toFixed(1)}h\n• Horas prevenção: ${horasPrevencao.toFixed(1)}h\n• KM total: ${kmTotal} km\n\nApós a submissão, as marcações não poderão ser alteradas.`;
-        
-        if (!confirm(confirmMsg)) return;
-
-        // Construir registo para aprovação local (Inter2)
-        const toMinutes = (hhmm) => {
-            if (!hhmm || typeof hhmm !== 'string') return 0;
-            const [h, m] = hhmm.split(':');
-            return (parseInt(h || '0', 10) * 60) + (parseInt(m || '0', 10));
-        };
-
-        const userId = localStorage.getItem('current_user_id') || 'user_local';
-        const userName = localStorage.getItem('current_user_name') || 'Operador';
-
-        // Calcular minutos de horas extra (para Inter2 formatar com formatMinutes)
-        let horasExtraMin = 0;
-        Object.values(monthMarcacoes).forEach(m => { horasExtraMin += toMinutes(m.horasExtra || '00:00'); });
-
-        const approvalRecord = {
-            userId,
-            userName,
-            month: monthKey,
-            status: 'pending',
-            summary: {
-                diasTrabalhados,
-                horasTotais: Number(horasTotais.toFixed(1)),
-                horasExtra: horasExtraMin, // minutos totais
-                kmTotal: kmTotal
-            },
-            dataExportacao: new Date().toISOString(),
-            marcacoes: monthMarcacoes
-        };
-
-        // Guardar no localStorage em marcacoes_pending_approval
-        const keyPending = 'marcacoes_pending_approval';
-        const keyProcessed = 'marcacoes_processed';
-        let pendingList = [];
-        let processedList = [];
-        try { pendingList = JSON.parse(localStorage.getItem(keyPending) || '[]'); } catch { pendingList = []; }
-        try { processedList = JSON.parse(localStorage.getItem(keyProcessed) || '[]'); } catch { processedList = []; }
-
-        // Remover duplicados do mesmo user/mês em pendentes e processados
-        const idKey = (rec) => `${rec.userId}-${rec.month}`;
-        pendingList = pendingList.filter(rec => idKey(rec) !== idKey(approvalRecord));
-        processedList = processedList.filter(rec => idKey(rec) !== idKey(approvalRecord));
-
-        pendingList.push(approvalRecord);
-        localStorage.setItem(keyPending, JSON.stringify(pendingList));
-        localStorage.setItem(keyProcessed, JSON.stringify(processedList));
-
-        // Feedback ao utilizador
-        window.showNotification('Marcações submetidas para aprovação do supervisor.', 'success');
-        alert('Marcações submetidas com sucesso!\n\nStatus: Aguardando aprovação do supervisor');
-
-    // Atualizar badge de estado
-    try { if (typeof window.renderCalendar === 'function') window.renderCalendar(); } catch(e){}
     };
     
     // Funções para seleção múltipla
@@ -1003,40 +1151,44 @@ window.initializeHorariosCalendar = function() {
             alert('Por favor, preencha pelo menos um campo.');
             return;
         }
-        
-        // Aplicar aos dias do período
-        const current = new Date(start);
-        let diasAplicados = 0;
-        
-        while (current <= end) {
-            const dateKey = `${current.getFullYear()}-${(current.getMonth() + 1).toString().padStart(2, '0')}-${current.getDate().toString().padStart(2, '0')}`;
-            
-            // Verificar se o dia tem férias
-            if (!window.ferias || !window.ferias[dateKey]) {
-                // Criar/atualizar dados do dia
-                if (!window.marcacoes[dateKey]) {
-                    window.marcacoes[dateKey] = {};
-                }
-                
-                if (horasTrabalhadas) window.marcacoes[dateKey].horasTrabalhadas = horasTrabalhadas;
-                if (horasExtra) window.marcacoes[dateKey].horasExtra = horasExtra;
-                if (horasPrevencao) window.marcacoes[dateKey].horasPrevencao = horasPrevencao;
-                if (kmViatura) window.marcacoes[dateKey].kmViatura = kmViatura;
-                
-                diasAplicados++;
+
+        // Chamar API batch_apply
+        const payload = {
+            start: startDate,
+            end: endDate,
+            workMin: horasTrabalhadas ? hhmmToMin(horasTrabalhadas) : undefined,
+            otMin: horasExtra ? hhmmToMin(horasExtra) : undefined,
+            oncallMin: horasPrevencao ? hhmmToMin(horasPrevencao) : undefined,
+            km: kmViatura ? Number(kmViatura) : undefined,
+            applyWeekend: true,
+            overwrite: true
+        };
+
+        fetch('../../api/calendar/batch_apply.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        })
+        .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+        .then(({httpOk, data})=>{
+            if (!httpOk || !data || data.ok!==true) {
+                const code = data && (data.code || data.msg || data.error);
+                window.showNotification(`Falha ao aplicar período: ${code||'Erro'}`, 'error');
+                return;
             }
-            
-            current.setDate(current.getDate() + 1);
-        }
-        
-        // Salvar no localStorage
-        localStorage.setItem('marcacoes_horarios', JSON.stringify(window.marcacoes));
-        
-        alert(`Marcação aplicada a ${diasAplicados} dias com sucesso!`);
-        
-        // Fechar modal e re-renderizar calendário
-        window.closeBulkModal();
-        window.renderCalendar();
+            const daysApplied = (data.summary && data.summary.daysApplied) || 0;
+            const skipped = Array.isArray(data.skippedLocked) ? data.skippedLocked.length : 0;
+            window.showNotification(`Aplicado em ${daysApplied} dia(s). Ignorados (bloqueado): ${skipped}.`, 'success');
+            window.closeBulkModal();
+            Promise.all([window.loadMonthData(), window.refreshMonthStatus()]).then(()=>{
+                try { window.renderCalendar(); } catch(e){}
+            });
+        })
+        .catch(err=>{
+            console.error('Erro no batch_apply:', err);
+            window.showNotification('Erro de rede ao aplicar período.', 'error');
+        });
     };
 
     window.showNotification = function(message, type = 'info') {
@@ -1070,9 +1222,8 @@ window.initializeHorariosCalendar = function() {
         }, 4000);
     };
     
-    // Renderizar calendário inicial
-    console.log('Renderizando calendário inicial...');
-    window.renderCalendar();
+    // O primeiro render será chamado após carregar dados do mês
+    console.log('A carregar dados do mês para render inicial...');
 };
 
 // Configurar event listeners para date range

@@ -6,6 +6,112 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "inter2") {
     echo "<p>Acesso negado.</p>";
     exit;
 }
+
+// AJAX handlers (no new API files): list submitted periods and decide approve/reject
+if (isset($_GET['ajax'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $role = $_SESSION['user']['role'] ?? '';
+    $selfId = (int)($_SESSION['user']['id'] ?? 0);
+    $allowed = ['inter2','inter','admin','adminrh'];
+    if (!in_array($role, $allowed, true)) { http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit; }
+    $pdo = db_connect();
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    $subRoles = [];
+    switch ($role) {
+        case 'inter2': $subRoles = ['opera']; break;
+        case 'inter':  $subRoles = ['inter2']; break;
+        case 'admin':
+        case 'adminrh': $subRoles = ['inter','inter2','opera']; break;
+    }
+    if (empty($subRoles)) { echo json_encode(["ok"=>true, "items"=>[]]); exit; }
+
+    $ajax = $_GET['ajax'];
+    if ($ajax === 'list') {
+        $month = isset($_GET['month']) ? $_GET['month'] : null; // YYYY-MM
+        $where = [];
+        $params = [];
+        $phSub = implode(',', array_fill(0, count($subRoles), '?'));
+        $where[] = "u.role IN ($phSub)"; $params = array_merge($params, $subRoles);
+        if ($month && preg_match('/^\d{4}-\d{2}$/', $month)) { $where[] = 'DATE_FORMAT(p.period_start, "%Y-%m") = ?'; $params[] = $month; }
+        $whereSql = $where ? ('WHERE '.implode(' AND ', $where)) : '';
+        $sql = "
+            SELECT p.id AS period_id, p.user_id, u.name AS user_name, u.id AS uid,
+                   p.period_start AS start, p.period_end AS end, p.estado,
+                   p.created_at, p.updated_at, p.decidido_por, p.decidido_em, p.comentario,
+                   SUM(CASE WHEN e.tipo='WORK'     THEN e.minutos ELSE 0 END) AS workMin,
+                   SUM(CASE WHEN e.tipo='OVERTIME' THEN e.minutos ELSE 0 END) AS otMin,
+                   SUM(CASE WHEN e.tipo='ONCALL'   THEN e.minutos ELSE 0 END) AS oncallMin,
+                   SUM(CASE WHEN e.tipo='KM'       THEN e.km      ELSE 0 END) AS km,
+                   COUNT(DISTINCT CASE WHEN e.tipo='WORK' AND e.minutos>0 THEN DATE(e.inicio) END) AS workedDays
+              FROM timesheet_periods p
+              JOIN user u ON u.id = p.user_id
+         LEFT JOIN eventos e
+                ON e.user_id = p.user_id
+               AND DATE(e.inicio) BETWEEN p.period_start AND p.period_end
+               AND e.tipo IN ('WORK','OVERTIME','ONCALL','KM')
+              $whereSql
+          GROUP BY p.id
+          ORDER BY p.updated_at DESC, p.id DESC
+        ";
+        try {
+            $st = $pdo->prepare($sql);
+            $st->execute($params);
+            $items = [];
+            while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+                $monthKey = substr($r['start'],0,7);
+                $items[] = [
+                    'periodId'       => (int)$r['period_id'],
+                    'userId'         => (int)$r['user_id'],
+                    'userName'       => $r['user_name'] ?? null,
+                    'month'          => $monthKey,
+                    'estado'         => $r['estado'],
+                    'dataExportacao' => $r['updated_at'] ?: $r['created_at'],
+                    'decididoEm'     => $r['decidido_em'] ?? null,
+                    'comentario'     => $r['comentario'] ?? null,
+                    'updatedAt'      => $r['updated_at'] ?? null,
+                    'summary' => [
+                        'diasTrabalhados' => (int)$r['workedDays'],
+                        'horasTotais'     => round(((int)$r['workMin']) / 60),
+                        'horasExtra'      => (int)$r['otMin'],
+                        'kmTotal'         => (float)$r['km']
+                    ]
+                ];
+            }
+            echo json_encode(["ok"=>true, "items"=>$items]);
+        } catch (Throwable $e) {
+            http_response_code(500); echo json_encode(["ok"=>false, "code"=>"DB_ERROR", "msg"=>$e->getMessage()]);
+        }
+        exit;
+    }
+    if ($ajax === 'decide') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); echo json_encode(["ok"=>false]); exit; }
+        $raw = file_get_contents('php://input'); $in = json_decode($raw,true) ?: [];
+        $periodId = isset($in['period_id']) ? (int)$in['period_id'] : 0;
+        $acao = $in['acao'] ?? $in['action'] ?? '';
+        $coment = $in['comentario'] ?? $in['reason'] ?? null;
+        if (!$periodId || !in_array($acao, ['aprovar','rejeitar','approve','reject'], true)) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_PARAMS"]); exit; }
+        $acao = ($acao==='approve'||$acao==='aprovar') ? 'approve' : 'reject';
+        try {
+            $phSub = implode(',', array_fill(0, count($subRoles), '?'));
+            $check = $pdo->prepare("SELECT p.id, p.user_id, u.role, p.estado FROM timesheet_periods p JOIN user u ON u.id=p.user_id WHERE p.id=? AND u.role IN ($phSub) LIMIT 1");
+            $params = array_merge([$periodId], $subRoles);
+            $check->execute($params);
+            $row = $check->fetch(PDO::FETCH_ASSOC);
+            if (!$row) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"NOT_FOUND"]); exit; }
+            if ($row['estado'] !== 'submitted') { http_response_code(409); echo json_encode(["ok"=>false,"code"=>"BAD_STATE","estado"=>$row['estado']]); exit; }
+            $newEstado = ($acao==='approve') ? 'approved' : 'rejected';
+            $upd = $pdo->prepare("UPDATE timesheet_periods SET estado=:e, decidido_por=:uid, decidido_em=CURRENT_TIMESTAMP, comentario=:c WHERE id=:id");
+            $upd->execute([':e'=>$newEstado, ':uid'=>$selfId, ':c'=>$coment, ':id'=>$periodId]);
+            echo json_encode(["ok"=>true, "period"=>["id"=>$periodId, "estado"=>$newEstado]]);
+        } catch (Throwable $e) {
+            http_response_code(500); echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+        }
+        exit;
+    }
+    echo json_encode(["ok"=>false]);
+    exit;
+}
 ?>
 
 <link rel="stylesheet" href="../../css/horarios_common.css">
@@ -111,6 +217,13 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "inter2") {
 </div>
 
 <script>
+// Timesheets APIs
+const LIST_ENDPOINT = "/api/timesheets/aval_periods.php";      // GET: state=submitted|approved|rejected|all, month=YYYY-MM
+const DETAILS_ENDPOINT = "/api/timesheets/aval_month.php";      // GET: user_id, month=YYYY-MM
+const DECIDE_ENDPOINT = "/api/timesheets/aval_decide.php";      // POST: { period_id, action: 'approve'|'reject', comment? }
+// Keep for compatibility if needed elsewhere
+const APPROVALS_ENDPOINT = "<?php echo htmlspecialchars($_SERVER['PHP_SELF'], ENT_QUOTES, 'UTF-8'); ?>";
+
 class AprovacaoHorarios {
     constructor() {
         this.currentFilter = 'pending';
@@ -129,16 +242,49 @@ class AprovacaoHorarios {
     }
 
     async loadApprovals() {
-        const pendingApprovals = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
-        const processedApprovals = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
-        return [
-            ...pendingApprovals.map(a => ({...a, status: 'pending'})),
-            ...processedApprovals
-        ];
+        try {
+            const monthSelEl = document.getElementById('month-filter');
+            const monthSel = monthSelEl ? monthSelEl.value : '';
+            // Fetch all states and filter client-side to keep tab counters accurate
+            const params = new URLSearchParams();
+            params.set('state', 'all');
+            if (monthSel) params.set('month', monthSel);
+            const url = `${LIST_ENDPOINT}?${params.toString()}`;
+            const resp = await fetch(url, { credentials:'same-origin' });
+            if (!resp.ok) return [];
+            const data = await resp.json();
+            if (!data || data.ok!==true || !Array.isArray(data.items)) return [];
+            return data.items.map(it => {
+                // aval_periods item shape
+                const periodId = it.period_id ?? it.periodId ?? null;
+                const userId = it.colaborador?.id ?? it.userId ?? null;
+                const userName = it.colaborador?.nome ?? it.userName ?? null;
+                const monthFromStart = (it.mes?.start || '').slice(0,7);
+                const estado = it.estado || 'submitted';
+                const resumo = it.resumo || {};
+                return {
+                    periodId,
+                    userId,
+                    userName,
+                    month: monthFromStart,
+                    status: estado === 'submitted' ? 'pending' : estado,
+                    dataExportacao: it.submetido_em || it.dataExportacao || new Date().toISOString(),
+                    processedDate: null, // not available in list response
+                    rejectionReason: null,
+                    summary: {
+                        diasTrabalhados: Number(resumo.workedDays || 0),
+                        horasTotais: Math.round(Number(resumo.workMin || 0) / 60),
+                        horasExtra: Number(resumo.otMin || 0),
+                        kmTotal: Number(resumo.km || 0)
+                    }
+                };
+            });
+        } catch (e) { console.error('Erro a carregar aprovações:', e); return []; }
     }
 
     populateMonthFilter() {
-        const monthFilter = document.getElementById('month-filter');
+    const monthFilter = document.getElementById('month-filter');
+    if (!monthFilter) return; // guard if container not present
     // Clear all options except the first ("Todos os meses")
     while (monthFilter.options.length > 1) monthFilter.remove(1);
         const months = new Set();
@@ -324,73 +470,50 @@ class AprovacaoHorarios {
     // Buscar detalhes do mês e férias/ausências do operador em paralelo
         try {
             const params = new URLSearchParams({ month: approval.month, user_id: String(approval.userId) });
-            const [resMonth, resFer] = await Promise.all([
-                fetch(`../../api/calendar/get_month.php?${params.toString()}`, { credentials: 'same-origin' }),
-                fetch(`../../api/pedidos/listar_ferias_aprovadas_inter2.php?user_id=${encodeURIComponent(String(approval.userId))}`, { credentials: 'same-origin' })
-            ]);
-
+            const resMonth = await fetch(`${DETAILS_ENDPOINT}?${params.toString()}`, { credentials: 'same-origin' });
             const data = await resMonth.json();
-            let feriasOverride = null;
+            // Construir feriasOverride a partir do próprio get_month() para o utilizador alvo
+            let feriasOverride = {};
             try {
-                const ferJson = await resFer.json();
-                if (ferJson && (ferJson.success || ferJson.ok) && ferJson.ferias && typeof ferJson.ferias === 'object') {
-                    const labelMap = {
-                        licenca_paternidade: 'Lic. Paternidade',
-                        licenca_maternidade: 'Lic. Maternidade',
-                        baixa_medica: 'Baixa Médica',
-                        baixa_seguro: 'Baixa Seguro',
-                        casamento: 'Casamento',
-                        consulta_medica: 'Consulta Médica',
-                        luto: 'Luto',
-                        falta_justificada: 'Falta Justificada',
-                        ferias: 'Férias'
-                    };
-                    feriasOverride = {};
-                    Object.entries(ferJson.ferias).forEach(([date, v]) => {
-                        const tipoRaw = (v && v.tipo) ? String(v.tipo) : '';
-                        const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation';
-                        feriasOverride[date] = {
-                            tipo: isFerias ? 'vacation' : 'absence',
-                            label: isFerias ? 'Férias' : (labelMap[tipoRaw] || 'Ausência')
-                        };
+                if (data && data.ok && Array.isArray(data.days)) {
+                    data.days.forEach(d => {
+                        const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                        if (leaves.length > 0) {
+                            const lv = leaves[0] || {};
+                            const tipoRaw = (lv && (lv.tipo || lv.type)) ? String(lv.tipo || lv.type) : '';
+                            const labelMap = {
+                                licenca_paternidade: 'Lic. Paternidade',
+                                licenca_maternidade: 'Lic. Maternidade',
+                                baixa_medica: 'Baixa Médica',
+                                baixa_seguro: 'Baixa Seguro',
+                                casamento: 'Casamento',
+                                consulta_medica: 'Consulta Médica',
+                                luto: 'Luto',
+                                falta_justificada: 'Falta Justificada',
+                                ferias: 'Férias'
+                            };
+                            const titleTxt = (lv.title || lv.titulo || '').toString();
+                            const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation' || /\b(f[eé]rias|vacation)\b/i.test(titleTxt);
+                            feriasOverride[d.date] = {
+                                tipo: isFerias ? 'vacation' : 'absence',
+                                label: isFerias ? 'Férias' : (labelMap[tipoRaw] || (lv.label || lv.title || 'Ausência'))
+                            };
+                        }
                     });
                 }
             } catch (_) { /* ignore */ }
+            // Se não houver overrides, usar null para manter comportamento anterior
+            if (!feriasOverride || Object.keys(feriasOverride).length === 0) {
+                feriasOverride = null;
+            }
 
             if (!data.ok) throw new Error(data.code || 'API_ERROR');
             body.innerHTML = this.createDetailedCalendarFromApi(approval, data, feriasOverride);
         } catch (e) {
             console.error('Erro ao carregar detalhes do mês:', e);
             if (approval.marcacoes) {
-                // Tentar ainda obter férias/ausências via API para o fallback local
-                let feriasOverride = null;
-                try {
-                    const resFer = await fetch(`../../api/pedidos/listar_ferias_aprovadas_inter2.php?user_id=${encodeURIComponent(String(approval.userId))}`, { credentials: 'same-origin' });
-                    const ferJson = await resFer.json();
-                    if (ferJson && (ferJson.success || ferJson.ok) && ferJson.ferias) {
-                        const labelMap = {
-                            licenca_paternidade: 'Lic. Paternidade',
-                            licenca_maternidade: 'Lic. Maternidade',
-                            baixa_medica: 'Baixa Médica',
-                            baixa_seguro: 'Baixa Seguro',
-                            casamento: 'Casamento',
-                            consulta_medica: 'Consulta Médica',
-                            luto: 'Luto',
-                            falta_justificada: 'Falta Justificada',
-                            ferias: 'Férias'
-                        };
-                        feriasOverride = {};
-                        Object.entries(ferJson.ferias).forEach(([date, v]) => {
-                            const tipoRaw = (v && v.tipo) ? String(v.tipo) : '';
-                            const isFerias = tipoRaw === 'ferias' || tipoRaw === 'vacation';
-                            feriasOverride[date] = {
-                                tipo: isFerias ? 'vacation' : 'absence',
-                                label: isFerias ? 'Férias' : (labelMap[tipoRaw] || 'Ausência')
-                            };
-                        });
-                    }
-                } catch (_) {}
-                body.innerHTML = this.createDetailedCalendarLocal(approval, feriasOverride);
+                // Fallback local sem override remoto
+                body.innerHTML = this.createDetailedCalendarLocal(approval, null);
             } else {
                 body.innerHTML = '<div style="padding:1rem;color:#b91c1c;">Erro ao carregar detalhes.</div>';
             }
@@ -416,9 +539,28 @@ class AprovacaoHorarios {
     // removed old createDetailedCalendar (replaced by API-driven version)
 
     async approveMarking(approvalId) {
-    if (!confirm('Deseja aprovar estas marcações de horários?')) return;
-    this.processApprovalLocal(approvalId, 'approved');
-    await this.refresh();
+        if (!confirm('Deseja aprovar estas marcações de horários?')) return;
+        const a = this.findApproval(approvalId);
+        if (!a) return;
+        try {
+            const periodId = a.periodId;
+            if (!periodId) {
+                this.showToast('Período inválido.', 'error');
+                return;
+            }
+            const r2 = await fetch(DECIDE_ENDPOINT, {
+                method: 'POST', headers: { 'Content-Type':'application/json' }, credentials:'same-origin',
+                body: JSON.stringify({ period_id: periodId, action: 'approve' })
+            });
+            const d2 = await r2.json();
+            if (!r2.ok || !d2 || d2.ok!==true){
+                const code = d2 && (d2.code || d2.msg || d2.error);
+                this.showToast(`Falha ao aprovar: ${code||'Erro'}`, 'error');
+                return;
+            }
+            this.showToast('Marcações aprovadas.', 'success');
+            await this.refresh();
+        } catch(e){ console.error(e); this.showToast('Erro ao aprovar.', 'error'); }
     }
 
     rejectMarking(approvalId) {
@@ -428,16 +570,30 @@ class AprovacaoHorarios {
     }
 
     async confirmRejection() {
-    const reason = document.getElementById('rejection-reason').value.trim();
-    if (!reason) { alert('Por favor, indique o motivo da rejeição.'); return; }
-    // Remover imediatamente da lista visual (UX imediato)
-    try {
-        const card = document.querySelector(`[data-approval-id="${this.currentApprovalId}"]`);
-        if (card && card.parentNode) card.parentNode.removeChild(card);
-    } catch (e) {}
-        this.processApprovalLocal(this.currentApprovalId, 'rejected', reason);
-    closeRejectionModal();
-    await this.refresh();
+        const reason = document.getElementById('rejection-reason').value.trim();
+        if (!reason) { alert('Por favor, indique o motivo da rejeição.'); return; }
+        const a = this.findApproval(this.currentApprovalId);
+        if (!a) { closeRejectionModal(); return; }
+        try {
+            const periodId = a.periodId;
+            if (!periodId) {
+                this.showToast('Período inválido.', 'error');
+                return;
+            }
+            const r2 = await fetch(DECIDE_ENDPOINT, {
+                method: 'POST', headers: { 'Content-Type':'application/json' }, credentials:'same-origin',
+                body: JSON.stringify({ period_id: periodId, action: 'reject', comment: reason })
+            });
+            const d2 = await r2.json();
+            if (!r2.ok || !d2 || d2.ok!==true){
+                const code = d2 && (d2.code || d2.msg || d2.error);
+                this.showToast(`Falha ao rejeitar: ${code||'Erro'}`, 'error');
+                return;
+            }
+            closeRejectionModal();
+            this.showToast('Marcações rejeitadas.', 'info');
+            await this.refresh();
+        } catch(e){ console.error(e); this.showToast('Erro ao rejeitar.', 'error'); }
     }
 
     async refresh() {
@@ -544,31 +700,7 @@ class AprovacaoHorarios {
         return this.approvals.find(a => `${a.userId}-${a.month}` === approvalId);
     }
 
-    processApprovalLocal(approvalId, status, reason = null) {
-        let pending = JSON.parse(localStorage.getItem('marcacoes_pending_approval') || '[]');
-        let processed = JSON.parse(localStorage.getItem('marcacoes_processed') || '[]');
-
-        const idx = pending.findIndex(a => `${a.userId}-${a.month}` === approvalId);
-        let item;
-        if (idx !== -1) {
-            item = pending.splice(idx, 1)[0];
-        } else {
-            const j = processed.findIndex(a => `${a.userId}-${a.month}` === approvalId);
-            item = j !== -1 ? processed.splice(j, 1)[0] : null;
-        }
-        if (!item) return;
-
-        item.status = status;
-        item.processedDate = new Date().toISOString();
-        if (reason) item.rejectionReason = reason;
-        processed.push(item);
-
-        localStorage.setItem('marcacoes_pending_approval', JSON.stringify(pending));
-        localStorage.setItem('marcacoes_processed', JSON.stringify(processed));
-
-        const label = status === 'approved' ? 'aprovadas' : 'rejeitadas';
-        this.showToast(`Marcações ${label} (local)`, status === 'approved' ? 'success' : 'info');
-    }
+    processApprovalLocal(approvalId, status, reason = null) { /* deprecated with backend; kept as no-op */ }
 
     createDetailedCalendarLocal(approval, feriasOverride = null) {
         const userName = approval.userName || approval.submittedBy || this.getUserName(approval.userId);
@@ -674,7 +806,8 @@ class AprovacaoHorarios {
             'user_2': 'Maria Santos',
             'user_3': 'Carlos Oliveira'
         };
-        return users[userId] || `Operador ${userId.slice(-3)}`;
+    const key = String(userId);
+    return users[key] || `Operador ${key.slice(-3)}`;
     }
 
     // ========= Name resolution & caching =========
@@ -885,7 +1018,7 @@ function filterApprovals(filter) {
 }
 
 function filterByMonth() {
-    aprovacaoHorarios.renderApprovals();
+    aprovacaoHorarios.refresh();
 }
 
 function showApprovalDetails(approvalId) {

@@ -11,6 +11,27 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
     }
 
+    // Badge de pendentes (avaliador)
+    async function updatePendingBadge(){
+        try{
+            const link = document.querySelector('.sidebar-menu a[data-content="aprovacao_ferias_ausencias"]');
+            if(!link) return;
+            const resp = await fetch('../../api/leaves/aval_summary.php', { credentials: 'include' });
+            if(!resp.ok) return;
+            const data = await resp.json();
+            if(!data || data.ok!==true || typeof data.pending !== 'number') return;
+            let badge = link.querySelector('.pending-badge');
+            if(!badge){
+                badge = document.createElement('span');
+                badge.className = 'pending-badge';
+                badge.style.cssText = 'margin-left:8px;display:inline-flex;min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:12px;line-height:18px;align-items:center;justify-content:center;font-weight:700;';
+                link.appendChild(badge);
+            }
+            badge.textContent = String(data.pending);
+            badge.style.display = data.pending>0 ? 'inline-flex' : 'none';
+        }catch(_){/* ignore */}
+    }
+
     // Função para resetar à página inicial
     function showWelcome() {
         mainContent.innerHTML = `
@@ -147,7 +168,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
         // Reaplicar event listeners aos novos card-links
-        attachCardLinkListeners();
+    attachCardLinkListeners();
+    updatePendingBadge();
     }
 
     // Função para anexar listeners aos card-links
@@ -156,6 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
         cardLinks.forEach(link => {
             link.addEventListener("click", handleNavigation);
         });
+    updatePendingBadge();
     }
 
     // Função principal de navegação
@@ -214,6 +237,135 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 // Inicializar funcionalidades dinâmicas após carregar conteúdo
                 window.initializeDynamicContent();
+
+                // Garantir que o script de aprovação de férias/ausências está carregado quando este módulo é aberto
+                if (content === 'aprovacao_ferias_ausencias') {
+                    (function ensureLeavesApproval(){
+                        try { console.debug('inter2: ensuring leaves_approval.js'); } catch(_) {}
+                        if (!window.__leavesApprovalInit) {
+                            const s = document.createElement('script');
+                            s.src = '/js/leaves_approval.js?v=20250905';
+                            s.async = true;
+                            s.onload = function(){ try { console.debug('leaves_approval: loaded via dashboard'); } catch(_) {} };
+                            s.onerror = function(){ console.error('Falha ao carregar /js/leaves_approval.js'); };
+                            document.body.appendChild(s);
+                            // Fallback: se após um curto período ainda não inicializou, ligar handlers mínimos aqui
+                            setTimeout(function(){
+                                if (!window.__leavesApprovalInit) {
+                                    try { console.warn('leaves_approval: fallback binder active'); } catch(_) {}
+                                    const onClick = async function(ev){
+                                        const t = ev.target && ev.target.closest && ev.target.closest('.js-approve[data-pedido-id], .js-reject[data-pedido-id]');
+                                        if (!t) return;
+                                        const id = t.getAttribute('data-pedido-id');
+                                        if (!id) return;
+                                        if (t.dataset.processing === '1') return;
+                                        const isApprove = t.classList.contains('js-approve');
+                                        const proceed = window.confirm((isApprove?'Aprovar':'Rejeitar') + ' pedido\n\nTem certeza que deseja ' + (isApprove?'aprovar?':'rejeitar?'));
+                                        if (!proceed) return;
+                                        let comentario = undefined;
+                                        if (!isApprove) {
+                                            const c = window.prompt('Motivo da rejeição\n\nIndique o motivo da rejeição (obrigatório):');
+                                            if (c === null) return; // cancel
+                                            comentario = String(c||'').trim();
+                                            if (!comentario) { if (window.showToast) showToast('error','Motivo de rejeição é obrigatório.'); else alert('Motivo de rejeição é obrigatório.'); return; }
+                                        }
+                                        t.dataset.processing = '1';
+                                        if (window.showToast) showToast('info','A enviar decisão...');
+                                        try{
+                                            const resp = await fetch('/api/leaves/decision.php', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
+                                                credentials: 'same-origin',
+                                                body: JSON.stringify({ pedido_id: Number(id), acao: isApprove?'aprovar':'rejeitar', comentario })
+                                            });
+                                            const ct = resp.headers.get('content-type')||'';
+                                            let data = null;
+                                            if (ct.includes('application/json')) data = await resp.json(); else { const txt=await resp.text(); try{data=JSON.parse(txt);}catch{data={ok:false,error:txt||('HTTP '+resp.status)}} }
+                                            if (!resp.ok || !data || data.ok!==true){
+                                                const code = data && (data.code||data.error||data.message||data.msg);
+                                                if (code === 'LEAVE_CONFLICT_DAYS' && Array.isArray(data.dates) && data.dates.length){
+                                                    const list = data.dates.join(', ');
+                                                    if (window.showToast) showToast('error','Já existe uma ausência aprovada para: '+list); else alert('Conflito: '+list);
+                                                } else {
+                                                    const msg = code || ('HTTP '+resp.status);
+                                                    if (window.showToast) showToast('error','Falha ao processar decisão: '+msg); else alert('Erro: '+msg);
+                                                }
+                                                return;
+                                            }
+                                            if (window.showToast) showToast('success','Decisão efetuada com sucesso.');
+                                            setTimeout(()=>window.location.reload(), 900);
+                                        }catch(e){
+                                            if (window.showToast) showToast('error','Erro inesperado: '+(e && e.message ? e.message : e)); else alert('Erro: '+e);
+                                        } finally {
+                                            delete t.dataset.processing;
+                                        }
+                                    };
+                                    document.addEventListener('click', onClick, { capture: true });
+                                }
+                            }, 500);
+                        } else {
+                            try { console.debug('leaves_approval: already initialized'); } catch(_) {}
+                        }
+                    })();
+                    // Fallback globals for inline onclick
+                    window.approveLeave = async function(id){
+                        try { if (window.__leavesApprovalInit) return; } catch(_) {}
+                        const ok = window.confirm('Aprovar pedido\n\nTem certeza que deseja aprovar este pedido?');
+                        if (!ok) return;
+                        // Pre-check conflicts using aval_requests + get_month
+                        try{
+                            const ar = await fetch('/api/leaves/aval_requests.php', { credentials:'same-origin' });
+                            if (ar.ok){
+                                const data = await ar.json();
+                                const item = data && Array.isArray(data.items) ? data.items.find(it => Number(it.pedido_id)===Number(id)) : null;
+                                if (item && item.colaborador && item.colaborador.id && item.inicio && item.fim){
+                                    const userId = Number(item.colaborador.id);
+                                    const start = String(item.inicio).slice(0,10);
+                                    const end   = String(item.fim).slice(0,10);
+                                    const toDate = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+                                    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                    const months=[]; const cs=new Date(toDate(start).getFullYear(), toDate(start).getMonth(), 1); const ce=new Date(toDate(end).getFullYear(), toDate(end).getMonth(), 1);
+                                    while(cs<=ce){ months.push(`${cs.getFullYear()}-${String(cs.getMonth()+1).padStart(2,'0')}`); cs.setMonth(cs.getMonth()+1); }
+                                    const results = await Promise.all(months.map(m => fetch(`/api/calendar/get_month.php?month=${encodeURIComponent(m)}&user_id=${encodeURIComponent(userId)}`, { credentials:'same-origin' }).then(r=>r.ok?r.json():null).catch(()=>null)));
+                                    const conflictMap = Object.create(null);
+                                    results.forEach(res=>{ if(res&&res.ok&&Array.isArray(res.days)){ res.days.forEach(d=>{ if (Array.isArray(d.leaves)&&d.leaves.length){ const dateKey=String(d.date); const conflict=d.leaves.some(lv=>{ const rid=typeof lv.requestId==='number'?lv.requestId:(lv.requestId?Number(lv.requestId):null); return rid===null || rid!==Number(id); }); if (conflict) conflictMap[dateKey]=true; } }); } });
+                                    const sDate=toDate(start), eDate=toDate(end); const conflicts=[]; for(let cur=new Date(sDate); cur<=eDate; cur.setDate(cur.getDate()+1)){ const key=fmt(cur); if (conflictMap[key]) conflicts.push(key); }
+                                    if (conflicts.length){
+                                        const override = window.confirm('Foram detetadas ausências já aprovadas em:\n\n'+conflicts.join(', ')+'\n\nPretende aprovar o pedido mesmo assim?');
+                                        if (!override) return;
+                                    }
+                                }
+                            }
+                        }catch(_){ /* ignore */ }
+                        if (window.showToast) showToast('info','A enviar decisão...');
+                        try{
+                            const resp = await fetch('/api/leaves/decision.php', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json','Accept':'application/json' }, credentials: 'same-origin', body: JSON.stringify({ pedido_id:Number(id), acao:'aprovar' })
+                            });
+                            const ct = resp.headers.get('content-type')||''; let data=null;
+                            if (ct.includes('application/json')) data = await resp.json(); else { const txt=await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||('HTTP '+resp.status) }; } }
+                            if (!resp.ok || !data || data.ok!==true){ const code=(data&&(data.code||data.error||data.message||data.msg))||('HTTP '+resp.status); const msgTxt=(data&&(data.msg||data.error||data.message))||''; const isDup=String(code).includes('DB_ERROR') && /Duplicate entry|uq_evento_user_tipo_dia/i.test(msgTxt||''); if (isDup){ if (window.showToast) showToast('success','Pedido aprovado (evento já existia no calendário).'); setTimeout(()=>window.location.reload(),900); return; } if (code==='LEAVE_CONFLICT_DAYS' && Array.isArray(data.dates)&&data.dates.length){ const list=data.dates.join(', '); if (window.showToast) showToast('error','Já existe uma ausência aprovada para: '+list); else alert('Conflito: '+list);} else { if (window.showToast) showToast('error','Falha: '+code); else alert('Erro: '+code);} return; }
+                            if (window.showToast) showToast('success','Decisão efetuada com sucesso.'); setTimeout(()=>window.location.reload(), 900);
+                        }catch(e){ if (window.showToast) showToast('error','Erro: '+(e&&e.message?e.message:e)); else alert('Erro: '+e); }
+                    };
+                    window.rejectLeave = async function(id){
+                        try { if (window.__leavesApprovalInit) return; } catch(_) {}
+                        const ok = window.confirm('Rejeitar pedido\n\nTem certeza que deseja rejeitar este pedido?');
+                        if (!ok) return;
+                        const c = window.prompt('Motivo da rejeição\n\nIndique o motivo da rejeição (obrigatório):');
+                        if (c === null) return; const comentario = String(c||'').trim(); if (!comentario){ if (window.showToast) showToast('error','Motivo de rejeição é obrigatório.'); else alert('Motivo de rejeição é obrigatório.'); return; }
+                        if (window.showToast) showToast('info','A enviar decisão...');
+                        try{
+                            const resp = await fetch('/api/leaves/decision.php', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json','Accept':'application/json' }, credentials: 'same-origin', body: JSON.stringify({ pedido_id:Number(id), acao:'rejeitar', comentario })
+                            });
+                            const ct = resp.headers.get('content-type')||''; let data=null;
+                            if (ct.includes('application/json')) data = await resp.json(); else { const txt=await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||('HTTP '+resp.status) }; } }
+                            if (!resp.ok || !data || data.ok!==true){ const code=(data&&(data.code||data.error||data.message||data.msg))||('HTTP '+resp.status); if (code==='LEAVE_CONFLICT_DAYS' && Array.isArray(data.dates)&&data.dates.length){ const list=data.dates.join(', '); if (window.showToast) showToast('error','Já existe uma ausência aprovada para: '+list); else alert('Conflito: '+list);} else { if (window.showToast) showToast('error','Falha: '+code); else alert('Erro: '+code);} return; }
+                            if (window.showToast) showToast('success','Decisão efetuada com sucesso.'); setTimeout(()=>window.location.reload(), 900);
+                        }catch(e){ if (window.showToast) showToast('error','Erro: '+(e&&e.message?e.message:e)); else alert('Erro: '+e); }
+                    };
+                }
 
                 // Executar scripts inline da página de aprovação de horários apenas uma vez (evitar redeclarações)
                 (function executePageScriptsOnce(container, content) {
@@ -371,16 +523,43 @@ document.addEventListener("DOMContentLoaded", function () {
                 },
                 height: 'auto',
                 events: function(fetchInfo, successCallback, failureCallback) {
-                    // Carregar eventos do servidor
-                    fetch('../../api/eventos/listar_eventos.php')
-                        .then(response => response.json())
-                        .then(data => {
-                            successCallback(data);
-                        })
-                        .catch(error => {
-                            console.error('Erro ao carregar eventos:', error);
-                            failureCallback(error);
+                    // Carregar eventos (férias/ausências) via calendar/get_month para todos os meses no intervalo
+                    try {
+                        const start = new Date(fetchInfo.startStr);
+                        const end = new Date(fetchInfo.endStr);
+                        const months = [];
+                        const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+                        while (cursor <= end) {
+                            const ym = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+                            if (!months.includes(ym)) months.push(ym);
+                            cursor.setMonth(cursor.getMonth() + 1);
+                        }
+                        Promise.all(
+                            months.map(m => fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(m)}`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null))
+                        ).then(results => {
+                            const events = [];
+                            results.forEach(res => {
+                                if (res && res.ok && Array.isArray(res.days)) {
+                                    res.days.forEach(d => {
+                                        const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                                        if (leaves.length > 0) {
+                                            leaves.forEach(lv => {
+                                                const title = lv.label || lv.titulo || lv.title || (lv.tipo === 'ferias' || lv.type === 'vacation' ? 'Férias' : 'Ausência');
+                                                events.push({ title, start: d.date, allDay: true });
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                            successCallback(events);
+                        }).catch(err => {
+                            console.error('Erro ao carregar eventos do calendário:', err);
+                            failureCallback(err);
                         });
+                    } catch (e) {
+                        console.error('Erro inesperado ao preparar eventos:', e);
+                        failureCallback(e);
+                    }
                 },
                 eventDisplay: 'block',
                 eventClick: function(info) {
@@ -642,6 +821,45 @@ window.fecharModal = function() {
 
 // Função para inicializar eventos após carregamento dinâmico de conteúdo
 window.initializeDynamicContent = function() {
+    // Garantir infra de toast disponível
+    (function ensureToastInfra(){
+        if (!document.getElementById('toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+            .toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+            .toast{min-width:260px;max-width:420px;padding:12px 14px;border-radius:10px;color:#0b1220;background:#0b1220;box-shadow:0 6px 16px rgba(0,0,0,.18);display:flex;align-items:flex-start;gap:10px;opacity:0;transform:translateY(-6px);animation:toast-in .2s ease forwards}
+            .toast.success{background:linear-gradient(135deg,#10b981,#34d399);color:#062d1f}
+            .toast.error{background:linear-gradient(135deg,#ef4444,#f59e0b);color:#2b0b0b}
+            .toast.info{background:linear-gradient(135deg,#3e84f2,#7aa8f9);color:#041935}
+            .toast .t-icon{font-size:18px;line-height:18px;margin-top:2px}
+            .toast .t-msg{flex:1;font-weight:600}
+            .toast .t-close{background:transparent;border:none;color:inherit;cursor:pointer;font-size:16px;opacity:.8}
+            @keyframes toast-in{to{opacity:1;transform:translateY(0)}}
+            @keyframes toast-out{to{opacity:0;transform:translateY(-6px)}}`;
+            document.head.appendChild(style);
+        }
+        if (!document.querySelector('.toast-container')){
+            const c = document.createElement('div');
+            c.className = 'toast-container';
+            document.body.appendChild(c);
+        }
+        if (!window.showToast){
+            window.showToast = function(type, message, opts={}){
+                const container = document.querySelector('.toast-container');
+                const t = document.createElement('div');
+                t.className = `toast ${type||'info'}`;
+                const icon = type==='success'?'✓':type==='error'?'✗':'ℹ';
+                t.innerHTML = `<span class="t-icon">${icon}</span><div class="t-msg">${message}</div><button class="t-close" aria-label="Fechar">×</button>`;
+                container.appendChild(t);
+                const ttl = Number(opts.duration||2500);
+                const close = ()=>{ t.style.animation = 'toast-out .18s ease forwards'; setTimeout(()=>t.remove(), 200); };
+                t.querySelector('.t-close').addEventListener('click', close);
+                setTimeout(close, ttl);
+                return t;
+            };
+        }
+    })();
     // Inicializar filtros de férias/ausências
     const filterBtns = document.querySelectorAll('.filter-btn');
     const pedidoCards = document.querySelectorAll('.pedido-card');
@@ -793,6 +1011,63 @@ window.initializeDynamicContent = function() {
         });
     }
 
+    // Interceptar submissão do formulário de Férias/Ausências (quando carregado dinamicamente)
+    try {
+        if (!window.__leavesSubmitCapture__) {
+            document.addEventListener('submit', function(ev){
+                const form = ev.target;
+                if (form && form.action && form.action.includes('/api/leaves/request.php')){
+                    ev.preventDefault();
+                    if (form.__leavesSubmitting) return;
+                    form.__leavesSubmitting = true;
+                    const fd = new FormData(form);
+                    // Normalizar datas caso venham como dd/mm/yyyy
+                    try {
+                        const diEl = form.querySelector('#data_inicio');
+                        const dfEl = form.querySelector('#data_fim');
+                        const norm = v => (/^\d{2}\/\d{2}\/\d{4}$/.test(v) ? `${v.slice(6,10)}-${v.slice(3,5)}-${v.slice(0,2)}` : v);
+                        if (diEl && diEl.value) fd.set('data_inicio', norm(diEl.value));
+                        if (dfEl && dfEl.value) fd.set('data_fim', norm(dfEl.value));
+                    } catch(_) {}
+                    const submitBtn = form.querySelector('button[type="submit"], .btn-submit');
+                    const originalText = submitBtn ? submitBtn.innerHTML : '';
+                    if (submitBtn){ submitBtn.disabled = true; submitBtn.innerText = 'A enviar...'; }
+                    fetch(form.action, { method:'POST', body: fd, credentials: 'same-origin' })
+                        .then(async resp => {
+                            const ct = resp.headers.get('content-type')||'';
+                            let data=null;
+                            if (ct.includes('application/json')) data = await resp.json();
+                            else { const txt = await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||'Erro ao processar resposta.'}; } }
+                            if (!resp.ok || !data || data.ok===false){
+                                const code = data && (data.code || data.error || data.message);
+                                const codeMap = {
+                                    MISSING_FIELDS: 'Preencha todos os campos obrigatórios.',
+                                    INVALID_DATE: 'Data inválida.',
+                                    RANGE_ERROR: 'Data de início deve ser anterior à data de fim.',
+                                    DOC_REQUIRED: 'Este tipo exige comprovativo (PDF/JPG/PNG).',
+                                    BAD_FILETYPE: 'Tipo de ficheiro inválido (PDF, JPG, PNG).',
+                                    FILE_TOO_LARGE: 'Ficheiro maior que 5MB.',
+                                    FILE_MOVE_ERROR: 'Erro ao guardar o ficheiro no servidor.',
+                                    UNAUTHENTICATED: 'Sessão expirada. Faça login novamente.',
+                                    FORBIDDEN_ROLE: 'Perfil sem permissão para criar pedidos.',
+                                    DB_ERROR: 'Erro interno ao gravar o pedido.'
+                                };
+                                const friendly = codeMap[code] || (code ? String(code) : `HTTP ${resp.status}`);
+                                showToast('error', `Falha ao submeter pedido: ${friendly}`);
+                            } else {
+                                showToast('success', 'Pedido submetido com sucesso.');
+                                window.fecharModalPedido && window.fecharModalPedido();
+                                setTimeout(()=>window.location.reload(), 1200);
+                            }
+                        })
+                        .catch(err => showToast('error', `Erro inesperado: ${err && err.message ? err.message : err}`))
+                        .finally(()=>{ if (submitBtn){ submitBtn.disabled=false; submitBtn.innerHTML = originalText || 'Submeter Pedido'; } form.__leavesSubmitting = false; });
+                }
+            }, true);
+            window.__leavesSubmitCapture__ = true;
+        }
+    } catch (e) { /* noop */ }
+
     const fichaModal = document.getElementById('fichaModal');
     if (fichaModal) {
         fichaModal.addEventListener('click', function(e) {
@@ -854,8 +1129,26 @@ window.closeModalInter2 = closeModalInter2;
 // Funções específicas para o sistema de horários do inter2
 let currentMonthInter2 = new Date().getMonth();
 let currentYearInter2 = new Date().getFullYear();
-let horariosDataInter2 = {};
+let horariosDataInter2 = {}; // mapa YYYY-MM-DD -> { horas_normais, horas_extra, horas_prevencao, km_viatura }
 let feriasDataInter2 = {};
+let inter2IsMonthLocked = false; // bloqueio de edição (submitted/aprovado/locked)
+
+// Helpers de conversão
+function minToHHMMInter2(min){
+    const m = Math.max(0, parseInt(min || 0, 10));
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    return `${String(h).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+}
+function hhmmToMinInter2(hhmm){
+    if (!hhmm || typeof hhmm !== 'string') return 0;
+    const match = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return 0;
+    const h = parseInt(match[1],10);
+    const mi = parseInt(match[2],10);
+    if (Number.isNaN(h) || Number.isNaN(mi)) return 0;
+    return Math.max(0,h)*60 + Math.max(0,mi);
+}
 
 // Variáveis para seleção múltipla
 let isBulkModeInter2 = false;
@@ -871,8 +1164,16 @@ window.initializeHorariosCalendarInter2 = function() {
     console.log('Calendar grid:', calendarGrid);
     console.log('Month year element:', monthYear);
     
-    loadFeriasInter2();
-    renderCalendarInter2();
+    // Carregar todos os dados iniciais em paralelo e renderizar uma vez
+    Promise.all([
+        loadFeriasInter2(),
+        loadHorariosDataInter2(),
+        refreshMonthStatusInter2()
+    ]).then(() => {
+        try { renderCalendarInter2(); } catch (e) {}
+    }).catch(() => {
+        try { renderCalendarInter2(); } catch (e) {}
+    });
     
     // Event listeners para navegação
     const prevBtn = document.getElementById('prevMonth');
@@ -922,22 +1223,34 @@ window.initializeHorariosCalendarInter2 = function() {
         });
     }
 
-    // Carregar dados existentes
-    loadHorariosDataInter2();
+    // Dados do mês são carregados acima
 };
 
-// Carregar férias aprovadas do inter2
-function loadFeriasInter2() {
-    fetch('../../api/pedidos/listar_ferias_aprovadas_inter2.php')
-        .then(response => response.json())
+// Carregar férias/ausências do mês atual (via calendar/get_month)
+function loadFeriasInter2(renderNow = true) {
+    const monthKey = `${currentYearInter2}-${String(currentMonthInter2 + 1).padStart(2, '0')}`;
+    return fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials: 'same-origin' })
+        .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                feriasDataInter2 = data.ferias;
-                console.log('Férias carregadas para Inter2:', feriasDataInter2);
-                renderCalendarInter2(); // Re-render para mostrar férias
+            if (!data || data.ok !== true || !Array.isArray(data.days)) {
+                console.warn('Resposta inesperada de get_month.php', data);
+                feriasDataInter2 = {};
+                if (renderNow) renderCalendarInter2();
+                return;
             }
+            const map = {};
+            data.days.forEach(d => {
+                const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                if (leaves.length > 0) {
+                    const lv = leaves[0] || {};
+                    map[d.date] = { tipo: lv.tipo || lv.type || 'ferias', label: lv.label || lv.titulo || lv.title || null };
+                }
+            });
+            feriasDataInter2 = map;
+            console.log('Férias/Ausências carregadas (calendar):', feriasDataInter2);
+            if (renderNow) renderCalendarInter2();
         })
-        .catch(error => console.error('Erro ao carregar férias Inter2:', error));
+    .catch(err => { console.error('Erro ao carregar calendário/leaves:', err); feriasDataInter2 = {}; if (renderNow) renderCalendarInter2(); });
 }
 
 // Renderizar calendário do inter2
@@ -1009,12 +1322,9 @@ function renderCalendarInter2() {
             }
         }
 
-        // Verificar se há horários marcados
-        const horariosKey = `horarios_inter2_${dateKey}`;
-        const savedData = localStorage.getItem(horariosKey);
-        
-        if (savedData) {
-            const data = JSON.parse(savedData);
+        // Verificar se há horários marcados (via API carregada)
+        const data = horariosDataInter2[dateKey];
+        if (data) {
             dayElement.classList.add('has-data');
             dayElement.classList.add('marked'); // Adicionar classe marked para cores de fundo
             
@@ -1110,17 +1420,17 @@ function renderCalendarInter2() {
             if (isBulkModeInter2) {
                 // No modo bulk, clique seleciona/deseleciona o dia
                 dayElement.addEventListener('click', () => toggleDaySelectionInter2(dateKey));
-            } else {
-                // Modo normal, clique abre modal
+            } else if (!inter2IsMonthLocked) {
+                // Modo normal, clique abre modal (apenas se não estiver bloqueado)
                 dayElement.addEventListener('click', () => {
                     console.log('Dia clicado:', dateKey);
                     openModalInter2(dateKey);
                 });
             }
-            dayElement.style.cursor = 'pointer';
+            dayElement.style.cursor = inter2IsMonthLocked ? 'not-allowed' : 'pointer';
             // Alternativa: adicionar onclick diretamente
             if (!isBulkModeInter2) {
-                dayElement.setAttribute('onclick', `window.openModalInter2('${dateKey}')`);
+                if (!inter2IsMonthLocked) dayElement.setAttribute('onclick', `window.openModalInter2('${dateKey}')`);
             }
         } else {
             dayElement.style.cursor = 'not-allowed';
@@ -1142,8 +1452,16 @@ function navigateMonthInter2(direction) {
         currentMonthInter2 = 11;
         currentYearInter2--;
     }
-    
-    renderCalendarInter2();
+    // Recarregar dados do mês novo em paralelo e depois renderizar
+    Promise.all([
+    loadFeriasInter2(false),
+    loadHorariosDataInter2(false),
+    refreshMonthStatusInter2(false)
+    ]).then(() => {
+        try { renderCalendarInter2(); } catch (_) {}
+    }).catch(() => {
+        try { renderCalendarInter2(); } catch (_) {}
+    });
 }
 
 // Ir para hoje do inter2
@@ -1151,7 +1469,15 @@ function goToTodayInter2() {
     const today = new Date();
     currentMonthInter2 = today.getMonth();
     currentYearInter2 = today.getFullYear();
-    renderCalendarInter2();
+    Promise.all([
+        loadFeriasInter2(),
+        loadHorariosDataInter2(),
+        refreshMonthStatusInter2()
+    ]).then(() => {
+        try { renderCalendarInter2(); } catch (_) {}
+    }).catch(() => {
+        try { renderCalendarInter2(); } catch (_) {}
+    });
 }
 
 // Abrir modal do inter2
@@ -1181,12 +1507,9 @@ function openModalInter2(dateKey) {
     
     modal.dataset.selectedDate = dateKey;
 
-    // Carregar dados existentes
-    const horariosKey = `horarios_inter2_${dateKey}`;
-    const savedData = localStorage.getItem(horariosKey);
-    
-    if (savedData) {
-        const data = JSON.parse(savedData);
+    // Carregar dados existentes do mapa carregado da API
+    const data = horariosDataInter2[dateKey];
+    if (data) {
         const horasNormais = document.getElementById('horasNormais');
         const horasExtra = document.getElementById('horasExtra');
         const horasPrevencao = document.getElementById('horasPrevencao');
@@ -1228,22 +1551,31 @@ function clearDayDataInter2() {
         return;
     }
 
-    // Remover dados do localStorage
-    const horariosKey = `horarios_inter2_${dateKey}`;
-    localStorage.removeItem(horariosKey);
-
-    // Limpar formulário
-    const form = document.getElementById('horariosForm');
-    if (form) form.reset();
-
-    // Atualizar calendário
-    renderCalendarInter2();
-
-    // Fechar modal
-    closeModalInter2();
-
-    // Mostrar notificação
-    showNotificationInter2('Dados do dia removidos com sucesso!', 'success');
+    fetch('../../api/calendar/day_delete.php', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ date: dateKey })
+    })
+    .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+    .then(({httpOk, data})=>{
+        if (!httpOk || !data || data.ok!==true) {
+            const code = data && (data.code || data.msg || data.error);
+            showNotificationInter2(`Falha ao limpar: ${code||'Erro'}`, 'error');
+            return;
+        }
+        // Limpar formulário
+        const form = document.getElementById('horariosForm');
+        if (form) form.reset();
+        // Atualizar dados e UI
+        closeModalInter2();
+        loadHorariosDataInter2().then(()=>renderCalendarInter2());
+        showNotificationInter2('Dados do dia removidos com sucesso!', 'success');
+    })
+    .catch(err=>{
+        console.error('Erro ao limpar dia (inter2):', err);
+        showNotificationInter2('Erro de rede ao limpar dia.', 'error');
+    });
 }
 
 // Salvar horários do inter2
@@ -1271,32 +1603,67 @@ function saveHorariosInter2() {
         return;
     }
 
-    // Salvar no localStorage
-    const horariosKey = `horarios_inter2_${dateKey}`;
-    localStorage.setItem(horariosKey, JSON.stringify(data));
-    
-    console.log(`Horários salvos para Inter2 em ${dateKey}:`, data);
-    
-    // Fechar modal e atualizar calendário
-    closeModalInter2();
-    renderCalendarInter2();
-    
-    // Mostrar confirmação
-    showNotificationInter2('Horários guardados com sucesso! Aguarde aprovação do Inter.', 'success');
+    // Enviar para API day_put
+    const payload = {
+        date: dateKey,
+        workMin: data.horas_normais ? hhmmToMinInter2(data.horas_normais) : null,
+        otMin: data.horas_extra ? hhmmToMinInter2(data.horas_extra) : null,
+        oncallMin: data.horas_prevencao ? hhmmToMinInter2(data.horas_prevencao) : null,
+        km: data.km_viatura ? Number(data.km_viatura) : null,
+        clear: true
+    };
+
+    fetch('../../api/calendar/day_put.php', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+    })
+    .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+    .then(({httpOk, data})=>{
+        if (!httpOk || !data || data.ok!==true){
+            const code = data && (data.code || data.msg || data.error);
+            showNotificationInter2(`Falha ao guardar: ${code||'Erro'}`, 'error');
+            return;
+        }
+        closeModalInter2();
+        loadHorariosDataInter2().then(()=>renderCalendarInter2());
+        showNotificationInter2('Horários guardados com sucesso.', 'success');
+    })
+    .catch(err=>{
+        console.error('Erro ao guardar dia (inter2):', err);
+        showNotificationInter2('Erro de rede ao guardar dia.', 'error');
+    });
 }
 
 // Carregar dados de horários do inter2
-function loadHorariosDataInter2() {
-    const allKeys = Object.keys(localStorage);
-    const horariosKeys = allKeys.filter(key => key.startsWith('horarios_inter2_'));
-    
-    horariosDataInter2 = {};
-    horariosKeys.forEach(key => {
-        const dateKey = key.replace('horarios_inter2_', '');
-        horariosDataInter2[dateKey] = JSON.parse(localStorage.getItem(key));
-    });
-    
-    console.log('Dados de horários carregados para Inter2:', horariosDataInter2);
+function loadHorariosDataInter2(renderNow = true) {
+    const monthKey = `${currentYearInter2}-${String(currentMonthInter2 + 1).padStart(2, '0')}`;
+    return fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials:'same-origin' })
+        .then(r=>r.json())
+        .then(data=>{
+            if (!data || data.ok!==true || !Array.isArray(data.days)){
+                console.warn('Resposta inesperada de get_month (inter2):', data);
+                horariosDataInter2 = {};
+                return;
+            }
+            const map = {};
+            data.days.forEach(d => {
+                const hasAny = (d.workMin||0) > 0 || (d.otMin||0) > 0 || (d.oncallMin||0) > 0 || (d.km||0) > 0;
+                if (hasAny){
+                    map[d.date] = {
+                        horas_normais: minToHHMMInter2(d.workMin||0),
+                        horas_extra: minToHHMMInter2(d.otMin||0),
+                        horas_prevencao: minToHHMMInter2(d.oncallMin||0),
+                        km_viatura: (d.km||0)
+                    };
+                }
+            });
+            horariosDataInter2 = map;
+            console.log('Dados de horários (inter2):', horariosDataInter2);
+        })
+    .catch(err=>{ console.error('Erro ao carregar dados mês (inter2):', err); horariosDataInter2 = {}; })
+    .finally(()=>{ if (renderNow) { try { renderCalendarInter2(); } catch(e){} } });
 }
 
 // Mostrar notificação do inter2
@@ -1531,44 +1898,86 @@ function applyBulkSelectionInter2() {
         return;
     }
     
-    // Aplicar a todos os dias do período
-    let appliedCount = 0;
-    let skippedCount = 0;
-    const currentDate = new Date(start);
-    
-    while (currentDate <= end) {
-        const dateKey = currentDate.toISOString().split('T')[0];
-        
-        // Verificar se o dia não tem férias
-        if (!feriasDataInter2[dateKey]) {
-            const horariosKey = `horarios_inter2_${dateKey}`;
-            localStorage.setItem(horariosKey, JSON.stringify(bulkData));
-            appliedCount++;
-        } else {
-            skippedCount++;
+    // Enviar via API batch_apply
+    const payload = {
+        start: startDate,
+        end: endDate,
+        workMin: bulkData.horas_normais ? hhmmToMinInter2(bulkData.horas_normais) : undefined,
+        otMin: bulkData.horas_extra ? hhmmToMinInter2(bulkData.horas_extra) : undefined,
+        oncallMin: bulkData.horas_prevencao ? hhmmToMinInter2(bulkData.horas_prevencao) : undefined,
+        km: bulkData.km_viatura ? Number(bulkData.km_viatura) : undefined,
+        applyWeekend: true,
+        overwrite: true
+    };
+
+    fetch('../../api/calendar/batch_apply.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+    })
+    .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+    .then(({httpOk, data})=>{
+        if (!httpOk || !data || data.ok!==true){
+            const code = data && (data.code || data.msg || data.error);
+            showNotificationInter2(`Falha ao aplicar período: ${code||'Erro'}`, 'error');
+            return;
         }
-        
-        // Avançar para o próximo dia
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    console.log(`Marcação em lote aplicada a ${appliedCount} dias:`, bulkData);
-    
-    // Atualizar calendário
-    renderCalendarInter2();
-    
-    // Fechar modal
-    closeBulkModalInter2();
-    
-    // Mostrar confirmação
-    let message = `Marcação aplicada a ${appliedCount} dias com sucesso!`;
-    if (skippedCount > 0) {
-        message += ` ${skippedCount} dias foram ignorados (férias/ausências).`;
-    }
-    message += ' Aguarde aprovação do Inter.';
-    
-    showNotificationInter2(message, 'success');
+        const applied = (data.summary && data.summary.daysApplied) || 0;
+        const skipped = Array.isArray(data.skippedLocked) ? data.skippedLocked.length : 0;
+        closeBulkModalInter2();
+        loadHorariosDataInter2().then(()=>renderCalendarInter2());
+        let message = `Marcação aplicada a ${applied} dia(s).`;
+        if (skipped>0) message += ` Ignorados (bloqueado): ${skipped}.`;
+        showNotificationInter2(message, 'success');
+    })
+    .catch(err=>{
+        console.error('Erro no batch_apply (inter2):', err);
+        showNotificationInter2('Erro de rede ao aplicar período.', 'error');
+    });
 }
 
 // Expor funções globalmente
 window.removeSelectedDay = removeSelectedDay;
+
+// Estado do período (bloqueio e badge local se existir)
+function refreshMonthStatusInter2(renderNow = true){
+    const monthKey = `${currentYearInter2}-${String(currentMonthInter2 + 1).padStart(2,'0')}`;
+    return fetch(`../../api/calendar/month_status.php?month=${encodeURIComponent(monthKey)}`, { credentials:'same-origin' })
+        .then(r=>r.json())
+        .then(data=>{
+            if (!data || data.ok!==true) return;
+            const estado = data.estado || 'open';
+            const isLocked = data.flags && data.flags.isLocked ? true : false;
+            inter2IsMonthLocked = !!isLocked;
+            // opcional: atualizar algum badge específico desta página, se existir
+        })
+        .catch(()=>{})
+    .finally(()=>{ if (renderNow) { try { renderCalendarInter2(); } catch(e){} } });
+}
+
+// Submeter mês (inter2)
+window.submitMonth = function(){
+    const monthKey = `${currentYearInter2}-${String(currentMonthInter2 + 1).padStart(2, '0')}`;
+    if (!confirm(`Deseja submeter as marcações de ${monthKey}?\n\nApós a submissão, as marcações não poderão ser alteradas.`)) return;
+    fetch('../../api/calendar/submit_month.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ month: monthKey })
+    })
+    .then(r=>r.json().catch(()=>({ok:false, code:'BAD_JSON'})).then(data=>({httpOk:r.ok, data})))
+    .then(({httpOk, data})=>{
+        if (!httpOk || !data || data.ok!==true){
+            const code = data && (data.code || data.msg || data.error);
+            showNotificationInter2(`Falha ao submeter mês: ${code||'Erro'}`, 'error');
+            return;
+        }
+        showNotificationInter2('Mês submetido com sucesso.', 'success');
+        refreshMonthStatusInter2();
+    })
+    .catch(err=>{
+        console.error('Erro ao submeter mês (inter2):', err);
+        showNotificationInter2('Erro de rede ao submeter mês.', 'error');
+    });
+};

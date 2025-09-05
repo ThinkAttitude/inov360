@@ -11,6 +11,27 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
     }
 
+    // Carrega badge de pendentes (avaliador) caso exista permissão
+    async function updatePendingBadge(){
+        try{
+            const link = document.querySelector('.sidebar-menu a[data-content="aprovacao_ferias_ausencias"]');
+            if(!link) return;
+            const resp = await fetch('../../api/leaves/aval_summary.php', { credentials: 'include' });
+            if(!resp.ok) return;
+            const data = await resp.json();
+            if(!data || data.ok!==true || typeof data.pending !== 'number') return;
+            let badge = link.querySelector('.pending-badge');
+            if(!badge){
+                badge = document.createElement('span');
+                badge.className = 'pending-badge';
+                badge.style.cssText = 'margin-left:8px;display:inline-flex;min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:12px;line-height:18px;align-items:center;justify-content:center;font-weight:700;';
+                link.appendChild(badge);
+            }
+            badge.textContent = String(data.pending);
+            badge.style.display = data.pending>0 ? 'inline-flex' : 'none';
+        }catch(_){/* no-op */}
+    }
+
     // Função para resetar à página inicial
     function showWelcome() {
         mainContent.innerHTML = `
@@ -133,6 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Reaplicar event listeners aos novos card-links
         attachCardLinkListeners();
+    updatePendingBadge();
     }
 
     // Função para anexar listeners aos card-links
@@ -141,6 +163,7 @@ document.addEventListener("DOMContentLoaded", function () {
         cardLinks.forEach(link => {
             link.addEventListener("click", handleNavigation);
         });
+    updatePendingBadge();
     }
 
     // Função principal de navegação
@@ -214,6 +237,9 @@ document.addEventListener("DOMContentLoaded", function () {
             case "ferias":
                 initializeFeriasModule();
                 break;
+            case "aprovacao_ferias_ausencias":
+                ensureLeavesApprovalHandlers();
+                break;
             case "horarios":
                 initializeHorariosModule();
                 break;
@@ -226,6 +252,89 @@ document.addEventListener("DOMContentLoaded", function () {
             case "ficha_colaborador":
                 initializeFichaColaboradorModule();
                 break;
+        }
+    }
+
+    // Garantir script de aprovação carregado + fallback robusto
+    function ensureLeavesApprovalHandlers(){
+        // Tenta carregar o script central se ainda não inicializado
+        if (!window.__leavesApprovalInit && !document.querySelector('script[data-leaves-approval]')){
+            try {
+                const s = document.createElement('script');
+                s.src = '/js/leaves_approval.js';
+                s.async = true;
+                s.setAttribute('data-leaves-approval','1');
+                s.onload = () => { try{ console.debug('leaves_approval loaded (inter)'); }catch(_){} };
+                s.onerror = () => { try{ console.warn('falha a carregar leaves_approval.js'); }catch(_){} };
+                document.body.appendChild(s);
+            } catch(_) {}
+        }
+
+        // Fallback binder (caso o script não inicialize por estar em HTML injetado)
+        if (!window.__leavesApprovalFallbackBound__) {
+            window.__leavesApprovalFallbackBound__ = true;
+            const resolveBtn = (ev)=>{
+                const path = typeof ev.composedPath==='function'?ev.composedPath():[];
+                for(const el of path){ if(el && el.closest){ const t=el.closest('.js-approve[data-pedido-id], .js-reject[data-pedido-id]'); if(t) return t; } }
+                return ev.target && ev.target.closest? ev.target.closest('.js-approve[data-pedido-id], .js-reject[data-pedido-id]') : null;
+            };
+            document.addEventListener('click', function(ev){
+                if (window.__leavesApprovalInit) return; // script principal já assumiu
+                const btn = resolveBtn(ev);
+                if(!btn) return;
+                const id = btn.getAttribute('data-pedido-id');
+                if(!id || btn.dataset.processing==='1') return;
+                const isApprove = btn.classList.contains('js-approve');
+                if (isApprove){
+                    if (!confirm('Aprovar pedido?')) return;
+                    btn.dataset.processing='1';
+                    postDecisionFallback(id, 'aprovar').finally(()=>{ delete btn.dataset.processing; });
+                } else {
+                    if (!confirm('Rejeitar pedido?')) return;
+                    const motivo = prompt('Motivo da rejeição (obrigatório):');
+                    if (motivo===null) return;
+                    if (!String(motivo).trim()) { (window.showToast?showToast('error','Motivo é obrigatório.'):alert('Motivo é obrigatório.')); return; }
+                    btn.dataset.processing='1';
+                    postDecisionFallback(id, 'rejeitar', String(motivo).trim()).finally(()=>{ delete btn.dataset.processing; });
+                }
+            }, true);
+        }
+
+        // Helpers globais para onclick inline
+        // Helpers só atuam se o script principal ainda não estiver ativo
+        window.approveLeave = function(id){
+            if (window.__leavesApprovalInit) return; // principal já trata o clique
+            if (!confirm('Aprovar pedido?')) return;
+            postDecisionFallback(id, 'aprovar');
+        };
+        window.rejectLeave = function(id){
+            if (window.__leavesApprovalInit) return; // principal já trata o clique
+            if (!confirm('Rejeitar pedido?')) return;
+            const motivo = prompt('Motivo da rejeição (obrigatório):');
+            if (motivo===null) return;
+            if (!String(motivo).trim()) { (window.showToast?showToast('error','Motivo é obrigatório.'):alert('Motivo é obrigatório.')); return; }
+            postDecisionFallback(id, 'rejeitar', String(motivo).trim());
+        };
+
+        function postDecisionFallback(pedidoId, acao, comentario){
+            // usa o mesmo endpoint do script principal
+            const payload = { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, credentials:'same-origin', body: JSON.stringify({ pedido_id:Number(pedidoId), acao, comentario }) };
+            const info = window.showToast? showToast('info','A enviar decisão...') : null;
+            return fetch('/api/leaves/decision.php', payload)
+              .catch(()=> fetch('../../api/leaves/decision.php', payload))
+              .then(async resp=>{
+                  if(!resp) throw new Error('Sem resposta');
+                  const ct = resp.headers.get('content-type')||'';
+                  let data=null; if(ct.includes('application/json')) data=await resp.json(); else { const t=await resp.text(); try{ data=JSON.parse(t);}catch{ data={ok:false,error:t}; } }
+                  if(!resp.ok || !data || data.ok===false){
+                      const m = (data && (data.error||data.message||data.code)) || ('HTTP '+resp.status);
+                      (window.showToast? showToast('error','Falha: '+m) : alert('Falha: '+m));
+                      return;
+                  }
+                  (window.showToast? showToast('success','Decisão efetuada.') : alert('Decisão efetuada.'));
+                  setTimeout(()=> window.location.reload(), 800);
+              })
+              .catch(err=>{ (window.showToast? showToast('error','Erro: '+(err&&err.message?err.message:err)) : alert('Erro: '+err)); });
         }
     }
 
@@ -373,7 +482,31 @@ document.addEventListener("DOMContentLoaded", function () {
                         day: 'Dia'
                     },
                     height: 'auto',
-                    events: '../../api/eventos/listar_eventos.php',
+                    events: function(fetchInfo, successCallback, failureCallback) {
+                        const start = fetchInfo.start;
+                        const monthKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2,'0')}`;
+                        fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials: 'same-origin' })
+                          .then(r => r.json())
+                          .then(data => {
+                            if (!data || data.ok !== true || !Array.isArray(data.days)) { failureCallback(new Error('Resposta inesperada')); return; }
+                            const events = [];
+                            data.days.forEach(d => {
+                                const dateStr = d.date;
+                                const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                                leaves.forEach(lv => {
+                                    const title = (lv.label || lv.titulo || lv.title || lv.tipo || lv.type || 'Ausência');
+                                    events.push({
+                                        title,
+                                        start: dateStr,
+                                        allDay: true,
+                                        extendedProps: { type: 'LEAVE', raw: lv }
+                                    });
+                                });
+                            });
+                            successCallback(events);
+                          })
+                          .catch(err => failureCallback(err));
+                    },
                     eventClick: function(info) {
                         alert('Evento: ' + info.event.title + '\nData: ' + info.event.start.toLocaleDateString());
                     }
@@ -555,6 +688,91 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Mostrar página inicial por padrão
     setTimeout(showWelcome, 100);
+
+    // --- Toast infra + Captura global de submits (sempre ativa neste dashboard) ---
+    (function ensureToastInfra(){
+        if (!document.getElementById('toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+            .toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+            .toast{min-width:260px;max-width:420px;padding:12px 14px;border-radius:10px;color:#0b1220;background:#0b1220;box-shadow:0 6px 16px rgba(0,0,0,.18);display:flex;align-items:flex-start;gap:10px;opacity:0;transform:translateY(-6px);animation:toast-in .2s ease forwards}
+            .toast.success{background:linear-gradient(135deg,#10b981,#34d399);color:#062d1f}
+            .toast.error{background:linear-gradient(135deg,#ef4444,#f59e0b);color:#2b0b0b}
+            .toast.info{background:linear-gradient(135deg,#3e84f2,#7aa8f9);color:#041935}
+            .toast .t-icon{font-size:18px;line-height:18px;margin-top:2px}
+            .toast .t-msg{flex:1;font-weight:600}
+            .toast .t-close{background:transparent;border:none;color:inherit;cursor:pointer;font-size:16px;opacity:.8}
+            @keyframes toast-in{to{opacity:1;transform:translateY(0)}}
+            @keyframes toast-out{to{opacity:0;transform:translateY(-6px)}}`;
+            document.head.appendChild(style);
+        }
+        if (!document.querySelector('.toast-container')){
+            const c = document.createElement('div');
+            c.className = 'toast-container';
+            document.body.appendChild(c);
+        }
+        if (!window.showToast){
+            window.showToast = function(type, message, opts={}){
+                const container = document.querySelector('.toast-container');
+                const t = document.createElement('div');
+                t.className = `toast ${type||'info'}`;
+                const icon = type==='success'?'✓':type==='error'?'✗':'ℹ';
+                t.innerHTML = `<span class=\"t-icon\">${icon}</span><div class=\"t-msg\">${message}</div><button class=\"t-close\" aria-label=\"Fechar\">×</button>`;
+                container.appendChild(t);
+                const ttl = Number(opts.duration||2500);
+                const close = ()=>{ t.style.animation = 'toast-out .18s ease forwards'; setTimeout(()=>t.remove(), 200); };
+                t.querySelector('.t-close').addEventListener('click', close);
+                setTimeout(close, ttl);
+                return t;
+            };
+        }
+    })();
+
+    try {
+        if (!window.__leavesSubmitCapture__) {
+            document.addEventListener('submit', function(ev){
+                const form = ev.target;
+                if (form && form.action && form.action.includes('/api/leaves/request.php')){
+                    ev.preventDefault();
+                    if (form.__leavesSubmitting) return;
+                    form.__leavesSubmitting = true;
+                    const fd = new FormData(form);
+                    // Normalizar datas dd/mm/yyyy -> yyyy-mm-dd
+                    try {
+                        const diEl = form.querySelector('#data_inicio');
+                        const dfEl = form.querySelector('#data_fim');
+                        const norm = v => (/^\d{2}\/\d{2}\/\d{4}$/.test(v) ? `${v.slice(6,10)}-${v.slice(3,5)}-${v.slice(0,2)}` : v);
+                        if (diEl && diEl.value) fd.set('data_inicio', norm(diEl.value));
+                        if (dfEl && dfEl.value) fd.set('data_fim', norm(dfEl.value));
+                    } catch(_) {}
+                    const btn = form.querySelector('button[type="submit"], .btn-submit');
+                    const original = btn ? btn.innerHTML : '';
+                    if (btn){ btn.disabled = true; btn.innerText = 'A enviar...'; }
+                    fetch(form.action, { method:'POST', body: fd, credentials: 'same-origin' })
+                      .then(async resp => {
+                        const ct = resp.headers.get('content-type')||'';
+                        let data=null;
+                        if (ct.includes('application/json')) data = await resp.json();
+                        else { const txt = await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||'Erro ao processar resposta.'}; } }
+                        if (!resp.ok || !data || data.ok===false){
+                            const code = data && (data.code || data.error || data.message);
+                            const codeMap = { MISSING_FIELDS:'Preencha todos os campos obrigatórios.', INVALID_DATE:'Data inválida.', RANGE_ERROR:'Data de início deve ser anterior à data de fim.', DOC_REQUIRED:'Este tipo exige comprovativo (PDF/JPG/PNG).', BAD_FILETYPE:'Tipo de ficheiro inválido (PDF, JPG, PNG).', FILE_TOO_LARGE:'Ficheiro maior que 5MB.', FILE_MOVE_ERROR:'Erro ao guardar o ficheiro no servidor.', UNAUTHENTICATED:'Sessão expirada. Faça login novamente.', FORBIDDEN_ROLE:'Perfil sem permissão para criar pedidos.', DB_ERROR:'Erro interno ao gravar o pedido.' };
+                            const friendly = codeMap[code] || (code ? String(code) : `HTTP ${resp.status}`);
+                            showToast('error', `Falha ao submeter pedido: ${friendly}`);
+                        } else {
+                            showToast('success', 'Pedido submetido com sucesso.');
+                            window.fecharModalPedido && window.fecharModalPedido();
+                            setTimeout(()=>window.location.reload(), 1200);
+                        }
+                      })
+                      .catch(err => showToast('error', `Erro inesperado: ${err && err.message ? err.message : err}`))
+                      .finally(()=>{ if (btn){ btn.disabled=false; btn.innerHTML = original || 'Submeter Pedido'; } form.__leavesSubmitting=false; });
+                }
+            }, true);
+            window.__leavesSubmitCapture__ = true;
+        }
+    } catch (_) { /* noop */ }
 });
 
 // Funções globais para Férias e Ausências
@@ -642,6 +860,45 @@ window.fecharModal = function() {
 
 // Função para inicializar eventos após carregamento dinâmico de conteúdo
 window.initializeDynamicContent = function() {
+    // Garantir infra de toast disponível (leve e idempotente)
+    (function ensureToastInfra(){
+        if (!document.getElementById('toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+            .toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+            .toast{min-width:260px;max-width:420px;padding:12px 14px;border-radius:10px;color:#0b1220;background:#0b1220;box-shadow:0 6px 16px rgba(0,0,0,.18);display:flex;align-items:flex-start;gap:10px;opacity:0;transform:translateY(-6px);animation:toast-in .2s ease forwards}
+            .toast.success{background:linear-gradient(135deg,#10b981,#34d399);color:#062d1f}
+            .toast.error{background:linear-gradient(135deg,#ef4444,#f59e0b);color:#2b0b0b}
+            .toast.info{background:linear-gradient(135deg,#3e84f2,#7aa8f9);color:#041935}
+            .toast .t-icon{font-size:18px;line-height:18px;margin-top:2px}
+            .toast .t-msg{flex:1;font-weight:600}
+            .toast .t-close{background:transparent;border:none;color:inherit;cursor:pointer;font-size:16px;opacity:.8}
+            @keyframes toast-in{to{opacity:1;transform:translateY(0)}}
+            @keyframes toast-out{to{opacity:0;transform:translateY(-6px)}}`;
+            document.head.appendChild(style);
+        }
+        if (!document.querySelector('.toast-container')){
+            const c = document.createElement('div');
+            c.className = 'toast-container';
+            document.body.appendChild(c);
+        }
+        if (!window.showToast){
+            window.showToast = function(type, message, opts={}){
+                const container = document.querySelector('.toast-container');
+                const t = document.createElement('div');
+                t.className = `toast ${type||'info'}`;
+                const icon = type==='success'?'✓':type==='error'?'✗':'ℹ';
+                t.innerHTML = `<span class="t-icon">${icon}</span><div class="t-msg">${message}</div><button class="t-close" aria-label="Fechar">×</button>`;
+                container.appendChild(t);
+                const ttl = Number(opts.duration||2500);
+                const close = ()=>{ t.style.animation = 'toast-out .18s ease forwards'; setTimeout(()=>t.remove(), 200); };
+                t.querySelector('.t-close').addEventListener('click', close);
+                setTimeout(close, ttl);
+                return t;
+            };
+        }
+    })();
     // Inicializar filtros de férias/ausências
     const filterBtns = document.querySelectorAll('.filter-btn');
     const pedidoCards = document.querySelectorAll('.pedido-card');
@@ -743,4 +1000,61 @@ window.initializeDynamicContent = function() {
             }
         });
     });
+
+    // Interceptar submissões para /api/leaves/request.php (conteúdo dinâmico)
+    try {
+        if (!window.__leavesSubmitCapture__) {
+            document.addEventListener('submit', function(ev){
+                const form = ev.target;
+                if (form && form.action && form.action.includes('/api/leaves/request.php')){
+                    ev.preventDefault();
+                    if (form.__leavesSubmitting) return;
+                    form.__leavesSubmitting = true;
+                    const fd = new FormData(form);
+                    // Normalizar datas dd/mm/yyyy -> yyyy-mm-dd
+                    try {
+                        const diEl = form.querySelector('#data_inicio');
+                        const dfEl = form.querySelector('#data_fim');
+                        const norm = v => (/^\d{2}\/\d{2}\/\d{4}$/.test(v) ? `${v.slice(6,10)}-${v.slice(3,5)}-${v.slice(0,2)}` : v);
+                        if (diEl && diEl.value) fd.set('data_inicio', norm(diEl.value));
+                        if (dfEl && dfEl.value) fd.set('data_fim', norm(dfEl.value));
+                    } catch(_) {}
+                    const btn = form.querySelector('button[type="submit"], .btn-submit');
+                    const original = btn ? btn.innerHTML : '';
+                    if (btn){ btn.disabled = true; btn.innerText = 'A enviar...'; }
+                    fetch(form.action, { method:'POST', body: fd, credentials: 'same-origin' })
+                      .then(async resp => {
+                        const ct = resp.headers.get('content-type')||'';
+                        let data=null;
+                        if (ct.includes('application/json')) data = await resp.json();
+                        else { const txt = await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||'Erro ao processar resposta.'}; } }
+                        if (!resp.ok || !data || data.ok===false){
+                            const code = data && (data.code || data.error || data.message);
+                            const codeMap = {
+                                MISSING_FIELDS: 'Preencha todos os campos obrigatórios.',
+                                INVALID_DATE: 'Data inválida.',
+                                RANGE_ERROR: 'Data de início deve ser anterior à data de fim.',
+                                DOC_REQUIRED: 'Este tipo exige comprovativo (PDF/JPG/PNG).',
+                                BAD_FILETYPE: 'Tipo de ficheiro inválido (PDF, JPG, PNG).',
+                                FILE_TOO_LARGE: 'Ficheiro maior que 5MB.',
+                                FILE_MOVE_ERROR: 'Erro ao guardar o ficheiro no servidor.',
+                                UNAUTHENTICATED: 'Sessão expirada. Faça login novamente.',
+                                FORBIDDEN_ROLE: 'Perfil sem permissão para criar pedidos.',
+                                DB_ERROR: 'Erro interno ao gravar o pedido.'
+                            };
+                            const friendly = codeMap[code] || (code ? String(code) : `HTTP ${resp.status}`);
+                            showToast('error', `Falha ao submeter pedido: ${friendly}`);
+                        } else {
+                            showToast('success', 'Pedido submetido com sucesso.');
+                            window.fecharModalPedido && window.fecharModalPedido();
+                            setTimeout(()=>window.location.reload(), 1200);
+                        }
+                      })
+                      .catch(err => showToast('error', `Erro inesperado: ${err && err.message ? err.message : err}`))
+                      .finally(()=>{ if (btn){ btn.disabled=false; btn.innerHTML = original || 'Submeter Pedido'; } form.__leavesSubmitting=false; });
+                }
+            }, true);
+            window.__leavesSubmitCapture__ = true;
+        }
+    } catch (_) { /* noop */ }
 };
