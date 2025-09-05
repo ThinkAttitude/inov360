@@ -11,7 +11,7 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     exit;
 }
 $role = $_SESSION['user']['role'] ?? '';
-$allowed = ['inter2','inter','admin','adminrh'];
+$allowed = ['inter2','inter','admin','adminrh','estrela','*'];
 if (!in_array($role, $allowed, true)) {
     http_response_code(403);
     echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]);

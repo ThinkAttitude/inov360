@@ -297,8 +297,8 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
     </main>
 </div>
 
-<script src="../../js/dashboard_admin.js?v=20250825"></script>
+<script src="../../js/dashboard_admin.js?v=20250825&b=20250905"></script>
 <script src="../../js/theme.js?v=20250825"></script>
-<script src="../../js/ferias_ausencias.js?v=20250825"></script>
+<script src="../../js/ferias_ausencias.js?v=20250825&b=20250905"></script>
 </body>
 </html>

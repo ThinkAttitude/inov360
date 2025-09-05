@@ -318,7 +318,7 @@ try {
                 </svg>
             </button>
         </div>
-        <form action="../../api/pedidos/i_fa.php" method="POST" enctype="multipart/form-data" class="modal-form">
+    <form action="../../api/leaves/request.php" method="POST" enctype="multipart/form-data" class="modal-form">
             <div class="form-section">
                 <div class="input-group">
                     <label for="tipo">Tipo de Pedido *</label>

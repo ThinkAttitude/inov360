@@ -14,6 +14,30 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
     }
 
+    // Badge de pendentes (avaliador)
+    async function updatePendingBadge(){
+        try{
+            // Tenta preferencialmente um link explícito de aprovação; caso não exista, usa o de pedidos_ferias
+            const link = document.querySelector(
+                '.sidebar-menu a[data-content="aprovacao_ferias_ausencias"], .sidebar-menu a[data-content="aprovar_ferias"], .sidebar-menu a[data-content="pedidos_ferias"]'
+            );
+            if(!link) return;
+            const resp = await fetch('../../api/leaves/aval_summary.php', { credentials: 'include' });
+            if(!resp.ok) return;
+            const data = await resp.json();
+            if(!data || data.ok!==true || typeof data.pending !== 'number') return;
+            let badge = link.querySelector('.pending-badge');
+            if(!badge){
+                badge = document.createElement('span');
+                badge.className = 'pending-badge';
+                badge.style.cssText = 'margin-left:8px;display:inline-flex;min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:12px;line-height:18px;align-items:center;justify-content:center;font-weight:700;';
+                link.appendChild(badge);
+            }
+            badge.textContent = String(data.pending);
+            badge.style.display = data.pending>0 ? 'inline-flex' : 'none';
+        }catch(_){ /* ignore */ }
+    }
+
     // ---------- EDIÇÃO COMPLETA FICHA (ADMIN RH) ----------
     function buildFichaEditarUrl(){
         // tenta usar user id do botão clicado anteriormente ou global
@@ -205,7 +229,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
         // Reaplicar event listeners aos novos card-links
-        attachCardLinkListeners();
+    attachCardLinkListeners();
+    updatePendingBadge();
     }
 
     // Função para anexar listeners aos card-links
@@ -214,6 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
         cardLinks.forEach(link => {
             link.addEventListener("click", handleNavigation);
         });
+    updatePendingBadge();
     }
 
     // Função principal de navegação
@@ -392,7 +418,26 @@ document.addEventListener("DOMContentLoaded", function () {
                         day: 'Dia'
                     },
                     height: 'auto',
-                    events: '../../api/eventos/listar_eventos.php',
+                    events: function(fetchInfo, successCallback, failureCallback) {
+                        const start = fetchInfo.start;
+                        const monthKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2,'0')}`;
+                        fetch(`../../api/calendar/get_month.php?month=${encodeURIComponent(monthKey)}`, { credentials: 'same-origin' })
+                          .then(r => r.json())
+                          .then(data => {
+                            if (!data || data.ok !== true || !Array.isArray(data.days)) { failureCallback(new Error('Resposta inesperada')); return; }
+                            const events = [];
+                            data.days.forEach(d => {
+                                const dateStr = d.date;
+                                const leaves = Array.isArray(d.leaves) ? d.leaves : [];
+                                leaves.forEach(lv => {
+                                    const title = (lv.label || lv.titulo || lv.title || lv.tipo || lv.type || 'Ausência');
+                                    events.push({ title, start: dateStr, allDay: true, extendedProps: { type: 'LEAVE', raw: lv } });
+                                });
+                            });
+                            successCallback(events);
+                          })
+                          .catch(err => failureCallback(err));
+                    },
                     eventClick: function(info) {
                         alert('Evento: ' + info.event.title + '\nData: ' + info.event.start.toLocaleDateString());
                     }
@@ -1105,6 +1150,51 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Mostrar página inicial por padrão
     setTimeout(showWelcome, 100);
+
+    // Captura global para impedir navegação para /api/leaves/request.php em conteúdos carregados via AJAX
+    try {
+        if (!window.__leavesSubmitCapture__) {
+            document.addEventListener('submit', function(ev){
+                const form = ev.target;
+                if (form && form.action && form.action.includes('/api/leaves/request.php')){
+                    ev.preventDefault();
+                    if (form.__leavesSubmitting) return;
+                    form.__leavesSubmitting = true;
+                    const fd = new FormData(form);
+                    // Normalizar datas
+                    try {
+                        const di = form.querySelector('#data_inicio');
+                        const df = form.querySelector('#data_fim');
+                        const norm = v => (/^\d{2}\/\d{2}\/\d{4}$/.test(v) ? `${v.slice(6,10)}-${v.slice(3,5)}-${v.slice(0,2)}` : v);
+                        if (di && di.value) fd.set('data_inicio', norm(di.value));
+                        if (df && df.value) fd.set('data_fim', norm(df.value));
+                    } catch(_) {}
+                    const btn = form.querySelector('button[type="submit"], .btn-submit');
+                    const original = btn ? btn.innerHTML : '';
+                    if (btn){ btn.disabled = true; btn.innerText = 'A enviar...'; }
+                    fetch(form.action, { method:'POST', body: fd, credentials: 'same-origin' })
+                      .then(async resp => {
+                          const ct = resp.headers.get('content-type')||'';
+                          let data=null;
+                          if (ct.includes('application/json')) data = await resp.json();
+                          else { const txt = await resp.text(); try{ data=JSON.parse(txt);}catch{ data={ ok:false, error:txt||'Erro ao processar resposta.'}; } }
+                          if (!resp.ok || !data || data.ok===false){
+                              const code = data && (data.code || data.error || data.message);
+                              const map = { MISSING_FIELDS:'Preencha todos os campos obrigatórios.', INVALID_DATE:'Data inválida.', RANGE_ERROR:'Data de início deve ser anterior à data de fim.', DOC_REQUIRED:'Este tipo exige comprovativo (PDF/JPG/PNG).', BAD_FILETYPE:'Tipo de ficheiro inválido (PDF, JPG, PNG).', FILE_TOO_LARGE:'Ficheiro maior que 5MB.', FILE_MOVE_ERROR:'Erro ao guardar o ficheiro no servidor.', UNAUTHENTICATED:'Sessão expirada. Faça login novamente.', FORBIDDEN_ROLE:'Perfil sem permissão para criar pedidos.', DB_ERROR:'Erro interno ao gravar o pedido.' };
+                              if (typeof showToast === 'function') showToast('❌ '+(map[code] || code || ('HTTP '+resp.status)), 'error'); else alert(map[code] || code || ('HTTP '+resp.status));
+                          } else {
+                              if (typeof showToast === 'function') showToast('✅ Pedido submetido com sucesso.', 'success'); else alert('Pedido submetido com sucesso');
+                              window.fecharModalPedido && window.fecharModalPedido();
+                              setTimeout(()=>window.location.reload(), 1200);
+                          }
+                      })
+                      .catch(err => { if (typeof showToast === 'function') showToast('❌ '+(err && err.message ? err.message : err), 'error'); else alert(err && err.message ? err.message : String(err)); })
+                      .finally(()=>{ if (btn){ btn.disabled=false; btn.innerHTML = original || 'Submeter Pedido'; } form.__leavesSubmitting=false; });
+                }
+            }, true);
+            window.__leavesSubmitCapture__ = true;
+        }
+    } catch (_) { /* noop */ }
 });
 
 // Funções globais para compatibilidade
