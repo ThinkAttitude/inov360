@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </svg>
                     </div>
                     <h3>Consulta de Pedidos</h3>
-                    <p>Consulte o histórico de todos os pedidos processados e os seus próprios pedidos.</p>
+                    <p>Consulte o histórico de pedidos processados da sua equipa.</p>
                     <a href="#" class="card-link" data-content="consulta_pedidos">
                         Ver Histórico
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -385,32 +385,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Inicializar módulo de consulta de pedidos
     function initializeConsultaPedidosModule() {
-        const toggleBtns = document.querySelectorAll('.toggle-btn');
-        const teamSection = document.querySelector('.requests-section:first-of-type');
-        const personalSection = document.getElementById('personal-section');
-
-        // Garantir que as secções estão correctamente inicializadas
-        if (teamSection) teamSection.style.display = 'block';
-        if (personalSection) personalSection.style.display = 'none';
-
-        toggleBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const section = this.getAttribute('data-section');
-
-                // Atualizar botão ativo
-                toggleBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-
-                // Mostrar/esconder secções
-                if (section === 'team') {
-                    if (teamSection) teamSection.style.display = 'block';
-                    if (personalSection) personalSection.style.display = 'none';
-                } else {
-                    if (teamSection) teamSection.style.display = 'none';
-                    if (personalSection) personalSection.style.display = 'block';
-                }
-            });
-        });
+    // Página agora só tem pedidos da equipa; não há toggles a inicializar.
+    const teamSection = document.querySelector('.requests-section');
+    if (teamSection) teamSection.style.display = 'block';
     }
 
     // Inicializar módulo de lista de intermédios 2
