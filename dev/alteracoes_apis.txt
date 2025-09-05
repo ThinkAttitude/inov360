@@ -1,3 +1,210 @@
+
+_____________________________
+LEAVES
+______________________________
+
+POST /api/leaves/request.php
+Parâmetros de entrada (form-data):
+
+tipo: enum do pedido (ex.: ferias, baixa_medica, licenca_maternidade, …) (obrigatório)
+
+data_inicio: data YYYY-MM-DD (obrigatório)
+
+data_fim: data YYYY-MM-DD (obrigatório)
+
+justificacao: texto da justificação (obrigatório)
+
+ficheiro: comprovativo (PDF/JPG/PNG ≤ 5 MB). Obrigatório para: licenca_paternidade, licenca_maternidade, baixa_medica, baixa_seguro, casamento, consulta_medica (opcional/obrigatório conforme tipo)
+
+responsavel_id: id do substituto (opcional)
+
+Resposta de sucesso:
+
+ok: true
+
+request_id: id do pedido criado
+
+Mensagens de erro possíveis: não autenticado, role sem permissão (estrela), campos em falta, data inválida/intervalo inválido, comprovativo obrigatório, tipo de ficheiro inválido, ficheiro demasiado grande, erro ao mover ficheiro, erro de base de dados.
+
+_______
+
+POST /api/leaves/decision.php
+Parâmetros de entrada (JSON):
+
+pedido_id: id do pedido (obrigatório)
+
+acao: “aprovar” | “rejeitar” (obrigatório)
+
+comentario: motivo (obrigatório quando acao = “rejeitar”)
+
+Resposta de sucesso:
+
+ok: true
+
+pedido_id: id do pedido
+
+estado: “aprovado” | “rejeitado”
+
+comentario: comentário (se enviado)
+
+evento: objeto do evento criado quando aprovado (id, user_id, titulo, tipo=LEAVE, inicio, fim, status, leave_request_id) ou null
+
+Mensagens de erro possíveis: não autenticado, role sem permissão (apenas inter2, inter, admin, adminrh, estrela), pedido inexistente, comentário obrigatório, erro de base de dados.
+
+_______
+
+GET /api/leaves/colab_summary.php
+Parâmetros de entrada:
+
+nenhum (usa a sessão; disponível para todas as roles exceto estrela)
+
+Resposta de sucesso:
+
+ok: true
+
+summary:
+
+total: total de pedidos do utilizador
+
+pendentes: nº de pedidos pendentes
+
+aprovados: nº de pedidos aprovados
+
+rejeitados: nº de pedidos rejeitados
+
+Mensagens de erro possíveis: não autenticado, role sem permissão, erro de base de dados.
+
+_____________
+
+GET /api/leaves/colab_requests.php
+Parâmetros de entrada:
+
+nenhum (lista todos os pedidos do utilizador logado)
+
+Resposta de sucesso:
+
+ok: true
+
+total: nº total de pedidos
+
+items: lista de pedidos com
+
+id, tipo, inicio, fim, justificacao, responsavel_id, comprovativo (URL ou null), estado, criado_em, decidido_por
+
+Mensagens de erro possíveis: não autenticado, role sem permissão, erro de base de dados.
+
+_______
+
+GET /api/leaves/aval_summary.php
+(“badge” de pendentes para o avaliador)
+
+Parâmetros de entrada:
+
+nenhum (usa a sessão; roles: inter2, inter, admin, adminrh, estrela)
+
+Resposta de sucesso:
+
+ok: true
+
+pending: nº de pedidos pendentes da equipa (roles imediatamente abaixo conforme hierarquia)
+
+Mensagens de erro possíveis: não autenticado, role sem permissão, erro de base de dados.
+
+_______
+
+GET /api/leaves/aval_requests.php
+(Lista de pedidos pendentes da equipa, com filtro por tipo)
+
+Parâmetros de entrada (query-string):
+
+type: “all” | “ferias” | “baixas” | “licencas” (opcional, default: all)
+
+Resposta de sucesso:
+
+ok: true
+
+type: filtro aplicado
+
+items: lista de pedidos com
+
+pedido_id
+
+colaborador: { id, nome, role }
+
+tipo, inicio, fim, justificacao
+
+substituicao: { id, nome } ou null
+
+comprovativo: URL ou null
+
+pedido_em: timestamp de criação
+
+Mensagens de erro possíveis: não autenticado, role sem permissão, erro de base de dados.
+
+________
+
+GET /api/leaves/aval_history_summary.php
+(Sumário do histórico — só equipa, estados não pendentes)
+
+Parâmetros de entrada:
+
+nenhum
+
+Resposta de sucesso:
+
+ok: true
+
+team_total: total de pedidos da equipa (aprovados + rejeitados)
+
+aprovados: nº aprovados
+
+rejeitados: nº rejeitados
+
+Mensagens de erro possíveis: não autenticado, role sem permissão, erro de base de dados.
+
+____________
+
+GET /api/leaves/aval_history_list.php
+(Lista do histórico aprovado/rejeitado da equipa)
+
+Parâmetros de entrada:
+
+nenhum
+
+Resposta de sucesso:
+
+ok: true
+
+total: nº de pedidos listados
+
+items: lista com
+
+pedido_id
+
+colaborador: { id, nome }
+
+tipo
+
+estado: “aprovado” | “rejeitado”
+
+inicio, fim
+
+pedido_em
+
+descricao
+
+decidido_por: { id, nome }
+
+Mensagens de erro possíveis: não autenticado, role sem permissão, erro de base de dados.
+
+
+_____________________________
+TIMESHEETS
+______________________________
+
+_____________________________
+CALENDAR
+______________________________
 PUT /api/calendar/day_put.php
 Parâmetros de entrada (JSON):
 
