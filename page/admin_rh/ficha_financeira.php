@@ -46,6 +46,7 @@ try {
         </div>
         <div class="header-actions">
             <button id="btn-guardar" class="btn-primary">Guardar Alterações</button>
+            <button id="btn-exportar" class="btn-primary" style="margin-left:10px;background:linear-gradient(135deg,#22c55e,#16a34a);">Exportar Excel</button>
         </div>
     </div>
 
@@ -53,6 +54,10 @@ try {
         <div class="ficha-section">
             <div class="section-header"><h3>Identificação</h3></div>
             <div class="form-grid">
+            <div class="field">
+                <label>Número</label>
+                <input id="numero" type="text" placeholder="Número">
+            </div>
             <div class="field full">
                 <label>Nome Completo</label>
                 <input id="nome_completo" type="text" placeholder="Nome completo do colaborador">
@@ -192,7 +197,7 @@ async function loadFinanceProfile(){
             const v = d.data || {};
             const set = (id, val)=>{ const el=document.getElementById(id); if(!el) return; if(el.type==='checkbox'){ el.checked = String(val)==='1' || val===1 || val===true; } else { el.value = (val==null? '': val); } };
             [
-                'nome_completo','vencimento_estimado','vencimento_base','duodecimos',
+                'numero','nome_completo','vencimento_estimado','vencimento_base','duodecimos',
                 'valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_start','baixa_medica_end','ferias_start','ferias_end','observacoes','ajustes_vencimento'
             ].forEach(k=> set(k, v[k]));
   } catch(e){ console.error(e); toast('Falha ao carregar ficha financeira','error'); }
@@ -226,5 +231,14 @@ async function saveFinanceProfile(){
 }
 
 document.getElementById('btn-guardar').addEventListener('click', saveFinanceProfile);
+const btnExportar = document.getElementById('btn-exportar');
+if (btnExportar && !btnExportar.__bound){
+    btnExportar.addEventListener('click', function(){
+        const url = `/api/finance/profile_export.php?user_id=${encodeURIComponent(userId)}`;
+        const win = window.open(url, '_blank');
+        if (!win) window.location.href = url;
+    });
+    btnExportar.__bound = true;
+}
 document.addEventListener('DOMContentLoaded', loadFinanceProfile);
 </script>
