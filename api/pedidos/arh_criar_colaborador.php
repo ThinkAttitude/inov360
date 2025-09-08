@@ -36,7 +36,7 @@ try {
         throw new Exception("Email inválido.");
     }
 
-    if (!in_array($role, ['opera', 'inter2', 'inter', 'admin'])) {
+    if (!in_array($role, ['opera', 'inter2', 'inter', 'admin', 'finan'])) {
         throw new Exception("Role inválido.");
     }
 
