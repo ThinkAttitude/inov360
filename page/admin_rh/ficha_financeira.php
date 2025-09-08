@@ -65,7 +65,7 @@ try {
             <div class="form-grid">
             <div class="field"><label>Vencimento Estimado</label><input id="vencimento_estimado" type="number" step="0.01"></div>
             <div class="field"><label>Vencimento Base</label><input id="vencimento_base" type="number" step="0.01"></div>
-            <div class="field"><label>Duodécimos</label><input id="duodecimos" type="number" step="0.01"></div>
+            <div class="field"><label>Duodécimos</label><input id="duodecimos" type="number" step="1"></div>
             <div class="field"><label>Bónus/Bonificações</label><input id="bonus_bonificacoes" type="number" step="0.01"></div>
             <div class="field"><label>Ajustes de Vencimento</label><input id="ajustes_vencimento" type="number" step="0.01"></div>
             <div class="field"><label>Ajudas de Custos a Deduzir</label><input id="ajudas_custos_deduc" type="number" step="0.01"></div>
@@ -109,10 +109,11 @@ try {
             <div class="field"><label>Faltas Não Remuneradas</label><input id="faltas_nao_rem" type="number" step="1"></div>
             <div class="field"><label>Faltas Não Rem. Justificadas</label><input id="faltas_nao_rem_just" type="number" step="1"></div>
             <div class="field"><label>Faltas Rem. Justificadas</label><input id="faltas_rem_just" type="number" step="1"></div>
-            <div class="field"><label>Baixa Médica (dias)</label><input id="baixa_medica_dt" type="number" step="1"></div>
+            <div class="field"><label>Baixa Médica - Início</label><input id="baixa_medica_start" type="date"></div>
+            <div class="field"><label>Baixa Médica - Fim</label><input id="baixa_medica_end" type="date"></div>
             <div class="field inline-checkbox"><input id="ferias_sn" type="checkbox"><label for="ferias_sn">Em férias?</label></div>
-            <div class="field"><label>Início Férias</label><input id="ferias_data_start" type="date"></div>
-            <div class="field"><label>Fim Férias</label><input id="ferias_data_end" type="date"></div>
+            <div class="field"><label>Início Férias</label><input id="ferias_start" type="date"></div>
+            <div class="field"><label>Fim Férias</label><input id="ferias_end" type="date"></div>
             </div>
         </div>
 
@@ -190,13 +191,10 @@ async function loadFinanceProfile(){
         if (!d.ok) throw new Error(d.code||'API');
             const v = d.data || {};
             const set = (id, val)=>{ const el=document.getElementById(id); if(!el) return; if(el.type==='checkbox'){ el.checked = String(val)==='1' || val===1 || val===true; } else { el.value = (val==null? '': val); } };
-            // Mapear chaves da API -> campos do formulário
-            if (v.hasOwnProperty('ferias_start')) set('ferias_data_start', v['ferias_start']);
-            if (v.hasOwnProperty('ferias_end')) set('ferias_data_end', v['ferias_end']);
-            if (v.hasOwnProperty('duodecimos_sn')) set('duodecimos', v['duodecimos_sn'] ? 2 : 1);
-    [
-                'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','observacoes','ajustes_vencimento'
-    ].forEach(k=> set(k, v[k]));
+            [
+                'nome_completo','vencimento_estimado','vencimento_base','duodecimos',
+                'valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_start','baixa_medica_end','ferias_start','ferias_end','observacoes','ajustes_vencimento'
+            ].forEach(k=> set(k, v[k]));
   } catch(e){ console.error(e); toast('Falha ao carregar ficha financeira','error'); }
 }
 
@@ -212,16 +210,9 @@ async function saveFinanceProfile(){
     };
     const payload = { user_id: userId };
     [
-        'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_dt','ferias_data_start','ferias_data_end','observacoes','ajustes_vencimento'
+        'numero','nome_completo','vencimento_estimado','vencimento_base','duodecimos',
+        'valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_start','baixa_medica_end','ferias_start','ferias_end','observacoes','ajustes_vencimento'
     ].forEach(k=> putIf(payload, k, getEl(k)));
-        // Map UI-specific fields to API field names
-        const duoEl = getEl('duodecimos');
-        if (duoEl) {
-            const n = parseInt((duoEl.value||'').toString().trim(), 10);
-            if (!Number.isNaN(n)) payload.duodecimos_sn = (n === 2 ? 1 : 0);
-        }
-        if (payload.ferias_data_start){ payload.ferias_start = payload.ferias_data_start; delete payload.ferias_data_start; }
-        if (payload.ferias_data_end){ payload.ferias_end = payload.ferias_data_end; delete payload.ferias_data_end; }
         try {
             const r = await fetch('/api/finance/profile_update.php', {
                 method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, credentials:'same-origin',

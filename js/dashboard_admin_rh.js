@@ -993,13 +993,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     throw new Error((d&&d.code)||'API');
                 }
                                 const v = d.data||{};
-                                // Map keys from API to form when different
-                                if (Object.prototype.hasOwnProperty.call(v,'ferias_start')) setField('ferias_data_start', v['ferias_start']);
-                                if (Object.prototype.hasOwnProperty.call(v,'ferias_end')) setField('ferias_data_end', v['ferias_end']);
-                                if (Object.prototype.hasOwnProperty.call(v,'duodecimos_sn')) setField('duodecimos', v['duodecimos_sn'] ? 2 : 1);
+                                // Set fields (prefer new names; keep fallback for API variations)
+                                if (Object.prototype.hasOwnProperty.call(v,'duodecimos')) setField('duodecimos', v['duodecimos']);
+                                else if (Object.prototype.hasOwnProperty.call(v,'duodecimos_sn')) setField('duodecimos', v['duodecimos_sn'] ? 2 : 1);
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_start')) setField('ferias_start', v['ferias_start']);
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_end')) setField('ferias_end', v['ferias_end']);
+                                if (Object.prototype.hasOwnProperty.call(v,'baixa_medica_start')) setField('baixa_medica_start', v['baixa_medica_start']);
+                                if (Object.prototype.hasOwnProperty.call(v,'baixa_medica_end')) setField('baixa_medica_end', v['baixa_medica_end']);
                 [
                                     'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','observacoes','ajustes_vencimento'
-                ].forEach(k=> setField(k, v[k]));
+                ].forEach(k=>{ if (k in v) setField(k, v[k]); });
             }catch(e){ console.error(e); toast('Falha ao carregar ficha financeira','error'); }
         }
 
@@ -1014,13 +1017,17 @@ document.addEventListener("DOMContentLoaded", function () {
                                 if (el.type==='number') { const n = Number(v); if (!Number.isNaN(n)) payload[k] = n; } else { payload[k] = v; }
                         };
                         [
-                                        'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_dt','ferias_data_start','ferias_data_end','observacoes','ajustes_vencimento'
+                                        'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_start','baixa_medica_end','ferias_start','ferias_end','observacoes','ajustes_vencimento'
                         ].forEach(assign);
-                                    // Map UI -> API names
+                                    // Map/augment for API compatibility: also send duodecimos_sn
                                     const duoEl = document.getElementById('duodecimos');
-                                    if (duoEl){ const n = parseInt((duoEl.value||'').toString().trim(),10); if(!Number.isNaN(n)) payload.duodecimos_sn = (n===2?1:0); delete payload.duodecimos; }
-                                    if (payload.ferias_data_start){ payload.ferias_start = payload.ferias_data_start; delete payload.ferias_data_start; }
-                                    if (payload.ferias_data_end){ payload.ferias_end = payload.ferias_data_end; delete payload.ferias_data_end; }
+                                    if (duoEl){
+                                        const n = parseInt((duoEl.value||'').toString().trim(),10);
+                                        if (!Number.isNaN(n)) {
+                                            payload.duodecimos = n;
+                                            payload.duodecimos_sn = (n===2?1:0);
+                                        }
+                                    }
             try{
                 const r = await fetch('/api/finance/profile_update.php', { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, credentials:'same-origin', body: JSON.stringify(payload)});
                 const raw = await r.text();
