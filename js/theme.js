@@ -14,7 +14,13 @@
     const aliases = {
       'thinkattitude': 'think-attitude',
       'think-attitude': 'think-attitude',
-      'think attitude': 'think-attitude'
+  'think attitude': 'think-attitude',
+  // Grupo Inov aliases
+  'grupoinov': 'grupo-inov',
+  'grupo-inov': 'grupo-inov',
+  'grupo inov': 'grupo-inov',
+  'grupo_inov': 'grupo-inov',
+  'inov': 'grupo-inov'
     };
     return aliases[slug] || slug;
   }
@@ -67,8 +73,17 @@
       if(!logoContainer.dataset.defaultHtml){
         logoContainer.dataset.defaultHtml = logoContainer.innerHTML;
       }
-      if(company.logo){
-        const logoUrl = company.logo + (company.logo.includes('?') ? '&' : '?') + '_=' + Date.now();
+      // Use provided company logo or a known fallback for this slug
+      const FALLBACK_LOGO_MAP = {
+        'grupo-inov': '../../assets/logos/grupoinov.png',
+        'think-attitude': '../../assets/logos/think.png',
+        'almalusa': '../../assets/logos/alma.png'
+      };
+      const provided = company.logo && String(company.logo).trim() ? company.logo : null;
+      const fallback = FALLBACK_LOGO_MAP[slug] || null;
+      const logoSrc = provided || fallback;
+      if(logoSrc){
+        const logoUrl = logoSrc + (logoSrc.includes('?') ? '&' : '?') + '_=' + Date.now();
         logoContainer.classList.add('has-company-logo');
         logoContainer.innerHTML = `<img src="${logoUrl}" alt="${company.name || 'Company Logo'}" />`;
       } else {
@@ -113,6 +128,14 @@
   '--background-gray': '#f8f6f2',
   '--gradient-1': '#d4af37',
   '--gradient-2': '#b8860b'
+    },
+    // Grupo Inov: dark baby blue palette for Operator UI
+    'grupo-inov': {
+      '--navy-blue': '#2c3e50',
+      '--light-blue': '#5DADE2',
+      '--background-gray': '#f8fafc',
+      '--gradient-1': '#5DADE2',
+      '--gradient-2': '#85C1E9'
     },
     'think-attitude': {
       '--navy-blue': '#f59e0b', /* orange primary */
