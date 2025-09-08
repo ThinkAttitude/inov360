@@ -45,6 +45,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 case "admin_rh":
                     $redirectUrl = "../page/admin_rh/dashboard_admin_rh.php";
                     break;
+                case "finan":
+                    $redirectUrl = "../page/finan/dashboard_finan.php";
+                    break;
                 case "admin":
                     $redirectUrl = "../page/admin/dashboard_admin.php";
                     break;
