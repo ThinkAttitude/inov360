@@ -1,19 +1,19 @@
 <?php return array(
     'root' => array(
         'name' => '__root__',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-copilot/vscode1757439038423',
+        'version' => 'dev-copilot/vscode1757439038423',
+        'reference' => '5b5f6387bb707147b43c2111f5ff7e827d8fea14',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'dev' => true,
+        'dev' => false,
     ),
     'versions' => array(
         '__root__' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-copilot/vscode1757439038423',
+            'version' => 'dev-copilot/vscode1757439038423',
+            'reference' => '5b5f6387bb707147b43c2111f5ff7e827d8fea14',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
