@@ -618,6 +618,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
             });
         }
+
+        // Botão Exportar Excel (todas as fichas financeiras)
+        const exportBtn = document.getElementById('exportar_fichas_financeiras');
+        if (exportBtn && !exportBtn.__bound){
+            exportBtn.addEventListener('click', function(ev){
+                // Allow default if opened directly via anchor in a new tab
+                ev.preventDefault();
+                const url = this.href || '/api/finance/profiles_export_all.php';
+                // Try to open in new tab to stream file
+                const win = window.open(url, '_blank');
+                if (!win) {
+                    // Popup blocked: fallback to navigate current window
+                    window.location.href = url;
+                }
+            });
+            exportBtn.__bound = true;
+        }
     }
 
 
@@ -660,6 +677,18 @@ document.addEventListener("DOMContentLoaded", function () {
     function initializeAnalisarFichaButtons() {
         const analisarBtns = document.querySelectorAll('.analisar-ficha-btn');
         const analisarFinanceBtns = document.querySelectorAll('.analisar-ficha-financeira-btn');
+
+        // Exportar Excel (todas as fichas financeiras)
+        const exportBtn = document.getElementById('exportar_fichas_financeiras');
+        if (exportBtn && !exportBtn.__bound){
+            exportBtn.addEventListener('click', function(ev){
+                ev.preventDefault();
+                const url = this.href || '/api/finance/profiles_export_all.php';
+                const win = window.open(url, '_blank');
+                if (!win) window.location.href = url;
+            });
+            exportBtn.__bound = true;
+        }
 
         analisarBtns.forEach(btn => {
             btn.addEventListener('click', function() {
@@ -993,13 +1022,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     throw new Error((d&&d.code)||'API');
                 }
                                 const v = d.data||{};
-                                // Map keys from API to form when different
-                                if (Object.prototype.hasOwnProperty.call(v,'ferias_start')) setField('ferias_data_start', v['ferias_start']);
-                                if (Object.prototype.hasOwnProperty.call(v,'ferias_end')) setField('ferias_data_end', v['ferias_end']);
-                                if (Object.prototype.hasOwnProperty.call(v,'duodecimos_sn')) setField('duodecimos', v['duodecimos_sn'] ? 2 : 1);
+                                // Set fields (prefer new names; keep fallback for API variations)
+                                if (Object.prototype.hasOwnProperty.call(v,'duodecimos')) setField('duodecimos', v['duodecimos']);
+                                else if (Object.prototype.hasOwnProperty.call(v,'duodecimos_sn')) setField('duodecimos', v['duodecimos_sn'] ? 2 : 1);
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_start')) setField('ferias_start', v['ferias_start']);
+                                if (Object.prototype.hasOwnProperty.call(v,'ferias_end')) setField('ferias_end', v['ferias_end']);
+                                if (Object.prototype.hasOwnProperty.call(v,'baixa_medica_start')) setField('baixa_medica_start', v['baixa_medica_start']);
+                                if (Object.prototype.hasOwnProperty.call(v,'baixa_medica_end')) setField('baixa_medica_end', v['baixa_medica_end']);
                 [
-                                    'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','observacoes','ajustes_vencimento'
-                ].forEach(k=> setField(k, v[k]));
+                                    'numero','nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','observacoes','ajustes_vencimento'
+                ].forEach(k=>{ if (k in v) setField(k, v[k]); });
             }catch(e){ console.error(e); toast('Falha ao carregar ficha financeira','error'); }
         }
 
@@ -1014,13 +1046,17 @@ document.addEventListener("DOMContentLoaded", function () {
                                 if (el.type==='number') { const n = Number(v); if (!Number.isNaN(n)) payload[k] = n; } else { payload[k] = v; }
                         };
                         [
-                                        'nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_dt','ferias_data_start','ferias_data_end','observacoes','ajustes_vencimento'
+                                        'numero','nome_completo','vencimento_estimado','vencimento_base','valor_sub_alimentacao','dias_sub_alimentacao','kms_estimados','valor_por_km','valor_prevencoes','valor_passe_transporte','iht','ajuda_custo_estimado','subsidio_noturno','subsidio_turno','ajudas_custos_deduc','adiantamentos_deduzir','bonus_bonificacoes','duodecimos','prevencoes_sn','penhoras_sn','ferias_sn','faltas_nao_rem','faltas_nao_rem_just','faltas_rem_just','baixa_medica_start','baixa_medica_end','ferias_start','ferias_end','observacoes','ajustes_vencimento'
                         ].forEach(assign);
-                                    // Map UI -> API names
+                                    // Map/augment for API compatibility: also send duodecimos_sn
                                     const duoEl = document.getElementById('duodecimos');
-                                    if (duoEl){ const n = parseInt((duoEl.value||'').toString().trim(),10); if(!Number.isNaN(n)) payload.duodecimos_sn = (n===2?1:0); delete payload.duodecimos; }
-                                    if (payload.ferias_data_start){ payload.ferias_start = payload.ferias_data_start; delete payload.ferias_data_start; }
-                                    if (payload.ferias_data_end){ payload.ferias_end = payload.ferias_data_end; delete payload.ferias_data_end; }
+                                    if (duoEl){
+                                        const n = parseInt((duoEl.value||'').toString().trim(),10);
+                                        if (!Number.isNaN(n)) {
+                                            payload.duodecimos = n;
+                                            payload.duodecimos_sn = (n===2?1:0);
+                                        }
+                                    }
             try{
                 const r = await fetch('/api/finance/profile_update.php', { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, credentials:'same-origin', body: JSON.stringify(payload)});
                 const raw = await r.text();
@@ -1034,6 +1070,38 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if(btnGuardar && !btnGuardar.__bound){ btnGuardar.addEventListener('click', save); btnGuardar.__bound=true; }
+        // Bind export button (download individual finance profile as Excel)
+        const btnExport = document.getElementById('btn-exportar');
+        if (btnExport && !btnExport.__bound){
+            btnExport.addEventListener('click', async function(){
+                try{
+                    btnExport.disabled = true;
+                    const url = `/api/finance/profile_export.php?user_id=${encodeURIComponent(uid)}`;
+                    const resp = await fetch(url, { credentials:'same-origin' });
+                    const ct = (resp.headers.get('content-type')||'').toLowerCase();
+                    if (!resp.ok || (!ct.includes('sheet') && !ct.includes('excel') && !ct.includes('octet'))){
+                        const txt = await resp.text();
+                        const code = (txt||'').trim();
+                        if (code === 'UNAUTHENTICATED') throw new Error('Sessão expirada. Faça login.');
+                        if (code === 'FORBIDDEN') throw new Error('Sem permissão.');
+                        throw new Error(code || ('HTTP '+resp.status));
+                    }
+                    const blob = await resp.blob();
+                    let fname = 'ficha_financeira_'+uid+'.xlsx';
+                    const cd = resp.headers.get('content-disposition') || '';
+                    const m = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+                    if (m){ fname = decodeURIComponent(m[1] || m[2] || fname); }
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = fname;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+                }catch(e){ console.error(e); if (typeof showToast==='function') showToast('❌ Exportação falhou: '+(e&&e.message?e.message:String(e)),'error'); else alert('Exportação falhou'); }
+                finally{ btnExport.disabled = false; }
+            });
+            btnExport.__bound = true;
+        }
         load();
     }
 
