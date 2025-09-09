@@ -193,4 +193,57 @@
     {"id":2,"veiculo":"Opel Movano","marca":"Opel","modelo":"Movano","matricula":"BB-11-BB","ano":"2021","tipo_contrato":"ALD","num_contrato":"ALD-2021-0442","locadora":"ALD Automotive","seguradora":"Allianz","apolice":"ALL-556677","carta_verde":"CV-556677","valido_de":"15/02/2025","valido_ate":"14/02/2026","agencia":"Agência Norte","ag_nome":"Maria Pereira","ag_morada":"Rua das Flores 25","ag_cp":"4000-222 Porto","ag_tel":"+351 220 000 000","ag_mail":"maria.pereira@agencia.pt","danos_materiais":false,"status":"Inspeção"},
     {"id":3,"veiculo":"Skoda Kamiq","marca":"Skoda","modelo":"Kamiq","matricula":"CC-22-CC","ano":"2022","tipo_contrato":"Próprio","num_contrato":"-","locadora":"-","seguradora":"Tranquilidade","apolice":"TR-998877","carta_verde":"CV-998877","valido_de":"01/04/2025","valido_ate":"31/03/2026","agencia":"Agência Sul","ag_nome":"Rui Gomes","ag_morada":"Praça do Sul 12","ag_cp":"8000-100 Faro","ag_tel":"+351 289 000 000","ag_mail":"rui.gomes@agencia.pt","danos_materiais":true,"status":"Livre"}
   ]</script>
+  
+  <!-- Script de controlo dos modais da frota -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const body = document.body;
+    const createBtn = document.getElementById('fleet-create-btn');
+    const createModal = document.getElementById('fleet-create-modal');
+    const detailModal = document.getElementById('fleet-modal');
+
+    function anyModalOpen() {
+      return Array.from(document.querySelectorAll('.fleet-modal')).some(m => m.style.display === 'flex');
+    }
+
+    function openFleetModal(modal) {
+      if (!modal) return;
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+      body.classList.add('modal-open');
+    }
+
+    function closeFleetModal(modal) {
+      if (!modal) return;
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      if (!anyModalOpen()) body.classList.remove('modal-open');
+    }
+
+    // Botão criar
+    createBtn?.addEventListener('click', () => openFleetModal(createModal));
+
+    // Botões detalhes (placeholder: apenas abre modal; lógica de preenchimento pode ser adicionada depois)
+    document.querySelectorAll('.fleet-detail-btn').forEach(btn => {
+      btn.addEventListener('click', () => openFleetModal(detailModal));
+    });
+
+    // Fechar via elementos com data-close (botão X e backdrop)
+    document.querySelectorAll('.fleet-modal [data-close]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const modal = el.closest('.fleet-modal');
+        closeFleetModal(modal);
+      });
+    });
+
+    // ESC fecha todos
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.fleet-modal').forEach(m => {
+          if (m.style.display === 'flex') closeFleetModal(m);
+        });
+      }
+    });
+  });
+  </script>
 </section>

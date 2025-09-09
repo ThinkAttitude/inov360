@@ -10,7 +10,8 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
 }
 $role = $_SESSION['user']['role'] ?? '';
-$allowed = ['admin_rh','*']; // ajusta aos teus papéis
+// Aceitar tanto a convenção documental (admin_rh) como a usada no restante código (adminrh)
+$allowed = ['admin_rh','adminrh'];
 if (!in_array($role, $allowed, true)) {
     http_response_code(403);
     header('Content-Type: application/json; charset=utf-8');
