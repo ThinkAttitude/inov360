@@ -1,6 +1,8 @@
 <?php
 session_start();
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
+require_once '../../api/includes/role_utils.php';
+
+if (!isset($_SESSION["is_login"]) || !has_permission($_SESSION["user"]["role"] ?? '', ['admin_rh', 'adminrh'])) {
     echo "<p>Acesso negado.</p>";
     exit;
 }
@@ -55,12 +57,12 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
         </div>
     </div>
 
-    <div class="bulk-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-        <button id="btn-generate-pdf" class="btn-success">Gerar PDFs Selecionados</button>
-        <button id="btn-export-zip" class="btn-secondary">Exportar ZIP</button>
-    <button id="btn-mark-extracted" class="btn-primary" style="border-radius:8px;">Marcar como Extraído</button>
-        <span id="selection-count" style="color:#64748b;">0 selecionados</span>
-    </div>
+        <div class="bulk-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <button id="btn-export-excel" class="btn-success">Exportar Excel Selecionados</button>
+            <button id="btn-export-zip" class="btn-secondary">Exportar ZIP</button>
+            <button id="btn-mark-extracted" class="btn-primary" style="border-radius:8px;">Marcar como Extraído</button>
+            <span id="selection-count" style="color:#64748b;">0 selecionados</span>
+        </div>
 
     <div id="extract-table-container" class="approvals-container" style="padding:0;">
         <!-- Tabela renderizada via JS -->
@@ -117,7 +119,57 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
     }
 
     function syncFromServer(){
-        notify('Sem API. Use "Importar do navegador" para carregar aprovações locais.', 'info');
+        notify('Carregando dados do servidor...', 'info');
+        
+        // Get current month filter
+        const monthSel = document.getElementById('extract-month');
+        const month = monthSel ? monthSel.value : '';
+        
+        // Build API URL
+        const url = new URL('../../api/timesheets/periods_approved_list.php', window.location);
+        if (month) url.searchParams.set('month', month);
+        
+        fetch(url.toString(), {
+            method: 'GET',
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || 'Erro desconhecido');
+            }
+            
+            // Convert API data to our internal format
+            state.rows = data.rows.map(r => ({
+                id: `${r.user_id}-${r.month}`,
+                userId: r.user_id,
+                userName: r.nome,
+                userEmail: r.email,
+                company: r.company_name,
+                month: r.month,
+                periodId: r.period_id,
+                periodStart: r.period_start,
+                periodEnd: r.period_end,
+                // Set defaults for now, will be populated from export API later
+                dias: 0,
+                horasTotais: 0,
+                horasExtraMin: 0,
+                km: 0,
+                processedDate: null
+            }));
+            
+            render();
+            notify(`${data.rows.length} períodos aprovados carregados.`, 'success');
+        })
+        .catch(error => {
+            console.error('Error syncing from server:', error);
+            notify(`Erro ao carregar dados: ${error.message}`, 'error');
+        });
     }
 
     function loadFromLocalStorage(){
@@ -207,7 +259,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
                 '<td>'+(isExtracted? '<span class="status-badge approved">Extraído</span>' : '<span class="status-badge pending">Por extrair</span>')+'</td>'+
                 '<td>'+
                     '<button class="btn-details" data-action="detalhes">Ver Detalhes</button> '
-                    +'<button class="btn-secondary" data-action="preparar">Preparar PDF</button>'+
+                    +'<button class="btn-secondary" data-action="exportar-excel">Exportar Excel</button>'+
                 '</td>'+
             '</tr>';
         });
@@ -236,6 +288,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
                 const row = state.rows.find(x=>x.id===id);
                 const action = this.getAttribute('data-action');
                 if(action==='detalhes') showDetails(row);
+                if(action==='exportar-excel') exportSingleExcel(row);
                 if(action==='preparar') notify('A geração de PDF será integrada em breve.', 'info');
             });
         });
@@ -276,11 +329,72 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
         setTimeout(()=>toast.remove(), 3000);
     }
 
+    function exportSingleExcel(row) {
+        exportExcel([row.userId], row.month);
+    }
+    
+    function exportSelectedExcel() {
+        if(!state.selected.size) {
+            notify('Selecione pelo menos um registo.', 'error');
+            return;
+        }
+        
+        // Get unique user IDs and months from selected rows
+        const selectedRows = state.rows.filter(r => state.selected.has(r.id));
+        const userIds = [...new Set(selectedRows.map(r => r.userId))];
+        
+        // For now, use the month from the first selected row
+        // In the future, we might want to handle multiple months differently
+        const month = selectedRows[0]?.month;
+        if (!month) {
+            notify('Erro: não foi possível determinar o mês.', 'error');
+            return;
+        }
+        
+        exportExcel(userIds, month);
+    }
+    
+    function exportExcel(userIds, month) {
+        if (!userIds || !userIds.length || !month) {
+            notify('Parâmetros inválidos para exportação.', 'error');
+            return;
+        }
+        
+        notify('Preparando exportação Excel...', 'info');
+        
+        // Build API URL
+        const url = new URL('../../api/timesheets/periods_users_export.php', window.location);
+        url.searchParams.set('month', month);
+        userIds.forEach(id => url.searchParams.append('user_ids[]', id));
+        
+        // Create a temporary link to download the file
+        const link = document.createElement('a');
+        link.href = url.toString();
+        link.download = `mapa_colaboradores_${month}.xlsx`;
+        link.style.display = 'none';
+        
+        // Add to document, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Mark as extracted after successful download attempt
+        setTimeout(() => {
+            const rowIds = state.rows
+                .filter(r => userIds.includes(r.userId) && r.month === month)
+                .map(r => r.id);
+            rowIds.forEach(id => state.extracted.add(id));
+            saveExtractedSet();
+            render();
+            notify('Exportação iniciada. Os registos foram marcados como extraídos.', 'success');
+        }, 1000);
+    }
+
     function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
     // Bind top buttons
     function bindTopActions(){
-        const btnPdf = document.getElementById('btn-generate-pdf');
+        const btnExcel = document.getElementById('btn-export-excel');
         const btnZip = document.getElementById('btn-export-zip');
         const btnMark = document.getElementById('btn-mark-extracted');
         const btnLocal = document.getElementById('btn-load-local');
@@ -291,8 +405,8 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
         if(search) search.addEventListener('input', render);
         if(monthSel) monthSel.addEventListener('change', render);
         if(btnLocal) btnLocal.addEventListener('click', ()=>{ loadFromLocalStorage(); notify('Registos carregados do navegador.', 'success'); });
-    if(btnRefresh) btnRefresh.addEventListener('click', ()=>{ syncFromServer(); });
-        if(btnPdf) btnPdf.addEventListener('click', ()=>{ if(!state.selected.size) return notify('Selecione pelo menos um registo.', 'error'); notify('Geração de PDFs em construção.', 'info'); });
+        if(btnRefresh) btnRefresh.addEventListener('click', ()=>{ syncFromServer(); });
+        if(btnExcel) btnExcel.addEventListener('click', exportSelectedExcel);
         if(btnZip) btnZip.addEventListener('click', ()=>{ if(!state.selected.size) return notify('Selecione pelo menos um registo.', 'error'); notify('Exportação ZIP em construção.', 'info'); });
         if(btnMark) btnMark.addEventListener('click', ()=>{
             if(!state.selected.size) return notify('Selecione pelo menos um registo.', 'error');
@@ -307,7 +421,12 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
     populateMonths();
     loadExtractedSet();
     bindTopActions();
-    // Auto-carregar do localStorage (sem depender do botão) para evitar lista vazia
-    try { loadFromLocalStorage(); } catch(_) { render(); }
+    // Auto-carregar do servidor primeiro, fallback para localStorage se falhar
+    try { 
+        syncFromServer(); 
+    } catch(e) { 
+        console.warn('Failed to sync from server, loading from localStorage:', e);
+        try { loadFromLocalStorage(); } catch(_) { render(); }
+    }
 })();
 </script>
