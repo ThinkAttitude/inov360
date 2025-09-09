@@ -10,16 +10,14 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
 }
 $role = $_SESSION['user']['role'] ?? '';
-// Aceitar tanto a convenção documental (admin_rh) como a usada no restante código (adminrh)
-$allowed = ['admin_rh','adminrh'];
-if (!in_array($role, $allowed, true)) {
-    http_response_code(403);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'FORBIDDEN']); exit;
+// Usar função de normalização para aceitar ambas as variantes: admin_rh e adminrh
+if (!has_permission($role, ['admin_rh', 'adminrh'])) {
+    send_json_error(403, 'FORBIDDEN');
 }
 
 /* Deps & DB */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/role_utils.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 header('Content-Type: application/json; charset=utf-8');
 

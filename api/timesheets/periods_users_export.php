@@ -4,13 +4,18 @@ declare(strict_types=1);
 session_start();
 
 /* --- Auth --- */
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) { http_response_code(401); exit; }
+if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) { 
+    send_json_error(401, 'UNAUTHENTICATED');
+}
 $role = $_SESSION['user']['role'] ?? '';
-// Permitir ambas as variantes do papel: admin_rh (documentação) e adminrh (implementação existente)
-if (!in_array($role, ['admin_rh','adminrh'], true)) { http_response_code(403); exit; }
+// Usar função de normalização para permitir ambas as variantes do papel: admin_rh e adminrh
+if (!has_permission($role, ['admin_rh', 'adminrh'])) { 
+    send_json_error(403, 'FORBIDDEN');
+}
 
 /* --- Deps & DB --- */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/role_utils.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -26,7 +31,9 @@ catch(Throwable $e){ $nameCol = 'name'; }
 
 /* --- Inputs --- */
 $month = trim((string)($_GET['month'] ?? ''));
-if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { http_response_code(400); echo 'INVALID month (use YYYY-MM)'; exit; }
+if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { 
+    send_json_error(400, 'INVALID_MONTH_FORMAT', 'Use YYYY-MM format');
+}
 
 /* user_ids: aceita array (user_ids[]=) ou CSV (user_ids=1,2) */
 $userIdsRaw = $_GET['user_ids'] ?? '';
@@ -35,7 +42,9 @@ if (!is_array($userIdsRaw)) {
 }
 $userIds = array_values(array_unique(array_map('intval', $userIdsRaw)));
 $userIds = array_values(array_filter($userIds, fn($v)=>$v>0));
-if (!$userIds) { http_response_code(400); echo 'Missing user_ids'; exit; }
+if (!$userIds) { 
+    send_json_error(400, 'MISSING_USER_IDS', 'No valid user IDs provided');
+}
 
 /* --- Palavras-chave para LEAVE (no título do evento) --- */
 $FERIAS_LIKE = ["%FERIA%", "%FÉRIA%", "%VACATION%"];
