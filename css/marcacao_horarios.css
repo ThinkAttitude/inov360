@@ -166,12 +166,71 @@
 }
 
 .calendar-day.today {
-    background: #eff6ff;
-    border: 2px solid #3b82f6;
+    background: #5DADE2 !important;
+    border: 3px solid #ffffff !important;
+    box-shadow: 0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+    position: relative;
+}
+
+.calendar-day.today.has-marcacao {
+    background: #5DADE2 !important;
+}
+
+.calendar-day.today::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    background: #3b82f6;
+    border-radius: 50%;
+    border: 1px solid white;
+    z-index: 2;
+}
+
+.calendar-day.today .day-number {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+.calendar-day.today .time-display,
+.calendar-day.today .day-status,
+.calendar-day.today .marcacao-info {
+    color: white !important;
 }
 
 .calendar-day.has-marcacao {
-    background: #f0f9ff;
+    background: #5DADE2;
+}
+
+/* Ensure today always has dark baby blue background regardless of other classes */
+.calendar-day.today,
+.calendar-day.today.has-marcacao,
+.calendar-day.today.vacation,
+.calendar-day.today.absence {
+    background: #5DADE2 !important;
+    border: 3px solid #ffffff !important;
+    box-shadow: 0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Ultra-specific override to ensure today's background is dark baby blue */
+body .marcacao-calendar .calendar-day.today,
+.marcacao-calendar .calendar-day.today {
+    background-color: #5DADE2 !important;
+    background: #5DADE2 !important;
+}
+
+/* Force override any possible inline styles */
+.calendar-day.today[style*="background"] {
+    background: #5DADE2 !important;
+    background-color: #5DADE2 !important;
+}
+
+/* Override any theme-specific styles */
+html .calendar-day.today,
+html body .calendar-day.today {
+    background: #5DADE2 !important;
 }
 
 .calendar-day.vacation {
@@ -209,9 +268,21 @@
     color: #1e40af;
 }
 
+.calendar-day.today .day-status.work {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .day-status.rest {
     background: #f1f5f9;
     color: #475569;
+}
+
+.calendar-day.today .day-status.rest {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .day-status.vacation {
@@ -232,6 +303,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.calendar-day.today .day-extra {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .day-extra.overtime {

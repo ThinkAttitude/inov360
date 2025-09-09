@@ -200,6 +200,32 @@ body.theme-think-attitude .sidebar-header .logo.has-company-logo img { filter: b
 */
 /* ==================================================== */
 
+/* Grupo Inov: Dark Baby Blue */
+body.theme-grupo-inov .sidebar { background: linear-gradient(180deg,#2c3e50,#34495e); }
+body.theme-grupo-inov .welcome-card::before { background: linear-gradient(90deg,#5DADE2,#85C1E9); }
+body.theme-grupo-inov .welcome-card .card-icon { background: linear-gradient(135deg,#5DADE2,#85C1E9); box-shadow:0 4px 12px rgba(93,173,226,0.35); }
+body.theme-grupo-inov .logo:not(.has-company-logo) { background: linear-gradient(135deg,#5DADE2,#85C1E9); box-shadow:0 8px 24px rgba(133,193,233,0.35); }
+body.theme-grupo-inov .role-indicator { background: rgba(93,173,226,0.12); border:1px solid rgba(93,173,226,0.35); color:#AED6F1; }
+body.theme-grupo-inov .sidebar-menu li.active a { background: linear-gradient(135deg,#5DADE2,#85C1E9); box-shadow:0 4px 12px rgba(93,173,226,0.35); }
+body.theme-grupo-inov .sidebar-menu li a::before { background:#5DADE2; }
+body.theme-grupo-inov { --gradient-1: #5DADE2; --gradient-2: #85C1E9; }
+/* Section icons and page icon accents */
+body.theme-grupo-inov .section-icon,
+body.theme-grupo-inov .welcome-card .card-icon { 
+    background: linear-gradient(135deg,#5DADE2,#85C1E9) !important; 
+    color:#1b2d3e !important; 
+    box-shadow:0 4px 12px rgba(93,173,226,0.35) !important; 
+}
+body.theme-grupo-inov .page-icon { 
+    background: linear-gradient(135deg,#5DADE2,#85C1E9) !important;
+    box-shadow:0 8px 24px rgba(93,173,226,0.35) !important;
+    color:#1b2d3e !important;
+}
+/* Improve contrast for fallback logo */
+body.theme-grupo-inov .sidebar-header .logo.has-company-logo img {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+}
+
 /* Dynamic company logo inside .logo container */
 /* Quando há logo da empresa, expandir e remover o "quadrado" */
 .sidebar-header .logo.has-company-logo {
