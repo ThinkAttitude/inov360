@@ -202,6 +202,136 @@ _____________________________
 TIMESHEETS
 ______________________________
 
+GET /api/timesheets/periods_users_export.php
+Exporta para Excel o mapa mensal dos colaboradores selecionados.
+
+Parâmetros de entrada:
+
+month (obrigatório) — string no formato YYYY-MM
+
+user_ids (obrigatório) — lista de IDs dos colaboradores. Pode ser enviada como user_ids[]=12&user_ids[]=34 ou como user_ids=12,34
+
+Regras do dataset:
+
+Apenas eventos com status = 'approved'
+
+O mês é calculado a partir do campo eventos.dia
+
+Os dados são agregados por colaborador
+
+Classificação de férias e faltas é feita com base em palavras-chave no título dos eventos do tipo LEAVE (férias: “FERIA”, “FÉRIA”, “VACATION”; faltas: “FALTA”, “ABSENCE”)
+
+Resposta de sucesso:
+
+Download de um ficheiro .xlsx com cabeçalho Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+A folha chama-se “Mapa YYYY-MM”
+
+Colunas do Excel:
+
+Empresa
+
+Nome
+
+Email
+
+Dias com registo
+
+Horas Trab.
+
+Horas Extr.
+
+Horas Pres.
+
+Total Férias
+
+Total Faltas
+
+Quilómetros
+
+Os registos são ordenados por empresa (ascendente) e depois nome (ascendente)
+
+O ficheiro vem com filtros ativos em cada coluna e cabeçalho a negrito
+
+Mensagens de erro possíveis:
+
+401 UNAUTHENTICATED (não autenticado)
+
+403 FORBIDDEN (role sem permissão — é preciso ser admin_rh)
+
+400 INVALID month (quando o formato do mês não é YYYY-MM)
+
+400 Missing user_ids (quando não foram enviados IDs)
+
+500 erro de base de dados
+
+Exemplos:
+
+/api/timesheets/periods_users_export.php?month=2025-08&user_ids[]=21&user_ids[]=39
+
+/api/timesheets/periods_users_export.php?month=2025-08&user_ids=21,39
+
+________
+
+GET /api/timesheets/periods_approved_list.php
+Lista os períodos de timesheet aprovados.
+
+Parâmetros de entrada:
+
+month (opcional) — string no formato YYYY-MM. Se presente, filtra pelos períodos iniciados nesse mês
+
+q (opcional) — pesquisa textual no nome ou email do utilizador
+
+limit (opcional) — número máximo de registos devolvidos (por defeito 200)
+
+offset (opcional) — deslocamento para paginação (por defeito 0)
+
+Resposta de sucesso (JSON):
+
+success: true
+
+filters: eco dos filtros aplicados (month, q, limit, offset)
+
+total: número total de períodos que cumprem os filtros (para paginação)
+
+rows: lista com os campos:
+
+period_id
+
+user_id
+
+nome
+
+email
+
+company_name
+
+month (ex.: 2025-08)
+
+period_start (data)
+
+period_end (data)
+
+Ordenação:
+
+Resultados ordenados por mês, nome e ID de utilizador.
+
+Mensagens de erro possíveis:
+
+401 UNAUTHENTICATED (não autenticado)
+
+403 FORBIDDEN (role sem permissão — esperado admin_rh)
+
+400 INVALID_MONTH_FORMAT (quando o mês não está no formato YYYY-MM)
+
+500 erro de base de dados
+
+Exemplos:
+
+/api/timesheets/periods_approved_list.php?month=2025-08&limit=100&offset=0
+
+/api/timesheets/periods_approved_list.php?q=ana
+
 _____________________________
 CALENDAR
 ______________________________

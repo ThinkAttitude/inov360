@@ -28,6 +28,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'ezyang/htmlpurifier' => array(
+            'pretty_version' => 'v4.18.0',
+            'version' => '4.18.0.0',
+            'reference' => 'cb56001e54359df7ae76dc522d08845dc741621b',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../ezyang/htmlpurifier',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'graham-campbell/result-type' => array(
             'pretty_version' => 'v1.1.3',
             'version' => '1.1.3.0',
@@ -65,9 +74,9 @@
             'dev_requirement' => false,
         ),
         'phpoffice/phpspreadsheet' => array(
-            'pretty_version' => '4.5.0',
-            'version' => '4.5.0.0',
-            'reference' => '2ea9786632e6fac1aee601b6e426bcc723d8ce13',
+            'pretty_version' => '1.30.0',
+            'version' => '1.30.0.0',
+            'reference' => '2f39286e0136673778b7a142b3f0d141e43d1714',
             'type' => 'library',
             'install_path' => __DIR__ . '/../phpoffice/phpspreadsheet',
             'aliases' => array(),
