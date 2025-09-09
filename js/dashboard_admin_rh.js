@@ -296,6 +296,9 @@ document.addEventListener("DOMContentLoaded", function () {
             case "ficha_colab":
                 url = "../admin_rh/ficha_colaborador.php";
                 break;
+            case "frota":
+                url = "../admin_rh/frota.php";
+                break;
             default:
                 setTimeout(showWelcome, 300);
                 return;
@@ -349,6 +352,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 break;
             case "criar_colaborador":
                 initializeCriarColaboradorModule();
+                break;
+            case "frota":
+                initializeFrotaModule();
                 break;
         }
     }
@@ -1292,37 +1298,243 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Função auxiliar para navegação direta
-    function handleNavigationDirect(content) {
-        document.querySelectorAll(".sidebar-menu li").forEach(li => li.classList.remove("active"));
-        const sidebarLink = document.querySelector(`.sidebar-menu a[data-content="${content}"]`);
-        if (sidebarLink) {
-            sidebarLink.parentElement.classList.add("active");
-        }
+    // --- Fleet (Frota) Module ---
+    function initializeFrotaModule(){
+        const modal = document.getElementById('fleet-modal');
+        if(!modal){ return; }
 
-        showLoading();
+        // Global helpers that always read fresh data from the DOM
+        window.__getFleetData = function(){
+            let data = [];
+            const jsonEl = document.querySelector('#fleet-data');
+            if(jsonEl){
+                try { data = JSON.parse(jsonEl.textContent || '[]'); } catch(e){ data = []; }
+            }
+            if(!Array.isArray(data) || !data.length){ data = (window.__FLEET__||[]); }
+            return data;
+        };
 
-        let url = "";
-        switch (content) {
-            case "ficha_colab":
-                url = "../admin_rh/ficha_colaborador.php";
-                break;
-            default:
-                showWelcome();
-                return;
-        }
+        window.__openFrotaModalFor = function(id){
+            const data = window.__getFleetData();
+            const v = (data||[]).find(x => String(x.id) === String(id));
+            if(!v) return;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            const set = (sel, val)=>{ const el = modal.querySelector(sel); if(el) el.textContent = (val==null? '': String(val)); };
+            set('[data-field="veiculo"]', v.veiculo || [v.marca, v.modelo].filter(Boolean).join(' '));
+            set('[data-field="marca"]', v.marca);
+            set('[data-field="modelo"]', v.modelo);
+            set('[data-field="matricula"]', v.matricula);
+            set('[data-field="ano"]', v.ano);
+            set('[data-field="tipo_contrato"]', v.tipo_contrato);
+            set('[data-field="num_contrato"]', v.num_contrato);
+            set('[data-field="locadora"]', v.locadora);
+            set('[data-field="seguradora"]', v.seguradora);
+            set('[data-field="apolice"]', v.apolice);
+            set('[data-field="carta_verde"]', v.carta_verde);
+            set('[data-field="valido_de"]', v.valido_de);
+            set('[data-field="valido_ate"]', v.valido_ate);
+            set('[data-field="agencia"]', v.agencia);
+            set('[data-field="ag_nome"]', v.ag_nome);
+            set('[data-field="ag_morada"]', v.ag_morada);
+            set('[data-field="ag_cp"]', v.ag_cp);
+            set('[data-field="ag_tel"]', v.ag_tel);
+            set('[data-field="ag_mail"]', v.ag_mail);
+            set('[data-field="danos_materiais"]', v.danos_materiais ? 'Sim' : 'Não');
+        };
 
-        fetch(url)
-            .then(response => response.text())
-            .then(html => {
-                mainContent.innerHTML = html;
-                initializeSpecificFeatures(content);
-            })
-            .catch(error => {
-                console.error('Error loading content:', error);
-                mainContent.innerHTML = '<p>Erro ao carregar conteúdo.</p>';
+        window.__bindFrotaCardClicks = function(scope){
+            const root = scope || document;
+            root.querySelectorAll('.fleet-detail-btn').forEach(btn=>{
+                btn.addEventListener('click', function(){
+                    const id = this.getAttribute('data-id') || this.getAttribute('data-index');
+                    window.__openFrotaModalFor(id);
+                });
             });
+        };
+
+        // Initial bind for existing cards
+        window.__bindFrotaCardClicks(document);
+
+        // Close handlers (idempotent)
+        const close = ()=>{ modal.style.display='none'; document.body.style.overflow=''; };
+        modal.querySelectorAll('[data-close]').forEach(el=> el.addEventListener('click', close));
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ close(); }});
     }
+
+    // Add create-vehicle UI logic: open/close modal, preview image, submit; append new card and update JSON
+    (function(){
+        window.__wireFrotaCreate = function(container){
+            if (!container) return;
+
+            // Helpers
+            const qs = (sel, root=container) => root.querySelector(sel);
+            const qsa = (sel, root=container) => Array.from(root.querySelectorAll(sel));
+
+            const createBtn = qs('#fleet-create-btn');
+            const modal = qs('#fleet-create-modal');
+            if (!createBtn || !modal) return;
+
+            if (modal.dataset.wired === '1') return; // idempotent per modal instance
+            modal.dataset.wired = '1';
+
+            const showModal = () => { modal.style.display = 'flex'; modal.setAttribute('aria-hidden','false'); };
+            const hideModal = () => { modal.style.display = 'none'; modal.setAttribute('aria-hidden','true'); };
+
+            qsa('[data-close]', modal).forEach(el => el.addEventListener('click', hideModal));
+            modal.addEventListener('click', (e) => {
+                if (e.target.classList && e.target.classList.contains('fleet-modal-backdrop')) hideModal();
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideModal(); });
+
+            createBtn.addEventListener('click', showModal);
+
+            // Preview image logic
+            const fileInput = qs('#fleet-image-file');
+            const urlInput = qs('#fleet-image-url');
+            const previewImg = qs('#fleet-create-preview');
+
+            const updatePreview = (src) => {
+                if (!src) { previewImg.style.display='none'; previewImg.src=''; return; }
+                previewImg.src = src; previewImg.style.display='block';
+            };
+
+            if (fileInput) {
+                fileInput.addEventListener('change', () => {
+                    const f = fileInput.files && fileInput.files[0];
+                    if (f) { const reader = new FileReader(); reader.onload = e => updatePreview(e.target.result); reader.readAsDataURL(f); }
+                });
+            }
+
+            if (urlInput) {
+                urlInput.addEventListener('input', () => updatePreview(urlInput.value.trim()));
+            }
+
+            // Submit -> push into JSON fleet array and append a new card
+            const form = qs('#fleet-create-form');
+            const grid = qs('.fleet-grid');
+
+            const getFleetData = () => {
+                const jsonEl = qs('#fleet-data', container) || document.getElementById('fleet-data');
+                if (!jsonEl) return [];
+                try { return JSON.parse(jsonEl.textContent || '[]'); } catch { return []; }
+            };
+            const setFleetData = (arr) => {
+                const jsonEl = qs('#fleet-data', container) || document.getElementById('fleet-data');
+                if (jsonEl) jsonEl.textContent = JSON.stringify(arr);
+            };
+
+            const appendCard = (car) => {
+                if (!grid) return;
+                const article = document.createElement('article');
+                article.className = 'fleet-card';
+                article.setAttribute('data-id', String(car.id));
+                article.innerHTML = `
+                <span class="fleet-status ${car.status === 'Atribuido' ? 'status-atribuido' : (car.status === 'Inspeção' ? 'status-inspecao' : 'status-livre')}">${car.status || 'Livre'}</span>
+                    <img src="${car.image || '../../assets/logos/logo.png'}" alt="${car.marca} ${car.modelo}" loading="lazy" />
+                    <div class="fleet-meta">
+                        <h4>${car.marca} ${car.modelo}</h4>
+                        <p class="muted">Matrícula: ${car.matricula}</p>
+                    </div>
+                    <button class="btn btn-primary fleet-detail-btn" data-id="${car.id}">Ver detalhes</button>
+                `;
+                grid.appendChild(article);
+                // bind detail click
+                article.querySelector('.fleet-detail-btn').addEventListener('click', function(){
+                    if (typeof window.__openFrotaModalFor === 'function') window.__openFrotaModalFor(car.id);
+                });
+            };
+
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(form);
+                    const imageFromUrl = (urlInput && urlInput.value.trim()) || '';
+                    const imageFromFile = (fileInput && fileInput.files && fileInput.files[0]) || null;
+
+                    const proceed = (imageSrc) => {
+                        const arr = getFleetData();
+                        const maxId = Math.max(0, ...arr.map(x => Number(x && x.id) || 0));
+                                    const newCar = {
+                            id: maxId + 1,
+                            veiculo: `${(fd.get('marca')||'').toString().trim()} ${(fd.get('modelo')||'').toString().trim()}`.trim(),
+                            marca: (fd.get('marca')||'').toString().trim(),
+                            modelo: (fd.get('modelo')||'').toString().trim(),
+                            matricula: (fd.get('matricula')||'').toString().trim(),
+                            ano: (fd.get('ano')||'').toString().trim(),
+                            tipo_contrato: (fd.get('tipo_contrato')||'').toString(),
+                            num_contrato: (fd.get('num_contrato')||'').toString(),
+                            locadora: (fd.get('locadora')||'').toString(),
+                            seguradora: (fd.get('seguradora')||'').toString(),
+                            apolice: (fd.get('apolice')||'').toString(),
+                            carta_verde: (fd.get('carta_verde')||'').toString(),
+                            valido_de: (fd.get('valido_de')||'').toString(),
+                            valido_ate: (fd.get('valido_ate')||'').toString(),
+                            agencia: (fd.get('agencia')||'').toString(),
+                            ag_nome: (fd.get('ag_nome')||'').toString(),
+                            ag_morada: (fd.get('ag_morada')||'').toString(),
+                            ag_cp: (fd.get('ag_cp')||'').toString(),
+                            ag_tel: (fd.get('ag_tel')||'').toString(),
+                            ag_mail: (fd.get('ag_mail')||'').toString(),
+                            danos_materiais: (fd.get('danos_materiais')||'false').toString() === 'true',
+                                        image: imageSrc || '',
+                                        status: 'Livre'
+                        };
+
+                        arr.push(newCar);
+                        setFleetData(arr);
+                        appendCard(newCar);
+                        hideModal();
+                        form.reset();
+                        updatePreview('');
+                    };
+
+                    if (imageFromUrl) return proceed(imageFromUrl);
+                    if (imageFromFile) {
+                        const reader = new FileReader();
+                        reader.onload = ev => proceed(ev.target.result);
+                        reader.readAsDataURL(imageFromFile);
+                        return;
+                    }
+                    proceed('');
+                });
+            }
+        };
+    })();
+
+    // Hook create-vehicle wiring into existing Frota initializer
+    (function(){
+      const origInit = window.initializeFrotaModule;
+      window.initializeFrotaModule = function(){
+        if (typeof origInit === 'function') origInit();
+        const container = document.getElementById('main-content') || document;
+        if (typeof window.__wireFrotaCreate === 'function') window.__wireFrotaCreate(container);
+      };
+    })();
+
+        // Delegated fallback: open/close create modal even if specific wiring didn't attach
+        (function(){
+            if (window.__fleetCreateDelegated) return; window.__fleetCreateDelegated = true;
+            document.addEventListener('click', function(ev){
+                const openBtn = ev.target && ev.target.closest && ev.target.closest('#fleet-create-btn');
+                if (openBtn){
+                    const root = document.getElementById('main-content') || document;
+                    const modal = root.querySelector('#fleet-create-modal') || document.querySelector('#fleet-create-modal');
+                    if (modal){ modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); ev.preventDefault(); return; }
+                }
+                const closeEl = ev.target && (ev.target.matches('[data-close]') || ev.target.classList.contains('fleet-modal-backdrop'));
+                if (closeEl){
+                    const modal = (ev.target.closest && ev.target.closest('.fleet-modal')) || document.querySelector('#fleet-create-modal');
+                    if (modal){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); ev.preventDefault(); }
+                }
+            }, true);
+            document.addEventListener('keydown', function(e){
+                if (e.key === 'Escape'){
+                    const modal = document.querySelector('#fleet-create-modal');
+                    if (modal && modal.style.display !== 'none'){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
+                }
+            });
+        })();
 
     // Adicionar event listeners iniciais
     links.forEach(link => {

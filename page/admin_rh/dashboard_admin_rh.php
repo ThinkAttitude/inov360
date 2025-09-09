@@ -32,7 +32,7 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="../../css/global.css">
-    <link rel="stylesheet" href="../../css/dashboard_admin.css">
+    <link rel="stylesheet" href="../../css/dashboard_admin_rh.css">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,7 +64,10 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
                 <?php endif; ?>
             </div>
             <h3><?= htmlspecialchars($company['name'] ?? 'RH360') ?></h3>
-            <p class="subtitle">Painel Admin RH</p>
+            <div class="subtitle">Painel Admin RH</div>
+            <div class="role-indicator">
+                <?= ucfirst($_SESSION['user']['role'] ?? 'Utilizador') ?>
+            </div>
         </div>
 
         <ul class="sidebar-menu">
@@ -164,16 +167,20 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
                     A Minha Ficha
                 </a>
             </li>
+            <li>
+                <a href="#" data-content="frota">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="7" rx="2" ry="2"></rect>
+                        <path d="M5 11l2-5h10l2 5"></path>
+                        <circle cx="7.5" cy="18.5" r="1.5"></circle>
+                        <circle cx="16.5" cy="18.5" r="1.5"></circle>
+                    </svg>
+                    Frota
+                </a>
+            </li>
         </ul>
 
         <div class="sidebar-footer">
-            <div class="role-indicator">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline; margin-right: 0.5rem;">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                </svg>
-                <?= ucfirst($_SESSION['user']['role'] ?? 'Utilizador') ?>
-            </div>
-
             <a href="../../api/logout.php" class="logout-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -326,7 +333,7 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
     </main>
 </div>
 
-<script src="../../js/dashboard_admin_rh.js?v=20250825&b=20250905"></script>
+<script src="../../js/dashboard_admin_rh.js?v=20250825&b=20250908"></script>
 <script src="../../js/theme.js?v=20250825"></script>
 <script src="../../js/ferias_ausencias.js?v=20250825&b=20250905"></script>
 <script>
