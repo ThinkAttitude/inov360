@@ -221,6 +221,12 @@
     background: transparent;
 }
 
+
+/* Estado de modal aberto: desfocar/escurecer sidebar para coerência visual */
+body.modal-open .sidebar {
+    filter: blur(3px) brightness(0.85) saturate(70%);
+    pointer-events: none;
+}
 .sidebar-menu::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
@@ -943,3 +949,43 @@
         padding: 0 0.5rem 0.5rem 0;
     }
 }
+
+/* ================= FIX BLUR MODALS (Frota + Férias/Ausências) ================= */
+/* Problema: o conteúdo do modal aparecia desfocado porque herdava (ou parecia somar) efeitos de blur.
+   Solução: garantir que apenas o backdrop aplica blur ao fundo e o conteúdo fica nítido. */
+
+/* Frota: remover blur interno e reforçar contraste */
+.fleet-modal-content {
+    backdrop-filter: none !important; /* remove vidro desfocado */
+    filter: none !important;
+    background: #ffffff !important; /* fundo sólido para máxima legibilidade */
+}
+
+/* Aplicar blur apenas no backdrop da frota */
+.fleet-modal-backdrop {
+    backdrop-filter: blur(6px) !important;
+}
+
+/* Modal genérico (férias / ausências) garantir conteúdo nítido */
+.modal-overlay .modal-content,
+#modalPedido .modal-content,
+#modalPedido { /* fallback caso a estrutura seja diferente */
+    backdrop-filter: none !important;
+    filter: none !important;
+}
+
+/* Caso exista algum filtro global aplicado quando o modal abre, impedir que afete o modal */
+body.modal-open .fleet-modal-content,
+body.modal-open .modal-overlay .modal-content,
+body.modal-open #modalPedido {
+    filter: none !important;
+}
+
+/* Opcional: leve sombra para compensar perda do efeito glass */
+.fleet-modal-content,
+.modal-overlay .modal-content,
+#modalPedido .modal-content {
+    box-shadow: 0 18px 48px -10px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.12) !important;
+}
+
+/* ============================================================================ */

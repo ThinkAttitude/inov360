@@ -145,6 +145,16 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
                 </a>
             </li>
             <li>
+                <a href="#" data-content="criar_colaborador_v2">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z"/>
+                        <path d="M3 22c0-4.418 3.582-8 8-8"/>
+                        <path d="M16 19l2 2 4-4"/>
+                    </svg>
+                    Criar Colaborador V2
+                </a>
+            </li>
+            <li>
                 <a href="#" data-content="consulta_pedidos">
                     <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
