@@ -11,7 +11,7 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     exit;
 }
 $role = $_SESSION['user']['role'] ?? '';
-$allowed = ['inter2','inter','admin','adminrh','estrela','*'];
+$allowed = ['inter2','inter','admin','admin_rh','*'];
 if (!in_array($role, $allowed, true)) {
     http_response_code(403);
     echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]);
@@ -42,11 +42,14 @@ if ($acao === 'rejeitar' && ($comentario === null || $comentario === '')) {
 
 /* ===== Fluxo ===== */
 try {
+    $pdo->beginTransaction();
+
     // Carregar pedido
     $q = $pdo->prepare("SELECT * FROM pedidos_ferias WHERE id=:id LIMIT 1");
     $q->execute([':id'=>$pedidoId]);
     $ped = $q->fetch(PDO::FETCH_ASSOC);
     if (!$ped) {
+        $pdo->rollBack();
         http_response_code(404);
         echo json_encode(["ok"=>false,"code"=>"REQUEST_NOT_FOUND"]);
         exit;
@@ -55,10 +58,10 @@ try {
     // Atualizar estado do pedido
     $novoEstado = $acao === 'aprovar' ? 'aprovado' : 'rejeitado';
     $upd = $pdo->prepare("
-    UPDATE pedidos_ferias
-       SET estado=:e, decidido_por=:dp, comentario = COALESCE(:c, comentario)
-     WHERE id=:id
-  ");
+        UPDATE pedidos_ferias
+           SET estado=:e, decidido_por=:dp, comentario = COALESCE(:c, comentario)
+         WHERE id=:id
+    ");
     $upd->execute([
         ':e'  => $novoEstado,
         ':dp' => (int)$_SESSION['user']['id'],
@@ -75,11 +78,11 @@ try {
 
         // Criar evento LEAVE (um único evento com o intervalo completo)
         $ins = $pdo->prepare("
-      INSERT INTO eventos
-        (user_id, titulo, tipo, inicio, fim, minutos, km, status, source, leave_request_id, period_id, created_at, updated_at)
-      VALUES
-        (:u, :title, 'LEAVE', CONCAT(:di,' 00:00:00'), CONCAT(:df,' 23:59:59'), NULL, NULL, 'approved', 'approval', :rid, NULL, NOW(), NOW())
-    ");
+            INSERT INTO eventos
+              (user_id, titulo, tipo, inicio, fim, minutos, km, status, source, leave_request_id, period_id, created_at, updated_at)
+            VALUES
+              (:u, :title, 'LEAVE', CONCAT(:di,' 00:00:00'), CONCAT(:df,' 23:59:59'), NULL, NULL, 'approved', 'approval', :rid, NULL, NOW(), NOW())
+        ");
         $ins->execute([
             ':u'     => (int)$ped['user_id'],
             ':title' => (string)$ped['tipo'],      // subtipo (ferias, baixa_medica, ...)
@@ -88,13 +91,29 @@ try {
             ':rid'   => (int)$ped['id']
         ]);
 
-        // Ler o evento criado
+        // Zerar minutos dos eventos que colidem com o LEAVE aprovado
+        $zero = $pdo->prepare("
+            UPDATE eventos
+               SET minutos = CASE WHEN tipo IN ('WORK','OVERTIME','ONCALL') THEN 0 ELSE minutos END,
+                   updated_at = NOW()
+             WHERE user_id = :u
+               AND tipo IN ('WORK','OVERTIME','ONCALL')
+               AND DATE(inicio) <= :df
+               AND DATE(fim)    >= :di
+        ");
+        $zero->execute([
+            ':u'  => (int)$ped['user_id'],
+            ':di' => (string)$ped['data_inicio'],
+            ':df' => (string)$ped['data_fim'],
+        ]);
+
+        // Ler o evento LEAVE criado (opcional, para devolver no JSON)
         $sel = $pdo->prepare("
-      SELECT id, user_id, titulo, tipo, inicio, fim, status, leave_request_id
-        FROM eventos
-       WHERE leave_request_id=:rid
-       ORDER BY id DESC LIMIT 1
-    ");
+            SELECT id, user_id, titulo, tipo, inicio, fim, status, leave_request_id
+              FROM eventos
+             WHERE leave_request_id=:rid
+             ORDER BY id DESC LIMIT 1
+        ");
         $sel->execute([':rid'=>$pedidoId]);
         $evento = $sel->fetch(PDO::FETCH_ASSOC) ?: null;
 
@@ -102,6 +121,8 @@ try {
         // Rejeitado: remover qualquer evento associado a este pedido
         $pdo->prepare("DELETE FROM eventos WHERE leave_request_id=:rid")->execute([':rid'=>$pedidoId]);
     }
+
+    $pdo->commit();
 
     echo json_encode([
         "ok"        => true,
@@ -112,6 +133,7 @@ try {
     ]);
 
 } catch (Throwable $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
     echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
 }
