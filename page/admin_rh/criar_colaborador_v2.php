@@ -71,11 +71,14 @@
                     <h5>Permissões Adicionais</h5>
                     <form id="ccv2-perms-form">
                         <div class="perm-grid">
-                            <label><input type="checkbox" name="gestao_fichas" value="1"> Gestão de Fichas</label>
-                            <label><input type="checkbox" name="extracao_horarios" value="1"> Extração de Horários</label>
-                            <label><input type="checkbox" name="marcacao_direta" value="1"> Marcação Direta</label>
-                            <label><input type="checkbox" name="criar_colaborador" value="1"> Criar Colaborador</label>
-                            <label><input type="checkbox" name="frota" value="1"> Frota</label>
+                            <label><input type="checkbox" name="criar_users" value="1"> Criar Users</label>
+                            <label><input type="checkbox" name="aprovar_alteracoes_ficha" value="1"> Aprovar Alterações em Ficha</label>
+                            <label><input type="checkbox" name="edicao_completa_ficha" value="1"> Edição Completa Ficha Colaborador</label>
+                            <label><input type="checkbox" name="edicao_financeira_ficha" value="1"> Edição Completa Ficha Financeira</label>
+                            <label><input type="checkbox" name="download_mapa_horarios" value="1"> Download Excel Mapa Horários</label>
+                            <label><input type="checkbox" name="marcacao_direta_fa" value="1"> Marcação Direta Férias/Ausências</label>
+                            <label><input type="checkbox" name="gestao_frota" value="1"> Gestão de Frota</label>
+                            <label><input type="checkbox" name="higiene_seguranca" value="1"> Higiene e Segurança no Trabalho</label>
                         </div>
                         <button type="submit" class="btn-save-perms">
                             <span class="label">Guardar Alterações</span>

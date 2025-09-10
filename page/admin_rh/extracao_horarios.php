@@ -1,6 +1,7 @@
 <?php
 session_start();
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
+$role = $_SESSION['user']['role'] ?? '';
+if (!isset($_SESSION['is_login']) || !in_array($role, ['admin_rh','adminrh'], true)) {
     echo "<p>Acesso negado.</p>";
     exit;
 }
@@ -117,7 +118,74 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
     }
 
     function syncFromServer(){
-        notify('Sem API. Use "Importar do navegador" para carregar aprovações locais.', 'info');
+        if(syncFromServer._loading){ return; }
+        syncFromServer._loading = true;
+        notify('A sincronizar períodos aprovados do servidor...', 'info');
+        const monthSel = (document.getElementById('extract-month')||{}).value||'';
+        const url = `/api/timesheets/aval_periods.php?state=approved${monthSel?`&month=${encodeURIComponent(monthSel)}`:''}`;
+        fetch(url, {credentials:'same-origin'})
+          .then(r=>r.json().catch(()=>null))
+          .then(async data => {
+            if(!data || data.ok!==true || !Array.isArray(data.items)){
+                notify('Falha ao sincronizar (lista).', 'error');
+                return;
+            }
+            // Mapear diretamente da API existente (sem segunda chamada por sumários)
+            const baseRows = data.items.map(it => {
+                const mKey = `${it.mes?.year ?? ''}-${String(it.mes?.month ?? '').padStart(2,'0')}`;
+                return {
+                    id: `${it.colaborador?.id}-${mKey}`,
+                    userId: it.colaborador?.id,
+                    userName: it.colaborador?.nome || it.colaborador?.name || it.colaborador?.email || it.colaborador?.id,
+                    month: mKey,
+                    dias: it.resumo?.workedDays || 0,
+                    horasTotais: (it.resumo?.workMin || 0)/60,
+                    horasExtraMin: it.resumo?.otMin || 0,
+                    km: it.resumo?.km || 0,
+                    processedDate: it.submetido_em || null
+                };
+            });
+            state.rows = baseRows;
+            render();
+            notify('Sincronização concluída.', 'success');
+          })
+          .catch(()=>notify('Erro de rede ao sincronizar.', 'error'))
+          .finally(()=>{ syncFromServer._loading=false; });
+    }
+
+    async function fetchMonthSummary(row){
+        const url = `/api/calendar/get_month.php?user_id=${encodeURIComponent(row.userId)}&month=${encodeURIComponent(row.month)}`;
+        const res = await fetch(url, {credentials:'same-origin'});
+        if(!res.ok) return;
+        const data = await res.json().catch(()=>null);
+        if(!data || data.ok!==true) return;
+        let workedDays = 0;
+        (data.days||[]).forEach(d=>{ if((d.workMin||0)>0) workedDays++; });
+        const workMin = data.totals?.workMin || 0;
+        const extraMin = data.totals?.otMin || 0;
+        const km = data.totals?.km || 0;
+        row.dias = workedDays;
+        row.horasTotais = (workMin/60); // horas (decimal)
+        row.horasExtraMin = extraMin;   // minutos
+        row.km = km;
+        delete row._needsSummary;
+    }
+
+    async function runLimited(tasks, limit){
+        let i=0; const running=[];
+        const launch = () => {
+            if(i>=tasks.length) return Promise.resolve();
+            const t = tasks[i++]();
+            const p = t.then(()=>{
+                running.splice(running.indexOf(p),1);
+                render(); // atualizar progressivamente
+            });
+            running.push(p);
+            const next = running.length>=limit ? Promise.race(running) : Promise.resolve();
+            return next.then(launch);
+        };
+        await launch();
+        await Promise.all(running);
     }
 
     function loadFromLocalStorage(){
@@ -307,7 +375,8 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
     populateMonths();
     loadExtractedSet();
     bindTopActions();
-    // Auto-carregar do localStorage (sem depender do botão) para evitar lista vazia
+    // Carrega primeiro localStorage (fallback) e em seguida sincroniza do servidor
     try { loadFromLocalStorage(); } catch(_) { render(); }
+    try { syncFromServer(); } catch(_) {}
 })();
 </script>
