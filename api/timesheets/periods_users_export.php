@@ -6,7 +6,8 @@ session_start();
 /* --- Auth --- */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) { http_response_code(401); exit; }
 $role = $_SESSION['user']['role'] ?? '';
-if (!in_array($role, ['admin_rh'], true)) { http_response_code(403); exit; }
+// Permitir ambas as variantes do papel: admin_rh (documentação) e adminrh (implementação existente)
+if (!in_array($role, ['admin_rh','adminrh'], true)) { http_response_code(403); exit; }
 
 /* --- Deps & DB --- */
 require_once __DIR__ . '/../includes/db.php';

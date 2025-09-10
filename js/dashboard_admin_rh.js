@@ -287,6 +287,9 @@ document.addEventListener("DOMContentLoaded", function () {
             case "criar_colaborador":
                 url = "../admin_rh/criar_colaborador.php";
                 break;
+            case "criar_colaborador_v2":
+                url = "../admin_rh/criar_colaborador_v2.php";
+                break;
             case "consulta_pedidos":
                 url = "../admin_rh/consulta_pedidos.php";
                 break;
@@ -295,6 +298,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 break;
             case "ficha_colab":
                 url = "../admin_rh/ficha_colaborador.php";
+                break;
+            case "frota":
+                url = "../admin_rh/frota.php";
                 break;
             default:
                 setTimeout(showWelcome, 300);
@@ -349,6 +355,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 break;
             case "criar_colaborador":
                 initializeCriarColaboradorModule();
+                break;
+            case "criar_colaborador_v2":
+                initializeCriarColaboradorV2Module();
+                break;
+            case "frota":
+                initializeFrotaModule();
                 break;
         }
     }
@@ -1292,37 +1304,953 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Função auxiliar para navegação direta
-    function handleNavigationDirect(content) {
-        document.querySelectorAll(".sidebar-menu li").forEach(li => li.classList.remove("active"));
-        const sidebarLink = document.querySelector(`.sidebar-menu a[data-content="${content}"]`);
-        if (sidebarLink) {
-            sidebarLink.parentElement.classList.add("active");
+    // --- Criar Colaborador V2 (DEMO FRONTEND) ---
+    function initializeCriarColaboradorV2Module(){
+        const root = document.querySelector('.ccv2-wrapper');
+        if(!root){ return; }
+    // Força aparência clara (independente de prefers-color-scheme) para manter consistência com restante dashboard
+    // Caso no futuro se queira permitir dark, remover esta linha ou adicionar a classe 'allow-dark-ccv2' ao body e ajustar CSS.
+    root.classList.add('ccv2-force-light');
+
+    // --- TOASTS DESATIVADOS NESTA PÁGINA ---
+    // Pedido: "remover" os toasts porque estão a piscar. Em vez de editar/remover
+    // cada chamada espalhada, fazemos shadow da função showToast dentro deste
+    // escopo, tornando-as no-ops sem afetar outras páginas/módulos.
+    const showToast = undefined; // qualquer "showToast && showToast(...)" fica silencioso
+
+        if(!document.querySelector('link[href*="criar_colaborador_v2.css"]')){
+            const link = document.createElement('link');
+            link.rel='stylesheet';
+            link.href='../../css/criar_colaborador_v2.css';
+            document.head.appendChild(link);
+        }
+        // Carregar Lucide (ícones) apenas uma vez nesta página
+        if(!window.__lucideLoaded){
+            const s = document.createElement('script');
+            s.src='https://unpkg.com/lucide@latest/dist/umd/lucide.min.js';
+            s.defer = true;
+            s.onload = ()=>{ window.__lucideLoaded = true; try { if(window.lucide){ lucide.createIcons(); } } catch(_){} };
+            document.head.appendChild(s);
+        } else {
+            try { if(window.lucide){ lucide.createIcons(); } } catch(_){}
         }
 
-        showLoading();
+        const STORAGE_KEY = 'demo_colaboradores_v2';
+        const basePerms = ['inicio','horarios','ferias_ausencias','ficha_colab','consulta_pedidos'];
+        const extraDefs = [
+            { key:'gestao_fichas', label:'Gestão de Fichas' },
+            { key:'extracao_horarios', label:'Extração de Horários' },
+            { key:'marcacao_direta', label:'Marcação Direta' },
+            { key:'criar_colaborador', label:'Criar Colaborador' },
+            { key:'frota', label:'Frota' }
+        ];
 
-        let url = "";
-        switch (content) {
-            case "ficha_colab":
-                url = "../admin_rh/ficha_colaborador.php";
-                break;
-            default:
-                showWelcome();
-                return;
+        function loadUsers(){
+            try { const raw = localStorage.getItem(STORAGE_KEY); return raw? JSON.parse(raw): []; } catch(_) { return []; }
+        }
+        function saveUsers(arr){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(_) {} }
+
+        let users = loadUsers();
+
+        // ------------- GRUPOS / PASTAS (NOVA FUNCIONALIDADE) -------------
+        // Cada grupo representa uma "pasta" contendo alguns utilizadores.
+        // Um utilizador pertence no máximo a UM grupo (simplificação inicial).
+        // Estrutura: { id:number, name:string, userIds:number[] }
+        const GROUPS_KEY = 'demo_colaboradores_v2_groups';
+        function loadGroups(){
+            try { const raw = localStorage.getItem(GROUPS_KEY); return raw? JSON.parse(raw): []; } catch(_){ return []; }
+        }
+        function saveGroups(arr){ try { localStorage.setItem(GROUPS_KEY, JSON.stringify(arr)); } catch(_){} }
+        let groups = loadGroups();
+        let groupOpenState = {}; // estado expandido/colapsado em memória
+        groups.forEach(g=>{ if(!(g.id in groupOpenState)) groupOpenState[g.id]=true; });
+        let activeGroupId = null; // null => Global (todos)
+
+    // Arrays da hierarquia devem existir antes de qualquer renderList para evitar erro de TDZ
+    let nodes = [];      // { id, x, y }
+    let draftEdges = []; // ligações em rascunho
+    let savedEdges = []; // ligações persistidas usadas nas relações dos cards
+
+        function createGroup(name){
+            name = (name||'').trim(); if(!name) return;
+            const id = Date.now();
+            groups.push({ id, name, userIds: [] });
+            groupOpenState[id] = true;
+            saveGroups(groups);
+            rebuildGroupSelect();
+            renderList();
+        }
+        function assignUserToGroup(userId, groupId){
+            // remover de grupo atual
+            groups.forEach(g=>{ const i = g.userIds.indexOf(userId); if(i!==-1) g.userIds.splice(i,1); });
+            const g = groups.find(g=>g.id===groupId); if(g && !g.userIds.includes(userId)) g.userIds.push(userId);
+            saveGroups(groups);
+            renderList();
+        }
+        function removeUserFromGroup(userId){
+            let changed=false; groups.forEach(g=>{ const i=g.userIds.indexOf(userId); if(i!==-1){ g.userIds.splice(i,1); changed=true; } });
+            if(changed){ saveGroups(groups); renderList(); }
+        }
+        function getUserGroupId(userId){
+            const g = groups.find(g=> g.userIds.includes(userId)); return g? g.id : null;
         }
 
-        fetch(url)
-            .then(response => response.text())
-            .then(html => {
-                mainContent.innerHTML = html;
-                initializeSpecificFeatures(content);
-            })
-            .catch(error => {
-                console.error('Error loading content:', error);
-                mainContent.innerHTML = '<p>Erro ao carregar conteúdo.</p>';
+        // Barra de controlo de grupos
+        function ensureGroupBar(){
+            if(document.getElementById('ccv2-group-bar')) return;
+            const bar = document.createElement('div');
+            bar.id='ccv2-group-bar';
+            bar.innerHTML = `
+                <div class="gb-left">
+                    <button type="button" class="gb-btn" id="ccv2-new-group">+ Nova Pasta</button>
+                    <select id="ccv2-group-select" class="gb-select" title="Selecionar pasta para hierarquia">
+                        <option value="">Global (todos)</option>
+                    </select>
+                </div>
+                <div class="gb-right" id="ccv2-active-group-label">Hierarquia: Global</div>
+            `;
+            // Inserir antes da lista de cards
+            const parent = cardsEl.parentElement || root;
+            parent.insertBefore(bar, parent.firstChild);
+            const btnNew = bar.querySelector('#ccv2-new-group');
+            const sel = bar.querySelector('#ccv2-group-select');
+            btnNew.addEventListener('click', ()=>{
+                const name = prompt('Nome da nova pasta:');
+                if(name) createGroup(name);
             });
+            sel.addEventListener('change', ()=>{
+                const val = sel.value || '';
+                const newGroupId = val? Number(val): null;
+                if(newGroupId===activeGroupId) return;
+                if(isHierarchyDirty()){
+                    if(!confirm('Existe hierarquia não guardada nesta pasta. Trocar mesmo assim (perde rascunho)?')){
+                        sel.value = activeGroupId||''; return; }
+                }
+                activeGroupId = newGroupId;
+                updateActiveGroupLabel();
+                loadHierarchy(true); // reload para nova pasta
+                syncHierarchyUI();
+                redrawLinks();
+            });
+            rebuildGroupSelect();
+        }
+
+        function rebuildGroupSelect(){
+            const sel = document.getElementById('ccv2-group-select');
+            if(!sel) return;
+            const current = sel.value;
+            // limpar excepto primeira option
+            [...sel.querySelectorAll('option')].forEach((o,i)=>{ if(i>0) o.remove(); });
+            groups.forEach(g=>{
+                const opt = document.createElement('option');
+                opt.value = g.id; opt.textContent = g.name;
+                sel.appendChild(opt);
+            });
+            if(current && [...sel.options].some(o=>o.value===current)) sel.value=current; else sel.value='';
+        }
+        function updateActiveGroupLabel(){
+            const lbl = document.getElementById('ccv2-active-group-label');
+            if(!lbl) return;
+            if(activeGroupId==null){ lbl.textContent='Hierarquia: Global'; }
+            else { const g = groups.find(x=>x.id===activeGroupId); lbl.textContent = 'Hierarquia: '+ (g? g.name: '—'); }
+        }
+
+        function isHierarchyDirty(){
+            // simples: diferença entre draft e saved ou nós adicionados
+            if(nodes.length !== (savedEdges.__nodesCount||nodes.length)) return true; // sentinel nunca definido => false aqui
+            if(draftEdges.length !== savedEdges.length) return true;
+            // comparar sets
+            const se = new Set(savedEdges.map(e=> e.parent+'=>'+e.child));
+            for(const e of draftEdges){ if(!se.has(e.parent+'=>'+e.child)) return true; }
+            return false;
+        }
+
+    const form = document.getElementById('ccv2-form');
+    const cardsEl = document.getElementById('ccv2-cards');
+    const emptyEl = document.getElementById('ccv2-empty');
+    const modal = document.getElementById('ccv2-modal');
+    const permsForm = document.getElementById('ccv2-perms-form');
+    const saveStatus = document.getElementById('ccv2-save-status');
+    let currentUserId = null;
+
+    // Agora que cardsEl existe podemos montar a barra de grupos
+    ensureGroupBar();
+    updateActiveGroupLabel();
+
+        function renderList(){
+            cardsEl.innerHTML='';
+            emptyEl.style.display = users.length? 'none':'block';
+
+            // Mapas de relações hierárquicas
+            let parentMap = {}, childParents = {};
+            if(Array.isArray(savedEdges)){
+                savedEdges.forEach(ed=>{
+                    (parentMap[ed.parent] = parentMap[ed.parent] || []).push(ed.child);
+                    (childParents[ed.child] = childParents[ed.child] || []).push(ed.parent);
+                });
+            }
+
+            function buildCard(u){
+                const card = document.createElement('div');
+                card.className='ccv2-card';
+                card.dataset.id = u.id;
+                const extraBadges = (u.extra_perms||[]).length ? u.extra_perms.map(k=> `<span class="extra">${(extraDefs.find(d=>d.key===k)||{}).label||k}</span>`).join('') : '<span>Nenhuma permissão extra</span>';
+                let relHtml='';
+                if(childParents[u.id]){
+                    const parents = childParents[u.id].map(pid=> users.find(x=>x.id===pid)).filter(Boolean);
+                    if(parents.length){
+                        relHtml += `<div class="rel rel-parent"><span class="rel-label">${parents.length>1? 'Superiores':'Superior'}</span><span class="rel-value">${parents.map(p=>`<span class=\"rel-badge\">${escapeHtml(p.nome)}</span>`).join('')}</span></div>`;
+                    }
+                }
+                if(parentMap[u.id]){
+                    const childs = parentMap[u.id].map(cid=> users.find(z=>z.id===cid)).filter(Boolean);
+                    if(childs.length){
+                        relHtml += `<div class="rel rel-super"><span class="rel-label">Supervisor de</span><span class="rel-value">${childs.map(c=>`<span class=\"rel-badge\">${escapeHtml(c.nome)}</span>`).join('')}</span></div>`;
+                    }
+                }
+                const inGroup = getUserGroupId(u.id)!=null;
+                // Botões posicionados via CSS (add-canvas no canto inferior direito, remove-group no topo direito)
+                card.innerHTML = `
+                    ${inGroup? '<button type="button" class="card-remove-group" title="Remover da pasta"><i data-lucide="x"></i></button>':''}
+                    <button type="button" class="card-add-canvas" title="Adicionar à hierarquia"><i data-lucide="network"></i></button>
+                    <h4>${escapeHtml(u.nome)}</h4>
+                    <div class="email">${escapeHtml(u.email)}</div>
+                    <div class="perm-badges">${extraBadges}</div>
+                    ${relHtml}
+                    <div class="meta"><span>ID: ${u.id}</span><span>${new Date(u.created_at).toLocaleDateString('pt-PT')}</span></div>`;
+                card.addEventListener('click', e=>{ if(e.target.closest('.card-remove-group') || e.target.closest('.card-add-canvas')) return; openModal(u.id); });
+                // Botão adicionar ao canvas
+                const addBtn = card.querySelector('.card-add-canvas');
+                if(addBtn){
+                    addBtn.addEventListener('click', ev=>{
+                        ev.stopPropagation();
+                        if(typeof addUserToCanvasAuto==='function') addUserToCanvasAuto(u.id);
+                    });
+                }
+                if(inGroup){
+                    const rmBtn = card.querySelector('.card-remove-group');
+                    // fallback opcional: se lucide não carregar, mostrar X
+                    if(!rmBtn.querySelector('svg')) rmBtn.innerHTML = '<i data-lucide="x"></i>';
+                    rmBtn.addEventListener('click', ev=>{ ev.stopPropagation(); removeUserFromGroup(u.id); });
+                }
+                card.draggable = true;
+                card.addEventListener('dragstart', ev=>{ ev.dataTransfer.setData('text/plain', String(u.id)); });
+                return card;
+            }
+
+            function groupHue(id){ return id % 360; }
+
+            // Adiciona um único utilizador ao canvas numa posição automática em grelha (mantendo dentro do viewport)
+            function addUserToCanvasAuto(userId){
+                if(!canvas || nodes.some(n=>n.id===userId)){
+                    // Já existe: highlight e centra na área visível se possível
+                    const elExisting = canvas && canvas.querySelector(`.hier-node[data-id="${userId}"]`);
+                    if(elExisting){
+                        elExisting.classList.add('pulse');
+                        setTimeout(()=>elExisting.classList.remove('pulse'),1600);
+                        try { elExisting.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'}); } catch(_){}
+                    }
+                    return;
+                }
+                const baseX = 40;
+                const baseY0 = 40;
+                const spacingX = 160; // horizontal gap
+                const spacingY = 140; // vertical gap
+                const marginRight = 40;
+                const marginBottom = 60;
+                const canvasWidth = canvas.clientWidth || canvas.offsetWidth || 800;
+                const canvasHeight = canvas.clientHeight || canvas.offsetHeight || 600;
+                // Tentar obter dimensão real de um node existente para evitar overflow horizontal
+                let sampleNode = canvas.querySelector('.hier-node');
+                const nodeWidth = sampleNode? sampleNode.offsetWidth : 140;
+                const nodeHeight = sampleNode? sampleNode.offsetHeight : 80;
+
+                // Agrupar nós existentes por "linha" aproximada
+                const rows = [];
+                nodes.forEach(n=>{
+                    let row = rows.find(r=> Math.abs(r.y - n.y) < spacingY/2);
+                    if(!row){ row = { y: n.y, nodes: [] }; rows.push(row); }
+                    row.nodes.push(n);
+                });
+                rows.sort((a,b)=> a.y - b.y);
+
+                let nextX, nextY;
+                if(!rows.length){
+                    nextX = baseX; nextY = baseY0;
+                } else {
+                    const lastRow = rows[rows.length-1];
+                    const rowNodeCount = lastRow.nodes.length;
+                    nextY = lastRow.y; // tentar mesma linha
+                    nextX = baseX + rowNodeCount * spacingX;
+                    // Verificar se cabe na largura
+                    if(nextX + nodeWidth > canvasWidth - marginRight){
+                        // Nova linha
+                        nextX = baseX;
+                        nextY = lastRow.y + spacingY;
+                    }
+                }
+
+                // Clamp dentro da largura
+                if(nextX + nodeWidth > canvasWidth - marginRight){
+                    nextX = Math.max(baseX, canvasWidth - marginRight - nodeWidth);
+                }
+                // Se passa a altura visível e canvas não tem scroll, aumentar altura mínima
+                if(nextY + nodeHeight > canvasHeight - marginBottom){
+                    // Expandir altura (sem encolher posteriormente) para manter drag possível
+                    const newH = nextY + nodeHeight + marginBottom;
+                    if(newH > canvasHeight){
+                        canvas.style.minHeight = newH + 'px';
+                    }
+                }
+
+                // Evitar colisão exacta: se já existir node nessa célula, deslocar para a direita até caber ou quebrar linha
+                let safety = 20;
+                while(safety-- > 0 && nodes.some(n=> Math.abs(n.x - nextX) < 5 && Math.abs(n.y - nextY) < 5)){
+                    nextX += spacingX;
+                    if(nextX + nodeWidth > canvasWidth - marginRight){
+                        nextX = baseX; nextY += spacingY;
+                        if(nextY + nodeHeight > canvasHeight - marginBottom){
+                            const newH2 = nextY + nodeHeight + marginBottom;
+                            if(newH2 > (canvas.clientHeight||0)) canvas.style.minHeight = newH2 + 'px';
+                        }
+                    }
+                }
+
+                nodes.push({ id: userId, x: nextX, y: nextY });
+                syncHierarchyUI();
+                redrawLinks();
+                const el = canvas.querySelector(`.hier-node[data-id="${userId}"]`);
+                if(el){
+                    el.classList.add('pulse');
+                    setTimeout(()=>el.classList.remove('pulse'),1600);
+                    try { el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'nearest'}); } catch(_){ }
+                }
+            }
+
+            // Adiciona todos os utilizadores de uma pasta ao canvas (sem duplicar)
+            function addGroupUsersToCanvas(group){
+                if(!canvas || !group || !Array.isArray(group.userIds) || !group.userIds.length) return;
+                // Calcular posição base abaixo dos nós existentes para evitar sobreposição grosseira
+                let maxY = 0; nodes.forEach(n=>{ if(n.y>maxY) maxY = n.y; });
+                const baseY = nodes.length? maxY + 140 : 40;
+                const baseX = 40;
+                const count = group.userIds.length;
+                const cols = Math.ceil(Math.sqrt(count));
+                const spacingX = 160; const spacingY = 110;
+                group.userIds.forEach((uid, idx)=>{
+                    if(nodes.some(n=> n.id===uid)) return; // já existe
+                    const col = idx % cols; const row = Math.floor(idx/cols);
+                    nodes.push({ id: uid, x: baseX + col*spacingX, y: baseY + row*spacingY });
+                });
+                syncHierarchyUI();
+                redrawLinks();
+            }
+
+            function buildGroup(g){
+                const open = groupOpenState[g.id]!==false;
+                const wrap = document.createElement('div');
+                wrap.className='ccv2-folder';
+                wrap.dataset.groupId = g.id;
+                wrap.style.setProperty('--folder-accent-h', groupHue(g.id));
+                wrap.innerHTML = `
+                    <div class="ccv2-folder-header">
+                        <button class="fh-toggle" title="Expandir/Colapsar" draggable="true" data-state="${open? 'open':'closed'}"><i data-lucide="${open? 'chevron-down':'chevron-right'}"></i></button>
+                        <div class="fh-title" title="Clique para renomear">${escapeHtml(g.name)}</div>
+                        <div class="fh-actions">
+                            <span class="fh-count" title="Colaboradores">${g.userIds.length}</span>
+                            <button class="fh-activate" title="Ativar pasta para hierarquia"><i data-lucide="network"></i></button>
+                            <button class="fh-rename" title="Renomear"><i data-lucide="edit"></i></button>
+                            <button class="fh-delete" title="Apagar pasta"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </div>
+                    <div class="ccv2-folder-body" style="display:${open?'grid':'none'}"></div>`;
+                const header = wrap.querySelector('.ccv2-folder-header');
+                const body = wrap.querySelector('.ccv2-folder-body');
+                header.classList.toggle('active', activeGroupId===g.id);
+                if(activeGroupId===g.id) wrap.classList.add('active-group');
+
+                // Toggle open (evita reconstruir tudo para não perder listeners)
+                const toggleBtn = header.querySelector('.fh-toggle');
+                toggleBtn.addEventListener('click', e=>{
+                    e.stopPropagation();
+                    const isOpenNow = body.style.display !== 'none';
+                    const newState = !isOpenNow;
+                    groupOpenState[g.id] = newState;
+                    body.style.display = newState ? 'grid' : 'none';
+                    const iconI = toggleBtn.querySelector('i[data-lucide]');
+                    if(iconI){
+                        iconI.setAttribute('data-lucide', newState ? 'chevron-down' : 'chevron-right');
+                        try { window.lucide && lucide.createIcons(toggleBtn); } catch(_){ }
+                    }
+                });
+                // Ativar pasta e lançar todos os utilizadores no canvas
+                header.querySelector('.fh-activate').addEventListener('click', e=>{
+                    e.stopPropagation();
+                    const sel = document.getElementById('ccv2-group-select');
+                    const needsSwitch = activeGroupId !== g.id;
+                    if(needsSwitch && sel){ sel.value = g.id; sel.dispatchEvent(new Event('change')); }
+                    // Após possível switch (loadHierarchy é síncrono), adicionar users
+                    addGroupUsersToCanvas(g);
+                });
+                // Rename inline
+                function startRename(){
+                    const titleEl = header.querySelector('.fh-title');
+                    const prev = g.name;
+                    const input = document.createElement('input');
+                    input.type='text'; input.value=prev; input.className='fh-rename-input';
+                    titleEl.replaceWith(input); input.focus(); input.select();
+                    const commit=(save)=>{ if(save){ const v = input.value.trim(); if(v){ g.name=v; saveGroups(groups); } }
+                        input.replaceWith(Object.assign(document.createElement('div'),{className:'fh-title',textContent:g.name,title:'Clique para renomear'}));
+                    };
+                    input.addEventListener('keydown', ev=>{ if(ev.key==='Enter'){ commit(true); } else if(ev.key==='Escape'){ commit(false); }});
+                    input.addEventListener('blur', ()=>commit(true));
+                }
+                header.querySelector('.fh-rename').addEventListener('click', e=>{ e.stopPropagation(); startRename(); });
+                header.addEventListener('dblclick', e=>{ if(e.target.classList.contains('fh-title')) startRename(); });
+                // Delete group
+                header.querySelector('.fh-delete').addEventListener('click', e=>{ e.stopPropagation(); if(!confirm('Apagar pasta? Os utilizadores ficarão sem pasta.')) return; g.userIds=[]; groups = groups.filter(x=>x.id!==g.id); saveGroups(groups); renderList(); });
+
+                // Drag reorder groups (usar apenas o toggle como handle)
+                toggleBtn.addEventListener('dragstart', ev=>{ ev.dataTransfer.setData('group-id', String(g.id)); ev.dataTransfer.effectAllowed='move'; wrap.classList.add('drag-origin'); });
+                toggleBtn.addEventListener('dragend', ()=> wrap.classList.remove('drag-origin'));
+                header.addEventListener('dragover', ev=>{ ev.preventDefault(); wrap.classList.add('drop-target'); });
+                header.addEventListener('dragleave', ()=> wrap.classList.remove('drop-target'));
+                header.addEventListener('drop', ev=>{ ev.preventDefault(); wrap.classList.remove('drop-target'); const fromId = Number(ev.dataTransfer.getData('group-id')); if(!fromId || fromId===g.id) return; const fromIdx = groups.findIndex(x=>x.id===fromId); const toIdx = groups.findIndex(x=>x.id===g.id); if(fromIdx===-1||toIdx===-1) return; const [moved] = groups.splice(fromIdx,1); groups.splice(toIdx,0,moved); saveGroups(groups); renderList(); });
+
+                // Accept user cards drop
+                function acceptUserDrop(target){
+                    target.addEventListener('dragover', ev=>{ ev.preventDefault(); wrap.classList.add('drag-over'); });
+                    target.addEventListener('dragleave', ev=>{ if(ev.relatedTarget && target.contains(ev.relatedTarget)) return; wrap.classList.remove('drag-over'); });
+                    target.addEventListener('drop', ev=>{ ev.preventDefault(); wrap.classList.remove('drag-over'); const uid = Number(ev.dataTransfer.getData('text/plain')); if(uid){ assignUserToGroup(uid, g.id); }});
+                }
+                acceptUserDrop(header);
+                acceptUserDrop(body);
+
+                // Preencher cards
+                g.userIds.map(uid=> users.find(u=>u.id===uid)).filter(Boolean).forEach(u=> body.appendChild(buildCard(u)));
+                // marca para refresh posterior (chamada única)
+                return wrap;
+            }
+
+            groups.forEach(g=> cardsEl.appendChild(buildGroup(g)));
+            // Atualizar ícones apenas em <i data-lucide>. Mantém botões intactos.
+            try { if(window.lucide){ lucide.createIcons(cardsEl); } } catch(_){ }
+
+            // Colaboradores sem pasta
+            const ungrouped = users.filter(u=> !getUserGroupId(u.id));
+            if(ungrouped.length){
+                const fake = { id:0, name:'(Sem Pasta)', userIds:[] };
+                const wrap = document.createElement('div'); wrap.className='ccv2-folder ungrouped'; wrap.innerHTML = `<div class="ccv2-folder-header"><div class="fh-title">Sem Pasta</div><div class="fh-actions"><span class="fh-count">${ungrouped.length}</span></div></div><div class="ccv2-folder-body" style="display:grid"></div>`;
+                const body = wrap.querySelector('.ccv2-folder-body');
+                ungrouped.forEach(u=> body.appendChild(buildCard(u)));
+                cardsEl.appendChild(wrap);
+            }
+
+            // Altura scroll adaptativa
+            if(users.length>4){ cardsEl.classList.add('scroll-active'); } else { cardsEl.classList.remove('scroll-active'); }
+        }
+
+        function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' }[c])); }
+
+        function openModal(id){
+            const u = users.find(x=>x.id===id); if(!u) return;
+            currentUserId = id;
+            modal.setAttribute('aria-hidden','false');
+            document.body.style.overflow='hidden';
+            const title = document.getElementById('ccv2-modal-title');
+            if(title) title.textContent = `Permissões: ${u.nome}`;
+            permsForm.reset();
+            (u.extra_perms||[]).forEach(k=>{ const cb = permsForm.querySelector(`input[name="${k}"]`); if(cb) cb.checked = true; });
+            saveStatus.textContent=''; saveStatus.className='save-status';
+        }
+        function closeModal(){ modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; currentUserId=null; }
+        modal.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closeModal));
+        modal.addEventListener('click', e=>{ if(e.target.classList.contains('ccv2-modal-backdrop')) closeModal(); });
+        document.addEventListener('keydown', e=>{ if(e.key==='Escape' && modal.getAttribute('aria-hidden')==='false') closeModal(); });
+
+        if(form && !form.__bound){
+            form.addEventListener('submit', function(ev){
+                ev.preventDefault();
+                const btn = form.querySelector('.ccv2-submit');
+                btn && btn.classList.add('loading');
+                const nome = form.nome.value.trim();
+                const email = form.email.value.trim().toLowerCase();
+                const password = form.password.value;
+                if(!nome || !email || !password){ showToast && showToast('❌ Preencha todos os campos.','error'); btn && btn.classList.remove('loading'); return; }
+                if(users.some(u=>u.email===email)){ showToast && showToast('❌ Email já existente nesta demo.','error'); btn && btn.classList.remove('loading'); return; }
+                const id = Date.now();
+                const newUser = { id, nome, email, password_demo: password, created_at: new Date().toISOString(), base_perms: basePerms.slice(), extra_perms: [] };
+                users.push(newUser); saveUsers(users); renderList();
+                form.reset();
+                btn && btn.classList.remove('loading');
+                showToast && showToast('✅ Conta demo criada. Agora configure permissões.','success');
+            });
+            form.__bound=true;
+        }
+
+        if(permsForm && !permsForm.__bound){
+            permsForm.addEventListener('submit', function(ev){
+                ev.preventDefault(); if(currentUserId==null) return;
+                const btn = permsForm.querySelector('.btn-save-perms');
+                btn && btn.classList.add('loading');
+                const selected = Array.from(permsForm.querySelectorAll('input[type="checkbox"]:checked')).map(cb=>cb.name);
+                const idx = users.findIndex(u=>u.id===currentUserId); if(idx!==-1){ users[idx].extra_perms = selected; saveUsers(users); }
+                setTimeout(()=>{ btn && btn.classList.remove('loading'); saveStatus.textContent='Guardado'; saveStatus.className='save-status ok'; showToast && showToast('✅ Permissões atualizadas (demo).','success'); renderList(); }, 450);
+            });
+            permsForm.__bound=true;
+        }
+
+        // ---------------- HIERARCHY BUILDER DEMO ----------------
+    const HIER_KEY_BASE = 'demo_colaboradores_v2_hierarchy';
+    function getHierKey(){ return activeGroupId!=null? `${HIER_KEY_BASE}_${activeGroupId}` : HIER_KEY_BASE; }
+        const canvas = document.getElementById('ccv2-hierarchy-canvas');
+        const svg = document.getElementById('ccv2-hierarchy-links');
+        const placeholder = document.getElementById('ccv2-hier-placeholder');
+        const btnLinkMode = document.getElementById('ccv2-link-mode');
+        const btnSaveHier = document.getElementById('ccv2-save-hierarchy');
+    const btnClearHier = document.getElementById('ccv2-clear-hierarchy'); // Limpa só canvas
+    const btnClearLinks = document.getElementById('ccv2-clear-links'); // Limpa ligações (edges) dos nodes presentes
+    const btnZoomIn = document.getElementById('ccv2-zoom-in');
+    const btnZoomOut = document.getElementById('ccv2-zoom-out');
+
+    let zoom = 1; const ZOOM_MIN = 0.5; const ZOOM_MAX = 2; const ZOOM_STEP = 0.1;
+
+        let linkMode = false; let selectedParent = null; let draggingNode = null; let dragOffset = {x:0,y:0};
+
+    function loadHierarchy(fromGroupSwitch){
+            try {
+        const raw = localStorage.getItem(getHierKey()); if(!raw) { nodes=[]; draftEdges=[]; savedEdges=[]; return; }
+                const obj = JSON.parse(raw);
+                nodes = (obj.nodes||[]).filter(n=> users.some(u=>u.id===n.id));
+                savedEdges = (obj.edges||[]).filter(e=> users.some(u=>u.id===e.parent)&& users.some(u=>u.id===e.child));
+                draftEdges = [...savedEdges];
+        if(fromGroupSwitch){ /* reset placeholder etc */ }
+            } catch(_){ nodes=[]; draftEdges=[]; savedEdges=[]; }
+        }
+        function saveHierarchy(){
+            try {
+        localStorage.setItem(getHierKey(), JSON.stringify({nodes,edges:draftEdges}));
+                savedEdges = [...draftEdges];
+                showToast && showToast('✅ Hierarquia guardada (demo).','success');
+                renderList(); // agora reflete ligações persistidas
+            } catch(_){ showToast && showToast('❌ Falha ao guardar hierarquia.','error'); }
+        }
+    function clearHierarchy(){ nodes=[]; draftEdges=[]; savedEdges=[]; syncHierarchyUI(); redrawLinks(); renderList(); }
+
+        function ensureSvgDefs(){ if(svg && !svg.querySelector('marker#hierArrow')){ const defs = document.createElementNS('http://www.w3.org/2000/svg','defs'); const marker = document.createElementNS('http://www.w3.org/2000/svg','marker'); marker.setAttribute('id','hierArrow'); marker.setAttribute('viewBox','0 0 10 10'); marker.setAttribute('refX','10'); marker.setAttribute('refY','5'); marker.setAttribute('markerWidth','8'); marker.setAttribute('markerHeight','8'); marker.setAttribute('orient','auto-start-reverse'); const path = document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d','M 0 0 L 10 5 L 0 10 z'); marker.appendChild(path); defs.appendChild(marker); svg.appendChild(defs);} }
+
+        function syncHierarchyUI(){
+            if(!canvas) return; placeholder.style.display = nodes.length? 'none':'flex';
+            // Remove stale nodes
+            canvas.querySelectorAll('.hier-node').forEach(el=>{ const id = Number(el.getAttribute('data-id')); if(!nodes.some(n=>n.id===id)) el.remove(); });
+            // Add/update nodes
+            nodes.forEach(n=>{
+                let el = canvas.querySelector(`.hier-node[data-id="${n.id}"]`);
+                const user = users.find(u=>u.id===n.id); if(!user) return;
+                if(!el){
+                    el = document.createElement('div');
+                    el.className='hier-node';
+                    el.setAttribute('data-id', n.id);
+                    el.innerHTML = `<div class="hn-name">${escapeHtml(user.nome)}</div><div class="hn-email">${escapeHtml(user.email)}</div>`;
+                    canvas.appendChild(el);
+                    // Drag within canvas (pointer events for smoothness)
+                    el.addEventListener('mousedown', e=>{ draggingNode = n; dragOffset.x = e.offsetX; dragOffset.y = e.offsetY; el.classList.add('dragging'); });
+                    // Double-click para iniciar/alterar modo ligação escolhendo supervisor
+                    el.addEventListener('dblclick', e=>{
+                        e.stopPropagation();
+                        if(!linkMode){
+                            linkMode = true; selectedParent = n.id;
+                            canvas.querySelectorAll('.hier-node').forEach(nd=>nd.classList.remove('selected-parent'));
+                            el.classList.add('selected-parent');
+                            showToast && showToast('Modo ligação ativo. Clique num subordinado.','success');
+                        } else {
+                            if(selectedParent === n.id){
+                                linkMode=false; selectedParent=null;
+                                canvas.querySelectorAll('.hier-node').forEach(nd=>nd.classList.remove('selected-parent'));
+                                showToast && showToast('Modo ligação cancelado.','error');
+                            } else {
+                                selectedParent = n.id;
+                                canvas.querySelectorAll('.hier-node').forEach(nd=>nd.classList.remove('selected-parent'));
+                                el.classList.add('selected-parent');
+                                showToast && showToast('Supervisor alterado. Clique num subordinado.','success');
+                            }
+                        }
+                    });
+                    // Clique simples quando em modo ligação escolhe o subordinado e termina
+                    el.addEventListener('click', e=>{
+                        if(!linkMode || selectedParent==null || selectedParent===n.id) return;
+                        // Evitar duplicados
+                        if(!draftEdges.some(ed=> ed.parent===selectedParent && ed.child===n.id)){
+                            draftEdges.push({parent:selectedParent, child:n.id});
+                        }
+                        redrawLinks();
+                        showToast && showToast('Ligação criada (rascunho). Guardar para persistir.','success');
+                        linkMode=false; selectedParent=null;
+                        canvas.querySelectorAll('.hier-node').forEach(nd=>nd.classList.remove('selected-parent'));
+                        e.stopPropagation();
+                    });
+                }
+                // Position
+                el.style.transform = `translate(${n.x}px, ${n.y}px) scale(${zoom})`;
+            });
+            redrawLinks();
+        }
+
+    function redrawLinks(){
+        if(!svg) return; ensureSvgDefs(); svg.querySelectorAll('path').forEach(p=>p.remove());
+        const canvasRect = canvas.getBoundingClientRect();
+        draftEdges.forEach(ed=>{
+            const pNode = canvas.querySelector(`.hier-node[data-id="${ed.parent}"]`);
+            const cNode = canvas.querySelector(`.hier-node[data-id="${ed.child}"]`);
+            if(!pNode||!cNode) return;
+            const pRect = pNode.getBoundingClientRect();
+            const cRect = cNode.getBoundingClientRect();
+            // Ajustar para zoom: posição central relativa ao canvas sem dividir por zoom (porque estamos a aplicar scale nos nodes)
+            const px = (pRect.left + pRect.width/2 - canvasRect.left);
+            const py = (pRect.top + pRect.height - canvasRect.top);
+            const cx = (cRect.left + cRect.width/2 - canvasRect.left);
+            const cy = (cRect.top - canvasRect.top);
+            const midY = (py + cy)/2;
+            const d = `M ${px} ${py} C ${px} ${midY}, ${cx} ${midY}, ${cx} ${cy}`;
+            const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+            path.setAttribute('d', d);
+            path.setAttribute('data-parent', ed.parent);
+            path.setAttribute('data-child', ed.child);
+            svg.appendChild(path);
+        });
     }
+
+        function addNodeForUser(userId, x, y){ if(nodes.some(n=>n.id===userId)) return; // default offset inside canvas
+            const rect = canvas.getBoundingClientRect(); const nx = x - rect.left - 70; const ny = y - rect.top - 30; nodes.push({id:userId, x:Math.max(0,nx), y:Math.max(0,ny)}); syncHierarchyUI(); }
+
+        if(canvas){
+            canvas.addEventListener('dragover', e=>{ e.preventDefault(); canvas.classList.add('drag-over'); e.dataTransfer.dropEffect='copy'; });
+            canvas.addEventListener('dragleave', ()=> canvas.classList.remove('drag-over'));
+            canvas.addEventListener('drop', e=>{ e.preventDefault(); canvas.classList.remove('drag-over'); const id = Number(e.dataTransfer.getData('text/plain')); if(!id) return; addNodeForUser(id, e.clientX, e.clientY); });
+            // Desenho otimizado durante drag: apenas move o node e atualiza as ligações ligadas
+            function updateLinksFor(nodeId){
+                const canvasRect = canvas.getBoundingClientRect();
+                const paths = svg.querySelectorAll(`path[data-parent="${nodeId}"], path[data-child="${nodeId}"]`);
+                paths.forEach(path=>{
+                    const pId = Number(path.getAttribute('data-parent'));
+                    const cId = Number(path.getAttribute('data-child'));
+                    const pNode = canvas.querySelector(`.hier-node[data-id="${pId}"]`);
+                    const cNode = canvas.querySelector(`.hier-node[data-id="${cId}"]`);
+                    if(!pNode||!cNode) return;
+                    const pRect = pNode.getBoundingClientRect();
+                    const cRect = cNode.getBoundingClientRect();
+                    const px = (pRect.left + pRect.width/2 - canvasRect.left);
+                    const py = (pRect.top + pRect.height - canvasRect.top);
+                    const cx = (cRect.left + cRect.width/2 - canvasRect.left);
+                    const cy = (cRect.top - canvasRect.top);
+                    const midY = (py + cy)/2;
+                    const d = `M ${px} ${py} C ${px} ${midY}, ${cx} ${midY}, ${cx} ${cy}`;
+                    path.setAttribute('d', d);
+                });
+            }
+            let dragRaf = null;
+            window.addEventListener('mousemove', e=>{
+                if(!draggingNode) return;
+                const rect = canvas.getBoundingClientRect();
+                draggingNode.x = Math.min(rect.width-60, Math.max(0, e.clientX - rect.left - dragOffset.x));
+                draggingNode.y = Math.min(rect.height-40, Math.max(0, e.clientY - rect.top - dragOffset.y));
+                if(!dragRaf){
+                    dragRaf = requestAnimationFrame(()=>{
+                        dragRaf = null;
+                        const el = canvas.querySelector(`.hier-node[data-id="${draggingNode.id}"]`);
+                        if(el){ el.style.transform = `translate(${draggingNode.x}px, ${draggingNode.y}px) scale(${zoom})`; }
+                        updateLinksFor(draggingNode.id);
+                    });
+                }
+            });
+            window.addEventListener('mouseup', ()=>{ if(draggingNode){ const el = canvas.querySelector(`.hier-node[data-id="${draggingNode.id}"]`); if(el) el.classList.remove('dragging'); draggingNode=null; } });
+            canvas.addEventListener('click', ()=>{ if(linkMode){ linkMode=false; selectedParent=null; canvas.querySelectorAll('.hier-node').forEach(nd=>nd.classList.remove('selected-parent')); showToast && showToast('Modo ligação cancelado.','error'); }});
+        }
+
+        // Esconde botão antigo de modo ligação (agora via double-click)
+        if(btnLinkMode){ btnLinkMode.style.display='none'; }
+        if(btnSaveHier){ btnSaveHier.addEventListener('click', saveHierarchy); }
+    if(btnZoomIn){ btnZoomIn.addEventListener('click', ()=>{ zoom = Math.min(ZOOM_MAX, +(zoom + ZOOM_STEP).toFixed(2)); syncHierarchyUI(); }); }
+    if(btnZoomOut){ btnZoomOut.addEventListener('click', ()=>{ zoom = Math.max(ZOOM_MIN, +(zoom - ZOOM_STEP).toFixed(2)); syncHierarchyUI(); }); }
+    if(btnClearHier){ btnClearHier.addEventListener('click', ()=>{ if(confirm('Limpar apenas o canvas? A hierarquia guardada mantém-se.')){
+            // Limpa só nós e linhas visuais; mantém edges para relações e não sobrescreve storage
+            nodes = [];
+            syncHierarchyUI(); // isto remove nós existentes
+            svg && svg.querySelectorAll('path').forEach(p=>p.remove());
+            placeholder && (placeholder.style.display='flex');
+            showToast && showToast('Canvas limpo. Hierarquia guardada intacta.','success');
+        }}); }
+    if(btnClearLinks){ btnClearLinks.addEventListener('click', ()=>{ if(!nodes.length){ showToast && showToast('Nenhum colaborador no canvas.','error'); return; }
+        if(confirm('Remover apenas as ligações entre colaboradores atualmente no canvas? (Não remove ligações onde um dos lados não está visível)')){
+            const idSet = new Set(nodes.map(n=>n.id));
+            const beforeSaved = savedEdges.length;
+            // Mantém edges onde pelo menos um dos lados NÃO está no canvas
+            draftEdges = draftEdges.filter(e=> !(idSet.has(e.parent) && idSet.has(e.child)));
+            savedEdges = savedEdges.filter(e=> !(idSet.has(e.parent) && idSet.has(e.child)));
+            // Persistir novas edges guardadas
+            try {
+                const existingRaw = localStorage.getItem(getHierKey());
+                let storedNodes = nodes.slice();
+                if(existingRaw){
+                    try { const parsed = JSON.parse(existingRaw)||{}; if(Array.isArray(parsed.nodes)) storedNodes = parsed.nodes; } catch(_){ }
+                }
+                localStorage.setItem(getHierKey(), JSON.stringify({ nodes: storedNodes, edges: savedEdges }));
+            } catch(_){ }
+            redrawLinks();
+            renderList();
+            const removed = beforeSaved - savedEdges.length;
+            showToast && showToast(`Removidas ${removed} ligações entre colaboradores visíveis.`,`success`);
+        }
+    }); }
+
+    // Carrega hierarquia ANTES da primeira renderList para que savedEdges seja populado
+    loadHierarchy();
+    syncHierarchyUI();
+    redrawLinks();
+    renderList();
+    }
+
+    // --- Fleet (Frota) Module ---
+    function initializeFrotaModule(){
+        const modal = document.getElementById('fleet-modal');
+        if(!modal){ return; }
+
+        // Global helpers that always read fresh data from the DOM
+        window.__getFleetData = function(){
+            let data = [];
+            const jsonEl = document.querySelector('#fleet-data');
+            if(jsonEl){
+                try { data = JSON.parse(jsonEl.textContent || '[]'); } catch(e){ data = []; }
+            }
+            if(!Array.isArray(data) || !data.length){ data = (window.__FLEET__||[]); }
+            return data;
+        };
+
+        window.__openFrotaModalFor = function(id){
+            const data = window.__getFleetData();
+            const v = (data||[]).find(x => String(x.id) === String(id));
+            if(!v) return;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            const set = (sel, val)=>{ const el = modal.querySelector(sel); if(el) el.textContent = (val==null? '': String(val)); };
+            set('[data-field="veiculo"]', v.veiculo || [v.marca, v.modelo].filter(Boolean).join(' '));
+            set('[data-field="marca"]', v.marca);
+            set('[data-field="modelo"]', v.modelo);
+            set('[data-field="matricula"]', v.matricula);
+            set('[data-field="ano"]', v.ano);
+            set('[data-field="tipo_contrato"]', v.tipo_contrato);
+            set('[data-field="num_contrato"]', v.num_contrato);
+            set('[data-field="locadora"]', v.locadora);
+            set('[data-field="seguradora"]', v.seguradora);
+            set('[data-field="apolice"]', v.apolice);
+            set('[data-field="carta_verde"]', v.carta_verde);
+            set('[data-field="valido_de"]', v.valido_de);
+            set('[data-field="valido_ate"]', v.valido_ate);
+            set('[data-field="agencia"]', v.agencia);
+            set('[data-field="ag_nome"]', v.ag_nome);
+            set('[data-field="ag_morada"]', v.ag_morada);
+            set('[data-field="ag_cp"]', v.ag_cp);
+            set('[data-field="ag_tel"]', v.ag_tel);
+            set('[data-field="ag_mail"]', v.ag_mail);
+            set('[data-field="danos_materiais"]', v.danos_materiais ? 'Sim' : 'Não');
+        };
+
+        window.__bindFrotaCardClicks = function(scope){
+            const root = scope || document;
+            root.querySelectorAll('.fleet-detail-btn').forEach(btn=>{
+                btn.addEventListener('click', function(){
+                    const id = this.getAttribute('data-id') || this.getAttribute('data-index');
+                    window.__openFrotaModalFor(id);
+                });
+            });
+        };
+
+        // Initial bind for existing cards
+        window.__bindFrotaCardClicks(document);
+
+        // Close handlers (idempotent)
+        const close = ()=>{ modal.style.display='none'; document.body.style.overflow=''; };
+        modal.querySelectorAll('[data-close]').forEach(el=> el.addEventListener('click', close));
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ close(); }});
+    }
+
+    // Add create-vehicle UI logic: open/close modal, preview image, submit; append new card and update JSON
+    (function(){
+        window.__wireFrotaCreate = function(container){
+            if (!container) return;
+
+            // Helpers
+            const qs = (sel, root=container) => root.querySelector(sel);
+            const qsa = (sel, root=container) => Array.from(root.querySelectorAll(sel));
+
+            const createBtn = qs('#fleet-create-btn');
+            const modal = qs('#fleet-create-modal');
+            if (!createBtn || !modal) return;
+
+            if (modal.dataset.wired === '1') return; // idempotent per modal instance
+            modal.dataset.wired = '1';
+
+            const showModal = () => { modal.style.display = 'flex'; modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); };
+            const hideModal = () => { modal.style.display = 'none'; modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); };
+
+            qsa('[data-close]', modal).forEach(el => el.addEventListener('click', hideModal));
+            modal.addEventListener('click', (e) => {
+                if (e.target.classList && e.target.classList.contains('fleet-modal-backdrop')) hideModal();
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideModal(); });
+
+            createBtn.addEventListener('click', showModal);
+
+            // Preview image logic
+            const fileInput = qs('#fleet-image-file');
+            const urlInput = qs('#fleet-image-url');
+            const previewImg = qs('#fleet-create-preview');
+
+            const updatePreview = (src) => {
+                if (!src) { previewImg.style.display='none'; previewImg.src=''; return; }
+                previewImg.src = src; previewImg.style.display='block';
+            };
+
+            if (fileInput) {
+                fileInput.addEventListener('change', () => {
+                    const f = fileInput.files && fileInput.files[0];
+                    if (f) { const reader = new FileReader(); reader.onload = e => updatePreview(e.target.result); reader.readAsDataURL(f); }
+                });
+            }
+
+            if (urlInput) {
+                urlInput.addEventListener('input', () => updatePreview(urlInput.value.trim()));
+            }
+
+            // Submit -> push into JSON fleet array and append a new card
+            const form = qs('#fleet-create-form');
+            const grid = qs('.fleet-grid');
+
+            const getFleetData = () => {
+                const jsonEl = qs('#fleet-data', container) || document.getElementById('fleet-data');
+                if (!jsonEl) return [];
+                try { return JSON.parse(jsonEl.textContent || '[]'); } catch { return []; }
+            };
+            const setFleetData = (arr) => {
+                const jsonEl = qs('#fleet-data', container) || document.getElementById('fleet-data');
+                if (jsonEl) jsonEl.textContent = JSON.stringify(arr);
+            };
+
+            const appendCard = (car) => {
+                if (!grid) return;
+                const article = document.createElement('article');
+                article.className = 'fleet-card';
+                article.setAttribute('data-id', String(car.id));
+                article.innerHTML = `
+                <span class="fleet-status ${car.status === 'Atribuido' ? 'status-atribuido' : (car.status === 'Inspeção' ? 'status-inspecao' : 'status-livre')}">${car.status || 'Livre'}</span>
+                    <img src="${car.image || '../../assets/logos/logo.png'}" alt="${car.marca} ${car.modelo}" loading="lazy" />
+                    <div class="fleet-meta">
+                        <h4>${car.marca} ${car.modelo}</h4>
+                        <p class="muted">Matrícula: ${car.matricula}</p>
+                    </div>
+                    <button class="btn btn-primary fleet-detail-btn" data-id="${car.id}">Ver detalhes</button>
+                `;
+                grid.appendChild(article);
+                // bind detail click
+                article.querySelector('.fleet-detail-btn').addEventListener('click', function(){
+                    if (typeof window.__openFrotaModalFor === 'function') window.__openFrotaModalFor(car.id);
+                });
+            };
+
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(form);
+                    const imageFromUrl = (urlInput && urlInput.value.trim()) || '';
+                    const imageFromFile = (fileInput && fileInput.files && fileInput.files[0]) || null;
+
+                    const proceed = (imageSrc) => {
+                        const arr = getFleetData();
+                        const maxId = Math.max(0, ...arr.map(x => Number(x && x.id) || 0));
+                                    const newCar = {
+                            id: maxId + 1,
+                            veiculo: `${(fd.get('marca')||'').toString().trim()} ${(fd.get('modelo')||'').toString().trim()}`.trim(),
+                            marca: (fd.get('marca')||'').toString().trim(),
+                            modelo: (fd.get('modelo')||'').toString().trim(),
+                            matricula: (fd.get('matricula')||'').toString().trim(),
+                            ano: (fd.get('ano')||'').toString().trim(),
+                            tipo_contrato: (fd.get('tipo_contrato')||'').toString(),
+                            num_contrato: (fd.get('num_contrato')||'').toString(),
+                            locadora: (fd.get('locadora')||'').toString(),
+                            seguradora: (fd.get('seguradora')||'').toString(),
+                            apolice: (fd.get('apolice')||'').toString(),
+                            carta_verde: (fd.get('carta_verde')||'').toString(),
+                            valido_de: (fd.get('valido_de')||'').toString(),
+                            valido_ate: (fd.get('valido_ate')||'').toString(),
+                            agencia: (fd.get('agencia')||'').toString(),
+                            ag_nome: (fd.get('ag_nome')||'').toString(),
+                            ag_morada: (fd.get('ag_morada')||'').toString(),
+                            ag_cp: (fd.get('ag_cp')||'').toString(),
+                            ag_tel: (fd.get('ag_tel')||'').toString(),
+                            ag_mail: (fd.get('ag_mail')||'').toString(),
+                            danos_materiais: (fd.get('danos_materiais')||'false').toString() === 'true',
+                                        image: imageSrc || '',
+                                        status: 'Livre'
+                        };
+
+                        arr.push(newCar);
+                        setFleetData(arr);
+                        appendCard(newCar);
+                        hideModal();
+                        form.reset();
+                        updatePreview('');
+                    };
+
+                    if (imageFromUrl) return proceed(imageFromUrl);
+                    if (imageFromFile) {
+                        const reader = new FileReader();
+                        reader.onload = ev => proceed(ev.target.result);
+                        reader.readAsDataURL(imageFromFile);
+                        return;
+                    }
+                    proceed('');
+                });
+            }
+        };
+    })();
+
+    // Hook create-vehicle wiring into existing Frota initializer
+    (function(){
+      const origInit = window.initializeFrotaModule;
+      window.initializeFrotaModule = function(){
+        if (typeof origInit === 'function') origInit();
+        const container = document.getElementById('main-content') || document;
+        if (typeof window.__wireFrotaCreate === 'function') window.__wireFrotaCreate(container);
+      };
+    })();
+
+        // Delegated fallback: open/close create modal even if specific wiring didn't attach
+        (function(){
+            if (window.__fleetCreateDelegated) return; window.__fleetCreateDelegated = true;
+            function syncModalClass(){
+                const anyVisible = document.querySelector('.fleet-modal[style*="display: flex"], .fleet-modal:not([style])') || document.querySelector('#modalPedido[style*="display: flex"]');
+                if (anyVisible) document.body.classList.add('modal-open'); else document.body.classList.remove('modal-open');
+            }
+            document.addEventListener('click', function(ev){
+                const openBtn = ev.target && ev.target.closest && ev.target.closest('#fleet-create-btn');
+                if (openBtn){
+                    const root = document.getElementById('main-content') || document;
+                    const modal = root.querySelector('#fleet-create-modal') || document.querySelector('#fleet-create-modal');
+                    if (modal){ modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); ev.preventDefault(); syncModalClass(); return; }
+                }
+                const closeEl = ev.target && (ev.target.matches('[data-close]') || ev.target.classList.contains('fleet-modal-backdrop'));
+                if (closeEl){
+                    const modal = (ev.target.closest && ev.target.closest('.fleet-modal')) || document.querySelector('#fleet-create-modal');
+                    if (modal){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); ev.preventDefault(); syncModalClass(); }
+                }
+            }, true);
+            document.addEventListener('keydown', function(e){
+                if (e.key === 'Escape'){
+                    const modal = document.querySelector('#fleet-create-modal');
+                    if (modal && modal.style.display !== 'none'){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); syncModalClass(); }
+                }
+            });
+        })();
 
     // Adicionar event listeners iniciais
     links.forEach(link => {
@@ -1384,6 +2312,7 @@ window.abrirModalPedido = function() {
     if (modal) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        document.body.classList.add('modal-open');
     }
 };
 
@@ -1392,6 +2321,7 @@ window.fecharModalPedido = function() {
     if (modal) {
         modal.style.display = 'none';
         document.body.style.overflow = '';
+        document.body.classList.remove('modal-open');
     }
 };
 
