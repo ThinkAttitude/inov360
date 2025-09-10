@@ -268,6 +268,9 @@ document.addEventListener("DOMContentLoaded", function () {
             case "inicio":
                 setTimeout(showWelcome, 300);
                 return;
+            case "seguranca_higiene":
+                url = "../admin_rh/seguranca_higiene.php";
+                break;
             case "ficha_editar":
                 // edição completa admin RH
                 url = buildFichaEditarUrl();
@@ -332,6 +335,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // Função para inicializar funcionalidades específicas de cada módulo
     function initializeSpecificFeatures(content) {
         switch (content) {
+            case "seguranca_higiene":
+                initializeSegurancaHigieneModule();
+                break;
             case "pedidos_ferias":
                 initializeFeriasModule();
                 break;
@@ -363,6 +369,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 initializeFrotaModule();
                 break;
         }
+    }
+
+    // Inicializar módulo de Segurança e Higiene (cores aleatórias por campo)
+    function initializeSegurancaHigieneModule(){
+        try{
+            const scope = document.getElementById('main-content') || document;
+            const cards = scope.querySelectorAll('.sh-card');
+            if(!cards.length) return;
+            cards.forEach(card => {
+                const fields = card.querySelectorAll('.sh-field');
+                let okCount = 0;
+                fields.forEach(f => {
+                    const isOk = Math.random() > 0.35; // ~65% OK
+                    f.classList.toggle('ok', isOk);
+                    f.classList.toggle('missing', !isOk);
+                    if(isOk) okCount++;
+                });
+                const pct = Math.round((okCount / Math.max(1, fields.length)) * 100);
+                const badge = card.querySelector('[data-compliance]');
+                if(badge) badge.textContent = pct + '% completo';
+            });
+        }catch(_){ /* noop */ }
     }
 
     // Inicializar módulo de férias
