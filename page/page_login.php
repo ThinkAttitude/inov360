@@ -14,18 +14,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-grupo-inov">
   <div class="login-container">
     <div class="login-box">
       <!-- Brand Section -->
       <div class="login-brand">
-        <div class="logo">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+        <div class="logo has-company-logo">
+          <img src="../assets/logos/logo_index.png" alt="INOV360" />
         </div>
-        <h1>RH360</h1>
+        <h1>INOV360</h1>
         <p>A gestão de recursos humanos, simplificada.</p>
         <div class="brand-divider"></div>
       </div>

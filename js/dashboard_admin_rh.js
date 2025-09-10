@@ -1337,13 +1337,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const STORAGE_KEY = 'demo_colaboradores_v2';
         const basePerms = ['inicio','horarios','ferias_ausencias','ficha_colab','consulta_pedidos'];
+        // NOVAS PERMISSÕES (2025-09): substituir anteriores
         const extraDefs = [
-            { key:'gestao_fichas', label:'Gestão de Fichas' },
-            { key:'extracao_horarios', label:'Extração de Horários' },
-            { key:'marcacao_direta', label:'Marcação Direta' },
-            { key:'criar_colaborador', label:'Criar Colaborador' },
-            { key:'frota', label:'Frota' }
+            { key:'criar_users',               label:'Criar Users' },
+            { key:'aprovar_alteracoes_ficha',  label:'Aprovar Alterações Ficha' },
+            { key:'edicao_completa_ficha',     label:'Edição Completa Ficha' },
+            { key:'edicao_financeira_ficha',   label:'Edição Ficha Financeira' },
+            { key:'download_mapa_horarios',    label:'Download Mapa Horários' },
+            { key:'marcacao_direta_fa',        label:'Marcação Direta Férias/Ausências' },
+            { key:'gestao_frota',              label:'Gestão de Frota' },
+            { key:'higiene_seguranca',         label:'Higiene & Segurança' }
         ];
+
+        // Mapeamento antigo->novo para migração automática de dados demo guardados no localStorage
+        const legacyMap = {
+            gestao_fichas: 'edicao_completa_ficha',
+            extracao_horarios: 'download_mapa_horarios',
+            marcacao_direta: 'marcacao_direta_fa',
+            criar_colaborador: 'criar_users',
+            frota: 'gestao_frota'
+        };
 
         function loadUsers(){
             try { const raw = localStorage.getItem(STORAGE_KEY); return raw? JSON.parse(raw): []; } catch(_) { return []; }
@@ -1351,6 +1364,18 @@ document.addEventListener("DOMContentLoaded", function () {
         function saveUsers(arr){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(_) {} }
 
         let users = loadUsers();
+        // Migrar permissões legado -> novas chaves
+        let migrated = false;
+        users.forEach(u => {
+            if(!Array.isArray(u.extra_perms)) return;
+            const updated = new Set();
+            u.extra_perms.forEach(p => {
+                if(legacyMap[p]) { updated.add(legacyMap[p]); migrated = true; }
+                else if(extraDefs.some(d=>d.key===p)) { updated.add(p); }
+            });
+            u.extra_perms = Array.from(updated);
+        });
+        if(migrated) { try { localStorage.setItem('demo_colaboradores_v2', JSON.stringify(users)); } catch(_){} }
 
         // ------------- GRUPOS / PASTAS (NOVA FUNCIONALIDADE) -------------
         // Cada grupo representa uma "pasta" contendo alguns utilizadores.

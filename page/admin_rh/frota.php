@@ -11,32 +11,44 @@
   </div>
 
   <div class="fleet-grid">
-    <article class="fleet-card" data-id="1">
+    <article class="fleet-card" data-id="1" style="position:relative;">
   <span class="fleet-status status-atribuido">Atribuido</span>
       <img src="../../assets/carros/bmw_520d.png" alt="Carro 1" loading="lazy" />
       <div class="fleet-meta">
         <h4>BMW 520d</h4>
-        <p class="muted">Matrícula: AA-00-AA</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+          <p class="muted" style="margin:0;">Matrícula: AA-00-AA</p>
+          <span class="fleet-tag" style="background:rgba(17,24,39,0.85);color:#fff;font-size:12px;line-height:1;padding:5px 8px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,0.2);white-space:nowrap;">Veiculo de Uso Proprio</span>
+        </div>
       </div>
       <button class="btn btn-primary fleet-detail-btn" data-id="1">Ver detalhes</button>
     </article>
 
-    <article class="fleet-card" data-id="2">
-  <span class="fleet-status status-inspecao">Inspeção</span>
+    <article class="fleet-card" data-id="2" style="position:relative;">
+      <button id="fleet-transport-btn-2" type="button" class="btn btn-primary" title="Agendar transporte para o Opel" onclick="(function(){var m=document.getElementById('fleet-transport-modal'); if(m){ m.style.display='flex'; m.setAttribute('aria-hidden','false'); document.body.classList.add('modal-open'); if(window.__initTransportModal){ try{ window.__initTransportModal(); }catch(e){} } } })(); return false;" style="position:absolute;top:6px;left:6px;z-index:1001;pointer-events:auto;">
+        Agendar Transporte
+      </button>
+  <span class="fleet-status status-livre">Livre</span>
       <img src="../../assets/carros/opel_movano.png" alt="Carro 2" loading="lazy" />
       <div class="fleet-meta">
         <h4>Opel Movano</h4>
-        <p class="muted">Matrícula: BB-11-BB</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+          <p class="muted" style="margin:0;">Matrícula: BB-11-BB</p>
+          <span class="fleet-tag" style="background:rgba(17,24,39,0.85);color:#fff;font-size:12px;line-height:1;padding:5px 8px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,0.2);white-space:nowrap;">Veiculo Comunitario</span>
+        </div>
       </div>
       <button class="btn btn-primary fleet-detail-btn" data-id="2">Ver detalhes</button>
     </article>
 
-    <article class="fleet-card" data-id="3">
-  <span class="fleet-status status-livre">Livre</span>
+    <article class="fleet-card" data-id="3" style="position:relative;">
+  <span class="fleet-status status-inspecao">Inspeção</span>
       <img src="../../assets/carros/skoda_kamiq.png" alt="Carro 3" loading="lazy" />
       <div class="fleet-meta">
         <h4>Skoda Kamiq</h4>
-        <p class="muted">Matrícula: CC-22-CC</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+          <p class="muted" style="margin:0;">Matrícula: CC-22-CC</p>
+          <span class="fleet-tag" style="background:rgba(17,24,39,0.85);color:#fff;font-size:12px;line-height:1;padding:5px 8px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,0.2);white-space:nowrap;">Veiculo Serviço</span>
+        </div>
       </div>
       <button class="btn btn-primary fleet-detail-btn" data-id="3">Ver detalhes</button>
     </article>
@@ -188,10 +200,69 @@
     </div>
   </div>
 
+  <!-- Modal Agendar Transporte -->
+  <div class="fleet-modal" id="fleet-transport-modal" aria-hidden="true" style="display:none;">
+    <div class="fleet-modal-backdrop" data-close></div>
+    <div class="fleet-modal-content" role="dialog" aria-modal="true" aria-labelledby="fleetTransportTitle">
+      <button class="fleet-modal-close" data-close aria-label="Fechar">×</button>
+      <h3 id="fleetTransportTitle">Agendar Transporte — Opel Movano</h3>
+
+      <form id="fleet-transport-form">
+        <div class="fleet-sections">
+          <section>
+            <h4>Período</h4>
+            <div class="form-group">
+              <label class="form-label">Selecione o período</label>
+              <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+                <label style="display:flex;gap:.5rem;align-items:center;">
+                  <input type="radio" name="periodo" value="meio_dia" checked>
+                  Meio dia
+                </label>
+                <label style="display:flex;gap:.5rem;align-items:center;">
+                  <input type="radio" name="periodo" value="dia_inteiro">
+                  Dia inteiro
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h4>Estado do Veículo</h4>
+            <div class="form-group">
+              <label class="form-label" for="estado_recolha">Recolha</label>
+              <input class="form-input" type="text" id="estado_recolha" name="estado_recolha" placeholder="Ex.: Danos Visiveis, nível combustível…">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="estado_entrega">Entrega</label>
+              <input class="form-input" type="text" id="estado_entrega" name="estado_entrega" placeholder="Ex.: Danos Visiveis, nível combustível…">
+            </div>
+          </section>
+
+          <section>
+            <h4>Ocorrências</h4>
+            <div class="form-group" style="display:flex;gap:.5rem;align-items:center;">
+              <input type="checkbox" id="ocorrencias_check" name="ocorrencias_check" onchange="(function(el){var g=document.getElementById('ocorrencias_text_group'); if(g){ g.style.setProperty('display', el.checked ? 'block' : 'none', 'important'); } })(this)" onclick="(function(el){var g=document.getElementById('ocorrencias_text_group'); if(g){ g.style.setProperty('display', el.checked ? 'block' : 'none', 'important'); } })(this)">
+              <label class="form-label" for="ocorrencias_check" style="margin:0;">Registar ocorrências</label>
+            </div>
+            <div class="form-group" id="ocorrencias_text_group" style="display:none;">
+              <label class="form-label" for="ocorrencias_text">Descreva o que aconteceu</label>
+              <textarea class="form-input" id="ocorrencias_text" name="ocorrencias_text" rows="4" placeholder="Notas, danos, atrasos, etc."></textarea>
+            </div>
+          </section>
+        </div>
+
+        <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem;">
+          <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script type="application/json" id="fleet-data">[
     {"id":1,"veiculo":"BMW 520d","marca":"BMW","modelo":"520d","matricula":"AA-00-AA","ano":"2020","tipo_contrato":"Leasing","num_contrato":"LS-2020-1001","locadora":"LeasePlan","seguradora":"Fidelidade","apolice":"AP-520-0001","carta_verde":"CV-520-0001","valido_de":"01/01/2025","valido_ate":"31/12/2025","agencia":"Agência Central","ag_nome":"João Silva","ag_morada":"Av. Central 100","ag_cp":"1000-001 Lisboa","ag_tel":"+351 210 000 000","ag_mail":"joao.silva@agencia.pt","danos_materiais":true,"status":"Atribuido"},
-    {"id":2,"veiculo":"Opel Movano","marca":"Opel","modelo":"Movano","matricula":"BB-11-BB","ano":"2021","tipo_contrato":"ALD","num_contrato":"ALD-2021-0442","locadora":"ALD Automotive","seguradora":"Allianz","apolice":"ALL-556677","carta_verde":"CV-556677","valido_de":"15/02/2025","valido_ate":"14/02/2026","agencia":"Agência Norte","ag_nome":"Maria Pereira","ag_morada":"Rua das Flores 25","ag_cp":"4000-222 Porto","ag_tel":"+351 220 000 000","ag_mail":"maria.pereira@agencia.pt","danos_materiais":false,"status":"Inspeção"},
-    {"id":3,"veiculo":"Skoda Kamiq","marca":"Skoda","modelo":"Kamiq","matricula":"CC-22-CC","ano":"2022","tipo_contrato":"Próprio","num_contrato":"-","locadora":"-","seguradora":"Tranquilidade","apolice":"TR-998877","carta_verde":"CV-998877","valido_de":"01/04/2025","valido_ate":"31/03/2026","agencia":"Agência Sul","ag_nome":"Rui Gomes","ag_morada":"Praça do Sul 12","ag_cp":"8000-100 Faro","ag_tel":"+351 289 000 000","ag_mail":"rui.gomes@agencia.pt","danos_materiais":true,"status":"Livre"}
+  {"id":2,"veiculo":"Opel Movano","marca":"Opel","modelo":"Movano","matricula":"BB-11-BB","ano":"2021","tipo_contrato":"ALD","num_contrato":"ALD-2021-0442","locadora":"ALD Automotive","seguradora":"Allianz","apolice":"ALL-556677","carta_verde":"CV-556677","valido_de":"15/02/2025","valido_ate":"14/02/2026","agencia":"Agência Norte","ag_nome":"Maria Pereira","ag_morada":"Rua das Flores 25","ag_cp":"4000-222 Porto","ag_tel":"+351 220 000 000","ag_mail":"maria.pereira@agencia.pt","danos_materiais":false,"status":"Livre"},
+  {"id":3,"veiculo":"Skoda Kamiq","marca":"Skoda","modelo":"Kamiq","matricula":"CC-22-CC","ano":"2022","tipo_contrato":"Próprio","num_contrato":"-","locadora":"-","seguradora":"Tranquilidade","apolice":"TR-998877","carta_verde":"CV-998877","valido_de":"01/04/2025","valido_ate":"31/03/2026","agencia":"Agência Sul","ag_nome":"Rui Gomes","ag_morada":"Praça do Sul 12","ag_cp":"8000-100 Faro","ag_tel":"+351 289 000 000","ag_mail":"rui.gomes@agencia.pt","danos_materiais":true,"status":"Inspeção"}
   ]</script>
   
   <!-- Script de controlo dos modais da frota -->
@@ -201,6 +272,37 @@
     const createBtn = document.getElementById('fleet-create-btn');
     const createModal = document.getElementById('fleet-create-modal');
     const detailModal = document.getElementById('fleet-modal');
+    const transportBtn2 = document.getElementById('fleet-transport-btn-2');
+    const transportModal = document.getElementById('fleet-transport-modal');
+
+    // Inicializa o toggle de Ocorrências quando o modal abre
+    function initTransportModal() {
+      if (!transportModal) return;
+      const ocorrCheck = transportModal.querySelector('#ocorrencias_check');
+      const ocorrGroup = transportModal.querySelector('#ocorrencias_text_group');
+      if (!ocorrCheck || !ocorrGroup) return;
+      const setVis = () => {
+        const val = ocorrCheck.checked ? 'block' : 'none';
+        ocorrGroup.style.setProperty('display', val, 'important');
+      };
+      if (!transportModal.dataset.ocorrInit) {
+        ocorrCheck.addEventListener('change', setVis);
+        ocorrCheck.addEventListener('input', setVis);
+        transportModal.dataset.ocorrInit = '1';
+      }
+      setVis();
+    }
+  // expor globalmente para fallback inline
+  window.__initTransportModal = initTransportModal;
+  window.toggleOcorrencias = function(cb){
+      try {
+        const group = document.getElementById('ocorrencias_text_group');
+        if (!group) return;
+    const val = cb && cb.checked ? 'block' : 'none';
+    group.style.setProperty('display', val, 'important');
+    console.debug('[frota] toggleOcorrencias ->', val);
+      } catch(e) { /* noop */ }
+    };
 
     function anyModalOpen() {
       return Array.from(document.querySelectorAll('.fleet-modal')).some(m => m.style.display === 'flex');
@@ -226,6 +328,32 @@
     // Botões detalhes (placeholder: apenas abre modal; lógica de preenchimento pode ser adicionada depois)
     document.querySelectorAll('.fleet-detail-btn').forEach(btn => {
       btn.addEventListener('click', () => openFleetModal(detailModal));
+    });
+
+    // Botão Agendar Transporte (Opel)
+    transportBtn2?.addEventListener('click', (e) => {
+      console.debug('[frota] click Agendar Transporte');
+      e.preventDefault();
+      if (!transportModal) {
+        console.warn('[frota] transportModal não encontrado');
+        return;
+      }
+      initTransportModal();
+      openFleetModal(transportModal);
+    });
+
+    // Disponibilizar método global (usado no onclick inline)
+    window.openTransportForOpel = function() {
+      if (!transportModal) return;
+      initTransportModal();
+      openFleetModal(transportModal);
+    };
+
+    // Submeter formulário (placeholder: apenas fecha modal)
+    const transportForm = document.getElementById('fleet-transport-form');
+    transportForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      closeFleetModal(transportModal);
     });
 
     // Fechar via elementos com data-close (botão X e backdrop)
