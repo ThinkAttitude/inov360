@@ -40,11 +40,10 @@ if ($acao === 'rejeitar' && ($comentario === null || $comentario === '')) {
     exit;
 }
 
-/* ===== Fluxo ===== */
 try {
     $pdo->beginTransaction();
 
-    // Carregar pedido
+    /* ===== Carregar pedido ===== */
     $q = $pdo->prepare("SELECT * FROM pedidos_ferias WHERE id=:id LIMIT 1");
     $q->execute([':id'=>$pedidoId]);
     $ped = $q->fetch(PDO::FETCH_ASSOC);
@@ -55,7 +54,16 @@ try {
         exit;
     }
 
-    // Atualizar estado do pedido
+    // Dados auxiliares (requisitante e substituto)
+    $reqUserId = (int)$ped['user_id'];
+    $subUserId = isset($ped['responsavel_id']) ? (int)$ped['responsavel_id'] : 0;
+
+    // usar crases porque user/name podem ser palavras reservadas
+    $uStmt = $pdo->prepare("SELECT `name` FROM `user` WHERE id=:id LIMIT 1");
+    $uStmt->execute([':id'=>$reqUserId]);
+    $reqNome = (string)($uStmt->fetchColumn() ?: 'utilizador');
+
+    /* ===== Atualizar estado do pedido ===== */
     $novoEstado = $acao === 'aprovar' ? 'aprovado' : 'rejeitado';
     $upd = $pdo->prepare("
         UPDATE pedidos_ferias
@@ -69,29 +77,32 @@ try {
         ':id' => $pedidoId
     ]);
 
-    $evento = null;
+    $eventoLeave = null;
+    $eventoSub   = null;
 
     if ($acao === 'aprovar') {
-        // Evitar duplicados (se não tiveres UNIQUE em leave_request_id)
-        $del = $pdo->prepare("DELETE FROM eventos WHERE leave_request_id=:rid");
-        $del->execute([':rid'=>$pedidoId]);
+        /* ===== Limpa eventos anteriores do mesmo pedido ===== */
+        $pdo->prepare("DELETE FROM eventos WHERE leave_request_id=:rid")
+            ->execute([':rid'=>$pedidoId]);
 
-        // Criar evento LEAVE (um único evento com o intervalo completo)
+        /* ===== Criar evento principal (LEAVE) ===== */
         $ins = $pdo->prepare("
             INSERT INTO eventos
               (user_id, titulo, tipo, inicio, fim, minutos, km, status, source, leave_request_id, period_id, created_at, updated_at)
             VALUES
-              (:u, :title, 'LEAVE', CONCAT(:di,' 00:00:00'), CONCAT(:df,' 23:59:59'), NULL, NULL, 'approved', 'approval', :rid, NULL, NOW(), NOW())
+              (:u, :title, 'LEAVE',
+               CONCAT(:di,' 00:00:00'), CONCAT(:df,' 23:59:59'),
+               NULL, NULL, 'approved', 'approval', :rid, NULL, NOW(), NOW())
         ");
         $ins->execute([
-            ':u'     => (int)$ped['user_id'],
-            ':title' => (string)$ped['tipo'],      // subtipo (ferias, baixa_medica, ...)
+            ':u'     => $reqUserId,
+            ':title' => (string)$ped['tipo'],
             ':di'    => (string)$ped['data_inicio'],
             ':df'    => (string)$ped['data_fim'],
             ':rid'   => (int)$ped['id']
         ]);
 
-        // Zerar minutos dos eventos que colidem com o LEAVE aprovado
+        /* ===== Zerar minutos dos eventos de trabalho que colidem ===== */
         $zero = $pdo->prepare("
             UPDATE eventos
                SET minutos = CASE WHEN tipo IN ('WORK','OVERTIME','ONCALL') THEN 0 ELSE minutos END,
@@ -102,34 +113,67 @@ try {
                AND DATE(fim)    >= :di
         ");
         $zero->execute([
-            ':u'  => (int)$ped['user_id'],
+            ':u'  => $reqUserId,
             ':di' => (string)$ped['data_inicio'],
             ':df' => (string)$ped['data_fim'],
         ]);
 
-        // Ler o evento LEAVE criado (opcional, para devolver no JSON)
-        $sel = $pdo->prepare("
-            SELECT id, user_id, titulo, tipo, inicio, fim, status, leave_request_id
+        /* ===== Criar evento de SUBSTITUIÇÃO para o responsável ===== */
+        if ($subUserId > 0) {
+            $insSub = $pdo->prepare("
+                INSERT INTO eventos
+                  (user_id, titulo, tipo, inicio, fim, minutos, km, status, source, leave_request_id, period_id, created_at, updated_at)
+                VALUES
+                  (:u, :title, 'SUBSTITUTION',
+                   CONCAT(:di,' 00:00:00'), CONCAT(:df,' 23:59:59'),
+                   NULL, NULL, 'approved', 'system', :rid, NULL, NOW(), NOW())
+            ");
+            $insSub->execute([
+                ':u'     => $subUserId,
+                ':title' => 'Substituição ' . $reqNome,
+                ':di'    => (string)$ped['data_inicio'],
+                ':df'    => (string)$ped['data_fim'],
+                ':rid'   => (int)$ped['id']
+            ]);
+        }
+
+        /* ===== Ler eventos gerados (opcional para resposta) ===== */
+        $sel1 = $pdo->prepare("
+            SELECT id, user_id, titulo, tipo, inicio, fim, status, leave_request_id, source
               FROM eventos
-             WHERE leave_request_id=:rid
+             WHERE leave_request_id=:rid AND source='approval'
              ORDER BY id DESC LIMIT 1
         ");
-        $sel->execute([':rid'=>$pedidoId]);
-        $evento = $sel->fetch(PDO::FETCH_ASSOC) ?: null;
+        $sel1->execute([':rid'=>$pedidoId]);
+        $eventoLeave = $sel1->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        if ($subUserId > 0) {
+            // procurar pelo tipo SUBSTITUTION (source = system)
+            $sel2 = $pdo->prepare("
+                SELECT id, user_id, titulo, tipo, inicio, fim, status, leave_request_id, source
+                  FROM eventos
+                 WHERE leave_request_id=:rid AND tipo='SUBSTITUTION'
+                 ORDER BY id DESC LIMIT 1
+            ");
+            $sel2->execute([':rid'=>$pedidoId]);
+            $eventoSub = $sel2->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
 
     } else {
-        // Rejeitado: remover qualquer evento associado a este pedido
-        $pdo->prepare("DELETE FROM eventos WHERE leave_request_id=:rid")->execute([':rid'=>$pedidoId]);
+        /* ===== Rejeitado: remover qualquer evento associado ===== */
+        $pdo->prepare("DELETE FROM eventos WHERE leave_request_id=:rid")
+            ->execute([':rid'=>$pedidoId]);
     }
 
     $pdo->commit();
 
     echo json_encode([
-        "ok"        => true,
-        "pedido_id" => $pedidoId,
-        "estado"    => $novoEstado,
-        "comentario"=> $comentario,
-        "evento"    => $evento
+        "ok"           => true,
+        "pedido_id"    => $pedidoId,
+        "estado"       => $novoEstado,
+        "comentario"   => $comentario,
+        "evento_leave" => $eventoLeave,
+        "evento_sub"   => $eventoSub
     ]);
 
 } catch (Throwable $e) {
