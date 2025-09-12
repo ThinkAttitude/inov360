@@ -63,11 +63,11 @@ while ($cursor <= $last) {
 $period = null;
 try {
     $p = $pdo->prepare("
-    SELECT id, estado, period_start AS start, period_end AS end
-      FROM timesheet_periods
-     WHERE user_id=:u AND period_start=:s AND period_end=:e
-     LIMIT 1
-  ");
+      SELECT id, estado, period_start AS start, period_end AS end
+        FROM timesheet_periods
+       WHERE user_id=:u AND period_start=:s AND period_end=:e
+       LIMIT 1
+    ");
     $p->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
     $period = $p->fetch(PDO::FETCH_ASSOC) ?: null;
 } catch (Throwable $e) {
@@ -111,17 +111,17 @@ foreach ($sts as $r) {
     $days[$d]['statuses'][$r['tipo']] = $r['status'];
 }
 
-/* ==== Férias/Ausências (LEAVE) dentro do mês, expandido por dia ==== */
+/* ==== Férias/Ausências + Substituições (LEAVE e SUBSTITUTION) ==== */
 $leaveQ = $pdo->prepare("
-  SELECT id, titulo, inicio, fim, leave_request_id
+  SELECT id, titulo, inicio, fim, leave_request_id, tipo
     FROM eventos
    WHERE user_id=:u
-     AND tipo='LEAVE'
+     AND tipo IN ('LEAVE','SUBSTITUTION')
      AND DATE(fim)   >= :s
      AND DATE(inicio) <= :e
 ");
 $leaveQ->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
-$leaveTypes = []; // opcional: podes mapear titulo->tipo
+
 foreach ($leaveQ as $lv) {
     $ls = new DateTime(max($start, substr($lv['inicio'],0,10)));
     $le = new DateTime(min($end,   substr($lv['fim'],0,10)));
@@ -129,9 +129,10 @@ foreach ($leaveQ as $lv) {
         $d = $ls->format('Y-m-d');
         if (isset($days[$d])) {
             $days[$d]['leaves'][] = [
-                "id" => (int)$lv['id'],
+                "id"        => (int)$lv['id'],
                 "requestId" => $lv['leave_request_id'] ? (int)$lv['leave_request_id'] : null,
-                "title" => $lv['titulo'] ?? 'LEAVE'
+                "title"     => $lv['titulo'] ?? ($lv['tipo'] === 'SUBSTITUTION' ? 'Substituição' : 'LEAVE'),
+                "kind"      => $lv['tipo'] // 'LEAVE' ou 'SUBSTITUTION' (para o frontend distinguir se quiser)
             ];
         }
         $ls->modify('+1 day');
