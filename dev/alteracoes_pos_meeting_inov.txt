@@ -1,0 +1,84 @@
+POST /api/leaves/direct_leave.php
+Marcação direta de férias/ausências por RH. Cria o pedido já aprovado, guarda comprovativo e gera o evento no calendário do colaborador.
+
+Autenticação e permissões:
+– Requer sessão válida.
+– Role necessária: admin_rh (ou admin).
+
+Content-Type:
+– multipart/form-data (com envio de ficheiro).
+
+Parâmetros de entrada (form-data):
+– user_id (obrigatório) — ID do colaborador.
+– tipo (obrigatório) — valor existente no ENUM de pedidos_ferias.tipo (ex.: “ferias”, “baixa_medica”, …).
+– data_inicio (obrigatório) — data no formato YYYY-MM-DD ou dd/mm/aaaa.
+– data_fim (obrigatório) — data no formato YYYY-MM-DD ou dd/mm/aaaa.
+– justificacao (opcional) — texto livre.
+– ficheiro (obrigatório) — comprovativo PDF/JPG/PNG, máximo 5MB.
+
+Comportamento:
+– Cria registo em pedidos_ferias com estado “aprovado”, decidido_por = utilizador atual e comentário “Marcação direta RH”; guarda o ficheiro em /uploads/leaves/AAAA/MM/.
+– Cria um evento LEAVE para o colaborador no intervalo [data_inicio 00:00:00, data_fim 23:59:59] com status “approved”, source “approval” e leave_request_id = pedido criado.
+– Define a zero os minutos de eventos WORK/OVERTIME/ONCALL que colidam no mesmo intervalo.
+
+Resposta de sucesso (JSON):
+ok: true
+pedido_id: ID do pedido criado
+ficheiro: caminho relativo do comprovativo guardado
+evento: objeto com { id, user_id, titulo, tipo, inicio, fim, status, leave_request_id, source }
+
+Mensagens de erro possíveis:
+401 UNAUTHENTICATED (não autenticado)
+403 FORBIDDEN_ROLE (role sem permissão)
+400 BAD_REQUEST (campos obrigatórios em falta)
+400 BAD_DATES (data_inicio > data_fim)
+400 FILE_REQUIRED (sem ficheiro)
+400 FILE_INVALID_TYPE (tipo inválido — apenas pdf/jpg/jpeg/png)
+400 FILE_TOO_LARGE (ficheiro > 5MB)
+400 FILE_UPLOAD_ERROR (erro no upload PHP)
+400 INVALID_TIPO (valor não existente no ENUM)
+500 STORAGE_ERROR (falha a criar/mover ficheiro)
+500 DB_ERROR (erro de base de dados)
+
+_______________________________
+
+POST /api/timesheets/aval_decide.php
+Aprovar ou rejeitar períodos de timesheet submetidos por operadores.
+
+Autenticação e permissões:
+– Requer sessão válida (cookie PHPSESSID).
+– Roles permitidas: inter2, inter, admin, admin_rh, estrela.
+– Hierarquia: inter2 avalia opera; inter avalia inter2; admin avalia inter; estrela avalia admin e admin_rh; admin_rh não avalia.
+
+Content-Type:
+– application/json.
+
+Parâmetros de entrada (JSON):
+– period_id (obrigatório) — ID do período em timesheet_periods.
+– action (obrigatório) — “approve” ou “reject”.
+– comment (obrigatório quando action = “reject”; opcional no approve).
+
+Comportamento:
+– Valida que o período existe e está em “submitted” e que o avaliador tem permissão na hierarquia.
+– Atualiza timesheet_periods: estado = “approved” ou “rejected”; decidido_por = utilizador atual; decidido_em = NOW(); comentario = comment (quando enviado).
+– Atualiza eventos desse utilizador no intervalo do período: se approve → eventos com status “submitted” passam a “approved”; se reject → eventos com status “submitted” regressam a “draft”. (source = “approval”.)
+
+Resposta de sucesso (JSON):
+ok: true
+period_id: ID do período
+novo_estado: “approved” ou “rejected”
+comentario: texto do motivo (ou null)
+
+Mensagens de erro possíveis:
+401 UNAUTHENTICATED — não autenticado
+403 FORBIDDEN_ROLE — role sem permissão
+403 HIERARCHY_FORBIDDEN — fora da cadeia de aprovação
+404 PERIOD_NOT_FOUND — período inexistente
+409 NOT_SUBMITTED — período não está em “submitted”
+400 BAD_REQUEST — parâmetros em falta/invalidos
+400 COMMENT_REQUIRED — rejeição sem comentário
+500 DB_ERROR — erro de base de dados
+
+Exemplos:
+POST /api/timesheets/aval_decide.php com body { "period_id": 14, "action": "approve" }
+POST /api/timesheets/aval_decide.php com body { "period_id": 16, "action": "reject", "comment": "Faltam registos de 12/08 e 13/08." }
