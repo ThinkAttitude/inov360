@@ -5,8 +5,8 @@ use Dotenv\Dotenv;
 
 // Caminhos das pastas privadas
 $localPrivate = '/var/www/private';           // Local (Docker)
-$devPrivate  = '/home/drawline/rh360_private/env_dev'; // Develop
-$prodPrivate = '/home/rhpt/rh360_private/env_prod'; // Production
+$devPrivate  = '/home/drawline/inov360_private/env_dev'; // Develop
+$prodPrivate = '/home/inovpt/inov360_private/env_prod'; // Production
 
 // Deteção do ambiente
 $runningInDocker = getenv('DOCKER_ENV') || file_exists('/.dockerenv');
