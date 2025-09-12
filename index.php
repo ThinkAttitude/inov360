@@ -9,7 +9,7 @@ switch($_SERVER['HTTP_HOST']) {
         // SERVER Develop
         header("Location: page/page_login.php");
         break;
-    case 'rh360.pt':
+    case 'inov360.pt':
             // SERVER Prod
         header("Location: page/page_login.php");
         break;
