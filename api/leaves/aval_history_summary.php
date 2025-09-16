@@ -4,53 +4,65 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
-}
-$role = $_SESSION['user']['role'] ?? '';
-$allowed = ['inter2','inter','admin','adminrh','estrela'];
-if (!in_array($role, $allowed, true)) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit;
+if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
+    exit;
 }
 
-// quem valida quem
-function subordinate_roles(string $r): array {
-    return match ($r) {
-        'inter2'  => ['opera'],
-        'inter'   => ['inter2'],
-        'admin'   => ['inter'],
-        'estrela' => ['admin','adminrh'],
-        default   => [], // adminrh não valida ninguém
-    };
-}
-$subRoles = subordinate_roles($role);
-if (!$subRoles) { echo json_encode(["ok"=>true,"team_total"=>0,"aprovados"=>0,"rejeitados"=>0]); exit; }
+$userId = (int)($_SESSION['user']['id'] ?? 0);
 
 require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-$ph = implode(',', array_fill(0, count($subRoles), '?'));
-$sql = "
-  SELECT p.estado, COUNT(*) cnt
-    FROM pedidos_ferias p
-    JOIN user u ON u.id = p.user_id
-   WHERE p.estado IN ('aprovado','rejeitado')
-     AND u.role IN ($ph)
-   GROUP BY p.estado
-";
-$st = $pdo->prepare($sql);
-$st->execute($subRoles);
+/* ===== Tenho subs diretos? ===== */
+$hasSubsStmt = $pdo->prepare("
+  SELECT 1
+  FROM inov360.colaborador_responsaveis cr
+  WHERE cr.responsavel_id = ?
+    AND cr.ativo = 1
+    AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+    AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+  LIMIT 1
+");
+$hasSubsStmt->execute([$userId]);
+if (!$hasSubsStmt->fetchColumn()) {
+    echo json_encode([
+        "ok"         => true,
+        "has_subs"   => false,
+        "team_total" => 0,
+        "aprovados"  => 0,
+        "rejeitados" => 0
+    ]);
+    exit;
+}
+
+/* ===== Contagens em histórico (subs diretos) ===== */
+$countStmt = $pdo->prepare("
+  SELECT p.estado, COUNT(*) AS cnt
+  FROM inov360.pedidos_ferias p
+  JOIN inov360.colaborador_responsaveis cr
+    ON cr.colaborador_id = p.user_id
+   AND cr.responsavel_id = ?
+   AND cr.ativo = 1
+   AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+   AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+  WHERE p.estado IN ('aprovado','rejeitado')
+  GROUP BY p.estado
+");
+$countStmt->execute([$userId]);
 
 $approved = 0; $rejected = 0;
-foreach ($st as $r) {
-    if ($r['estado']==='aprovado')  $approved = (int)$r['cnt'];
-    if ($r['estado']==='rejeitado') $rejected = (int)$r['cnt'];
+while ($r = $countStmt->fetch(PDO::FETCH_ASSOC)) {
+    if ($r['estado'] === 'aprovado')  $approved = (int)$r['cnt'];
+    if ($r['estado'] === 'rejeitado') $rejected = (int)$r['cnt'];
 }
 
 echo json_encode([
-    "ok"          => true,
-    "team_total"  => $approved + $rejected,
-    "aprovados"   => $approved,
-    "rejeitados"  => $rejected
+    "ok"         => true,
+    "has_subs"   => true,
+    "team_total" => $approved + $rejected,
+    "aprovados"  => $approved,
+    "rejeitados" => $rejected
 ]);

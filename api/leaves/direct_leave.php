@@ -10,13 +10,11 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
     exit;
 }
-$role = $_SESSION['user']['role'] ?? '';
-// RH e Admin podem marcar diretamente (ajuste se quiser apenas admin_rh)
-$allowed = ['admin_rh'];
-if (!in_array($role, $allowed, true)) {
+
+$myPerms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($myPerms) || !in_array(2, $myPerms, true)) { // exige permissão 2
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]);
-    exit;
+    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
 /* ===== DB ===== */
