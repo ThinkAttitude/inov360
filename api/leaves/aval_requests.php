@@ -4,28 +4,15 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
-}
-$role = $_SESSION['user']['role'] ?? '';
-$allowed = ['inter2','inter','admin','adminrh','estrela'];
-if (!in_array($role, $allowed, true)) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit;
+if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
+    exit;
 }
 
-function subordinate_roles(string $r): array {
-    return match ($r) {
-        'inter2'  => ['opera'],
-        'inter'   => ['inter2'],
-        'admin'   => ['inter'],
-        'estrela' => ['admin','adminrh'],
-        default   => [],
-    };
-}
-$subRoles = subordinate_roles($role);
-if (!$subRoles) { echo json_encode(["ok"=>true,"items"=>[]]); exit; }
+$userId = (int)($_SESSION['user']['id'] ?? 0);
+$type   = $_GET['type'] ?? 'all'; // all|ferias|baixas|licencas
 
-$type = $_GET['type'] ?? 'all'; // all|ferias|baixas|licencas
 $map = [
     'ferias'   => ['ferias'],
     'baixas'   => ['baixa_medica','baixa_seguro'],
@@ -37,12 +24,30 @@ require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-$params = [];
+/* ===== Verificar se tenho subs diretos ===== */
+$hasSubsStmt = $pdo->prepare("
+  SELECT 1
+  FROM inov360.colaborador_responsaveis cr
+  WHERE cr.responsavel_id = ?
+    AND cr.ativo = 1
+    AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+    AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+  LIMIT 1
+");
+$hasSubsStmt->execute([$userId]);
+if (!$hasSubsStmt->fetchColumn()) {
+    echo json_encode(["ok"=>true, "has_subs"=>false, "items"=>[]]);
+    exit;
+}
+
+/* ===== Filtros ===== */
+$params = [$userId];
 $wheres = [];
 $wheres[] = "p.estado = 'pendente'";
-$phSub = implode(',', array_fill(0, count($subRoles), '?'));
-$wheres[] = "u.role IN ($phSub)";
-$params = array_merge($params, $subRoles);
+$wheres[] = "cr.responsavel_id = ?";
+$wheres[] = "cr.ativo = 1";
+$wheres[] = "(cr.valido_desde IS NULL OR cr.valido_desde <= NOW())";
+$wheres[] = "(cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())";
 
 if ($filterTipos) {
     $phTipos = implode(',', array_fill(0, count($filterTipos), '?'));
@@ -51,29 +56,27 @@ if ($filterTipos) {
 }
 $whereSql = implode(' AND ', $wheres);
 
-// base SQL (placeholders para o nome de colunas do utilizador)
+/* ===== SQL com fallback para coluna de nome (nome|name) ===== */
 $sqlTpl = fn(string $nameCol) => "
   SELECT
     p.id,
     p.user_id,
-    u.$nameCol    AS colaborador_nome,
-    u.role        AS colaborador_role,
+    u.$nameCol     AS colaborador_nome,
     p.tipo,
     p.data_inicio,
     p.data_fim,
     p.justificacao,
     p.ficheiro,
-    p.criado_em,
-    p.responsavel_id,
-    ur.$nameCol   AS responsavel_nome
-  FROM pedidos_ferias p
-  JOIN user u  ON u.id  = p.user_id
-  LEFT JOIN user ur ON ur.id = p.responsavel_id
+    p.criado_em
+  FROM inov360.pedidos_ferias p
+  JOIN inov360.colaborador_responsaveis cr
+    ON cr.colaborador_id = p.user_id
+  JOIN inov360.user u
+    ON u.id = p.user_id
   WHERE $whereSql
   ORDER BY p.criado_em ASC, p.id ASC
 ";
 
-// tenta com `nome`; se falhar (1054), tenta com `name`
 try {
     $st = $pdo->prepare($sqlTpl('nome'));
     $st->execute($params);
@@ -83,11 +86,12 @@ try {
         $st->execute($params);
     } else {
         http_response_code(500);
-        echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+        echo json_encode(["ok"=>false,"code"=>"DB_ERROR"]);
         exit;
     }
 }
 
+/* ===== Montar resposta ===== */
 $baseUrl = rtrim(
     (isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : 'http') . '://' .
     ($_SERVER['HTTP_HOST'] ?? ''), '/'
@@ -96,23 +100,24 @@ $baseUrl = rtrim(
 $items = [];
 while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
     $items[] = [
-        "pedido_id"     => (int)$r['id'],
-        "colaborador"   => [
+        "pedido_id"    => (int)$r['id'],
+        "colaborador"  => [
             "id"   => (int)$r['user_id'],
             "nome" => $r['colaborador_nome'] ?? null,
-            "role" => $r['colaborador_role'] ?? null,
         ],
-        "tipo"          => $r['tipo'],
-        "inicio"        => $r['data_inicio'],
-        "fim"           => $r['data_fim'],
-        "justificacao"  => $r['justificacao'],
-        "substituicao"  => $r['responsavel_id'] ? [
-            "id"   => (int)$r['responsavel_id'],
-            "nome" => $r['responsavel_nome'] ?? null,
-        ] : null,
-        "comprovativo"  => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
-        "pedido_em"     => $r['criado_em'],
+        "tipo"         => $r['tipo'],
+        "inicio"       => $r['data_inicio'],
+        "fim"          => $r['data_fim'],
+        "justificacao" => $r['justificacao'],
+        // Nota: agora não atribuímos responsável no pedido; mantemos apenas o comprovativo
+        "comprovativo" => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
+        "pedido_em"    => $r['criado_em'],
     ];
 }
 
-echo json_encode(["ok"=>true, "type"=>$type, "items"=>$items]);
+echo json_encode([
+    "ok" => true,
+    "has_subs" => true,
+    "type" => $type,
+    "items" => $items
+]);

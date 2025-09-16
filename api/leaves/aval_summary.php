@@ -4,42 +4,53 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
-}
-$role = $_SESSION['user']['role'] ?? '';
-$allowed = ['inter2','inter','admin','adminrh','estrela'];
-if (!in_array($role, $allowed, true)) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit;
+if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
+    exit;
 }
 
-function subordinate_roles(string $r): array {
-    return match ($r) {
-        'inter2'  => ['opera'],
-        'inter'   => ['inter2'],
-        'admin'   => ['inter'],
-        'estrela' => ['admin','adminrh'],
-        default   => [], // adminrh não valida ninguém
-    };
-}
-$subRoles = subordinate_roles($role);
-if (!$subRoles) { echo json_encode(["ok"=>true,"pending"=>0]); exit; }
+$userId = (int)($_SESSION['user']['id'] ?? 0);
 
 require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// tabela de utilizadores é 'user'
-$inPlaceholders = implode(',', array_fill(0, count($subRoles), '?'));
-$sql = "
-  SELECT COUNT(*) AS c
-    FROM pedidos_ferias p
-    JOIN user u ON u.id = p.user_id
-   WHERE p.estado = 'pendente'
-     AND u.role IN ($inPlaceholders)
-";
-$st = $pdo->prepare($sql);
-$st->execute($subRoles);
-$pending = (int)$st->fetchColumn();
+/* ===== Verificar se o utilizador é responsável de alguém (subs) ===== */
+$hasSubsStmt = $pdo->prepare("
+  SELECT 1
+  FROM inov360.colaborador_responsaveis cr
+  WHERE cr.responsavel_id = ?
+    AND cr.ativo = 1
+    AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+    AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+  LIMIT 1
+");
+$hasSubsStmt->execute([$userId]);
+$hasSubs = (bool)$hasSubsStmt->fetchColumn();
 
-echo json_encode(["ok"=>true, "pending"=>$pending]);
+if (!$hasSubs) {
+    echo json_encode(["ok"=>true, "has_subs"=>false, "pending"=>0]);
+    exit;
+}
+
+/* ===== Contar pedidos pendentes dos meus subs diretos ===== */
+$pendingStmt = $pdo->prepare("
+  SELECT COUNT(*) AS c
+  FROM inov360.pedidos_ferias p
+  JOIN inov360.colaborador_responsaveis cr
+    ON cr.colaborador_id = p.user_id
+   AND cr.responsavel_id = ?
+   AND cr.ativo = 1
+   AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+   AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+  WHERE p.estado = 'pendente'
+");
+$pendingStmt->execute([$userId]);
+$pending = (int)$pendingStmt->fetchColumn();
+
+echo json_encode([
+    "ok" => true,
+    "has_subs" => true,
+    "pending" => $pending
+]);
