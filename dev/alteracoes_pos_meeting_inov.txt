@@ -82,3 +82,178 @@ Mensagens de erro possíveis:
 Exemplos:
 POST /api/timesheets/aval_decide.php com body { "period_id": 14, "action": "approve" }
 POST /api/timesheets/aval_decide.php com body { "period_id": 16, "action": "reject", "comment": "Faltam registos de 12/08 e 13/08." }
+
+______________________
+
+POST /api/create_colabs.php
+Criação de um ou vários colaboradores (apenas utilizadores base).
+
+Autenticação e permissões:
+– Requer sessão válida.
+– Requer permissão id=1 (create_colab).
+
+Content-Type:
+– application/json (recomendado) — aceita 1 objeto ou uma lista de objetos.
+– multipart/form-data ou x-www-form-urlencoded — aceita apenas 1 registro.
+
+Parâmetros de entrada:
+– nome (obrigatório) — string.
+– email (obrigatório) — email único.
+– password (obrigatório) — mínimo 6 caracteres.
+– company_id (opcional) — id de empresa existente (se não vier, fica NULL).
+
+Comportamento:
+– Valida dados e unicidade do email.
+– Cria registos em user (name, email, password hash, company_id).
+– Suporta criação em batch (lista JSON); responde com arrays “created” e “errors”.
+
+Resposta de sucesso (JSON):
+ok: true
+created: lista de { id, nome, email, company_id } criados
+errors: lista de erros por item em batch { index, email, errors[] }
+
+Mensagens de erro possíveis:
+401 UNAUTHENTICATED (não autenticado)
+403 FORBIDDEN_PERMISSION (sem permissão id=1)
+400 EMPTY_INPUT (payload vazio)
+400 VALIDATION_ERROR (nome/email/password inválidos)
+400 COMPANY_NOT_FOUND (company_id não existe)
+409 EMAIL_IN_USE (email já registado)
+500 SERVER_ERROR (erro interno)
+
+______________________
+
+POST /api/hierarchy_update.php
+Atualiza a hierarquia de um colaborador: define responsáveis diretos e insere-o no meio da cadeia, reatribuindo “subs”.
+
+Autenticação e permissões:
+– Requer sessão válida.
+– Requer permissão id=1 (create_colab).
+
+Content-Type:
+– application/json (recomendado)
+– multipart/form-data ou x-www-form-urlencoded
+
+Parâmetros de entrada:
+– user_id (obrigatório) — utilizador “no meio da cadeia”.
+– responsaveis (opcional) — array de ids de utilizadores que passam a ser os responsáveis diretos de user_id (substitui os atuais).
+– subs (opcional) — array de ids de utilizadores abaixo de user_id. Para cada sub: remove as ligações sub → responsaveis e cria sub → user_id (mantém outros responsáveis do sub).
+
+Comportamento:
+– Substitui totalmente os responsáveis de user_id pelo array “responsaveis”.
+– Para cada “sub”, remove ligações para os “responsaveis” informados e cria ligação para user_id.
+– Evita ciclos óbvios (user_id não pode estar em responsaveis nem em subs; responsaveis ∩ subs proibido).
+– Usa colaborador_responsaveis; mantém restantes ligações intactas.
+
+Resposta de sucesso (JSON):
+ok: true
+updated: { user_id, responsaveis: [], subs: [] }
+
+Mensagens de erro possíveis:
+401 UNAUTHENTICATED
+403 FORBIDDEN_PERMISSION
+400 USER_ID_REQUIRED
+400 USER_NOT_FOUND (algum id não existe)
+400 RESP_SUB_CONFLICT (interseção entre responsaveis e subs)
+400 SELF_REFERENCE (user_id igual a algum item)
+400 SUB_NOT_FOUND (algum sub inválido)
+500 SERVER_ERROR
+
+______________________
+
+POST /api/permissions_update.php
+Atualiza as permissões de um utilizador (overwrite total).
+
+Autenticação e permissões:
+– Requer sessão válida.
+– Requer permissão id=1 (create_colab).
+
+Content-Type:
+– application/json (recomendado)
+– multipart/form-data ou x-www-form-urlencoded
+
+Parâmetros de entrada:
+– user_id (obrigatório) — utilizador alvo.
+– permissions (obrigatório; pode ser vazio) — array de ids de permissões. Se vier vazio, o utilizador fica sem permissões.
+
+Comportamento:
+– Apaga todas as linhas existentes em user_permission do user_id.
+– Insere as novas (se alguma).
+– Valida existência das permissões enviadas.
+
+Resposta de sucesso (JSON):
+ok: true
+user_id: número
+permissions: array de ids aplicados
+
+Mensagens de erro possíveis:
+401 UNAUTHENTICATED
+403 FORBIDDEN_PERMISSION
+400 USER_ID_REQUIRED
+400 USER_NOT_FOUND
+400 PERMISSION_NOT_FOUND (algum id de permissão inexistente)
+500 SERVER_ERROR
+
+______________________
+
+GET /api/colabs_list.php
+Lista de colaboradores para seleção/gestão.
+
+Autenticação e permissões:
+– Requer sessão válida.
+– Requer permissão id=1 (create_colab).
+
+Query params (opcionais):
+– q — filtro por nome/email (substring).
+– company_id — filtrar por empresa.
+– page — página (default 1).
+– limit — nº por página (1–500, default 200).
+
+Comportamento:
+– Devolve utilizadores ordenados por name.
+– Inclui array de ids de permissões de cada utilizador.
+
+Resposta de sucesso (JSON):
+ok: true
+total: número total de registos que batem no filtro
+items: lista de { id, nome, email, permissoes: [ids] }
+
+Mensagens de erro possíveis:
+401 UNAUTHENTICATED
+403 FORBIDDEN_PERMISSION
+500 SERVER_ERROR
+
+______________________
+
+POST /api/login.php (atualizado)
+Autentica o utilizador e devolve dados mínimos para o frontend decidir o fluxo. Não faz redirect e não expõe “role”.
+
+Autenticação e permissões:
+– Sem requisitos prévios (é o login).
+– Mantém sessão (PHPSESSID).
+
+Content-Type:
+– application/x-www-form-urlencoded (email, password).
+(Nota: se precisarem em JSON, avisem para ativarmos leitura JSON.)
+
+Parâmetros de entrada:
+– email (obrigatório)
+– password (obrigatório)
+
+Comportamento:
+– Valida credenciais (password hash).
+– Carrega:
+• permissions: array de ids de permissões do utilizador (user_permission)
+• responsaveis: array de ids dos responsáveis diretos (colaborador_responsaveis ativos e válidos)
+– Guarda em sessão: is_login=true e user={ id, name, email, permissions[], responsaveis[] }.
+– Responde com o objeto user (sem role, sem redirect).
+
+Resposta de sucesso (JSON):
+success: true
+message: “Login realizado com sucesso.”
+user: { id, name, email, permissions: [ids], responsaveis: [ids] }
+
+Mensagens de erro possíveis:
+400 campos obrigatórios em falta
+401 UNAUTHENTICATED (credenciais inválidas)
+500 erro interno
