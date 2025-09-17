@@ -321,3 +321,228 @@ Parâmetros (form-data): tipo (obrigatório); data_inicio (obrigatório); data_f
 Comportamento: valida datas e comprovativo quando aplicável; cria pedido com estado “pendente”; não define responsável no pedido (os aprovadores são dados pela hierarquia).
 Resposta (JSON): ok, request_id.
 Erros: 401 UNAUTHENTICATED; 400 MISSING_FIELDS/INVALID_DATE/RANGE_ERROR/DOC_REQUIRED/BAD_FILETYPE/FILE_TOO_LARGE/FILE_MOVE_ERROR/NO_RESPONSAVEIS; 500 DB_ERROR.
+
+                                                            ______________________
+                                                            CALENDAR
+                                                            ______________________
+POST /api/calendar/batch_apply.php
+Aplica, em bloco, valores de WORK/OVERTIME/ONCALL/KM num intervalo de dias.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Content-Type
+– application/json
+
+Parâmetros (body JSON)
+– start (obrigatório) — data início, YYYY-MM-DD
+– end (obrigatório) — data fim, YYYY-MM-DD (≥ start)
+– workMin (opcional) — minutos de WORK por dia
+– otMin (opcional) — minutos de OVERTIME por dia
+– oncallMin (opcional) — minutos de ONCALL por dia
+– km (opcional) — quilómetros por dia
+– applyWeekend (opcional, default false) — se false, ignora sábados e domingos
+– overwrite (opcional, default true) — se true, substitui valores existentes desse dia/tipo
+
+Comportamento
+– Para cada dia no intervalo (respeitando o applyWeekend e bloqueios do período):
+• Faz “upsert” na tabela eventos para cada tipo enviado, com status='draft' e source='manual'.
+• Se o dia estiver num período submitted|approved|locked, o dia é ignorado (listado em skippedLocked).
+– Não cria/edita períodos.
+
+Resposta (JSON)
+ok: true
+user_id: id do utilizador da sessão
+range: [start, end]
+summary: { daysApplied, workMin, otMin, oncallMin, km }
+skippedLocked: [lista de datas ignoradas]
+
+Erros
+401 UNAUTHENTICATED
+400 INVALID_RANGE (datas inválidas)
+400 NO_FIELDS (nenhum dos campos work/ot/oncall/km enviado)
+500 DB_ERROR
+
+—
+
+DELETE /api/calendar/batch_clear.php
+Apaga, em bloco, eventos WORK/OVERTIME/ONCALL/KM em draft|rejected num intervalo de dias.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Content-Type
+– application/json
+
+Parâmetros (body JSON)
+– start (obrigatório) — YYYY-MM-DD
+– end (obrigatório) — YYYY-MM-DD
+– applyWeekend (opcional, default true)
+
+Comportamento
+– Para cada dia: se o período estiver bloqueado, a data vai para skippedLocked; caso contrário, apaga os eventos do dia/tipos indicados com status IN ('draft','rejected').
+
+Resposta (JSON)
+ok: true
+user_id, range, deleted (n.º total de linhas apagadas), skippedLocked [datas]
+
+Erros
+401 UNAUTHENTICATED
+405 METHOD_NOT_ALLOWED (se não for DELETE)
+400 INVALID_RANGE
+500 DB_ERROR
+
+—
+
+DELETE /api/calendar/day_delete.php
+Apaga, num único dia, todos os eventos WORK/OVERTIME/ONCALL/KM em draft|rejected.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Content-Type
+– application/json
+
+Parâmetros (body JSON)
+– date (obrigatório) — YYYY-MM-DD
+
+Comportamento
+– Se o dia estiver em período bloqueado (submitted|approved|locked), devolve 409.
+– Caso contrário, apaga os tipos acima com status IN ('draft','rejected').
+
+Resposta (JSON)
+ok: true
+user_id, date, deleted (linhas apagadas)
+
+Erros
+401 UNAUTHENTICATED
+405 METHOD_NOT_ALLOWED
+400 INVALID_DATE
+409 PERIOD_LOCKED
+500 DB_ERROR
+
+—
+
+PUT /api/calendar/day_put.php
+Escreve/atualiza valores do dia para WORK/OVERTIME/ONCALL/KM e, opcionalmente, limpa os tipos não enviados.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Content-Type
+– application/json
+
+Parâmetros (body JSON)
+– date (obrigatório) — YYYY-MM-DD
+– workMin, otMin, oncallMin, km (opcionais)
+– clear (opcional, boolean) — se true, apaga os tipos não enviados (mantém apenas os que vierem no body)
+
+Comportamento
+– Bloqueia se o período do dia estiver submitted|approved|locked (409).
+– Para cada tipo enviado, “upsert” em eventos com status='draft' e source='manual'.
+– Se clear=true, apaga no dia os tipos não enviados com status IN ('draft','rejected').
+
+Resposta (JSON)
+ok: true
+user_id, date, updated [tipos escritos], cleared [tipos apagados], status: "draft"
+
+Erros
+401 UNAUTHENTICATED
+405 METHOD_NOT_ALLOWED
+400 INVALID_DATE
+400 NO_FIELDS (nenhum tipo enviado e clear=false)
+409 PERIOD_LOCKED
+500 DB_ERROR
+
+—
+
+GET /api/calendar/get_month.php
+Devolve grelha do mês com totais diários, status por tipo e eventos de LEAVE/SUBSTITUTION.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Parâmetros (query)
+– month (recomendado) — YYYY-MM
+– ou date — YYYY-MM-DD (o mês é inferido)
+
+Comportamento
+– Constrói array de dias do mês.
+– Agrega workMin/otMin/oncallMin/km por dia a partir de eventos.
+– Devolve statuses por tipo/dia (ex.: WORK: draft/submitted/approved/rejected).
+– Lista eventos LEAVE/SUBSTITUTION que intersectem o mês, expandindo-os pelos dias.
+– Se existir, inclui o período do mês em timesheet_periods.
+
+Resposta (JSON)
+ok: true
+month: "YYYY-MM"
+period: { id, estado, start, end } | null
+days: [ { date, workMin, otMin, oncallMin, km, statuses {TIPO:status}, leaves [ { id, requestId|null, title, kind } ] } ]
+totals: { workMin, otMin, oncallMin, km }
+
+Erros
+401 UNAUTHENTICATED
+400 MISSING_MONTH | INVALID_MONTH
+
+—
+
+GET /api/timesheets/month_status.php
+Resumo e flags de submissão do mês corrente para o utilizador.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Parâmetros (query)
+– month — YYYY-MM (ou date para inferir)
+
+Comportamento
+– Lê timesheet_periods (se existir) para o mês.
+– Agrega totais do mês e verifica se há itens draft|rejected.
+– Calcula flags:
+• isLocked = período em {submitted, approved, locked}
+• canSubmit = !isLocked e (estado in {open, rejected}) e hasDraft
+
+Resposta (JSON)
+ok: true
+month, user_id
+period: { id, estado, start, end, decidido_por, decidido_em, comentario } | null
+estado: "open" | "submitted" | "approved" | "locked" | "rejected"
+flags: { canSubmit, isLocked, hasDraft }
+summary: { workedDays, workMin, otMin, oncallMin, km }
+range: [start, end]
+
+Erros
+401 UNAUTHENTICATED
+400 MISSING_MONTH | INVALID_MONTH
+
+—
+
+POST /api/timesheets/submit_month.php
+Submete o mês: marca eventos do mês como submitted e atualiza (ou cria) o período.
+
+Autenticação
+– Requer sessão válida. Self-only.
+
+Content-Type
+– application/json
+
+Parâmetros (body JSON)
+– month (recomendado) — YYYY-MM
+– ou date — YYYY-MM-DD (mês inferido)
+
+Comportamento
+– Procura (ou cria) timesheet_periods para [start,end] do mês.
+– Se o período já estiver em {submitted, approved, locked} → 409 ALREADY_SUBMITTED.
+– Atualiza eventos do mês com status IN ('draft','rejected') para status='submitted' e preenche period_id.
+– Atualiza o período para estado='submitted'.
+
+Resposta (JSON)
+ok: true
+period: { id, estado: "submitted", start, end }
+summary: { workedDays, workMin, otMin, oncallMin, km }
+
+Erros
+401 UNAUTHENTICATED
+400 MISSING_MONTH | INVALID_MONTH
+409 ALREADY_SUBMITTED
+500 DB_ERROR
