@@ -8,10 +8,9 @@ header('Content-Type: application/json; charset=utf-8');
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
 }
-$role   = $_SESSION['user']['role'] ?? '';
+
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
-if ($role === 'estrela') { http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit; }
-$isMgr  = in_array($role, ['inter2','inter','admin','adminrh'], true);
+
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../includes/db.php';
@@ -48,7 +47,6 @@ if (!$month) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"M
 if (!$start) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_MONTH"]); exit; }
 
 $userId = $selfId;
-if ($isMgr && isset($in['user_id']) && (int)$in['user_id']>0) $userId = (int)$in['user_id'];
 
 /* ===== OBTÉM/CRIA PERÍODO ===== */
 try {
