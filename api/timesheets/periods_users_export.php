@@ -5,9 +5,12 @@ session_start();
 
 /* --- Auth --- */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) { http_response_code(401); exit; }
-$role = $_SESSION['user']['role'] ?? '';
-// Permitir ambas as variantes do papel: admin_rh (documentação) e adminrh (implementação existente)
-if (!in_array($role, ['admin_rh'], true)) { http_response_code(403); exit; }
+
+$myPerms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($myPerms) || !in_array(3, $myPerms, true)) { // exige permissão 3
+    http_response_code(403);
+    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+}
 
 /* --- Deps & DB --- */
 require_once __DIR__ . '/../includes/db.php';

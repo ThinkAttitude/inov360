@@ -9,13 +9,10 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
 }
-$role = $_SESSION['user']['role'] ?? '';
-// Aceitar tanto a convenção documental (admin_rh) como a usada no restante código (adminrh)
-$allowed = ['admin_rh','*'];
-if (!in_array($role, $allowed, true)) {
+$myPerms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($myPerms) || !in_array(3, $myPerms, true)) { // exige permissão 3
     http_response_code(403);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'FORBIDDEN']); exit;
+    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
 /* Deps & DB */

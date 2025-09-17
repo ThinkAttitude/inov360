@@ -1,4 +1,5 @@
 <?php
+// api/timesheets/aval_periods.php
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -6,24 +7,10 @@ header('Content-Type: application/json; charset=utf-8');
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
 }
-$role = $_SESSION['user']['role'] ?? '';
-$allowed = ['inter2','inter','admin','adminrh','estrela'];
-if (!in_array($role, $allowed, true)) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit;
-}
 
-function subroles(string $r): array {
-    return match ($r) {
-        'inter2'  => ['opera'],
-        'inter'   => ['inter2'],
-        'admin'   => ['inter'],
-        'estrela' => ['admin','adminrh'],
-        default   => [], // adminrh não valida ninguém
-    };
-}
-$subs = subroles($role);
-if (!$subs) { echo json_encode(["ok"=>true,"items"=>[]]); exit; }
+$selfId = (int)($_SESSION['user']['id'] ?? 0);
 
+// filtros
 $state = $_GET['state'] ?? 'submitted'; // submitted|approved|rejected|all
 $validStates = ['submitted','approved','rejected','all'];
 if (!in_array($state, $validStates, true)) $state = 'submitted';
@@ -40,56 +27,72 @@ require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+// confirmar se tem pelo menos um sub (ativo/válido)
+$hasSubs = $pdo->prepare("
+  SELECT 1
+    FROM inov360.colaborador_responsaveis cr
+   WHERE cr.responsavel_id = :me
+     AND cr.ativo = 1
+     AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+     AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+   LIMIT 1
+");
+$hasSubs->execute([':me'=>$selfId]);
+if (!$hasSubs->fetchColumn()) {
+    echo json_encode(["ok"=>true,"items"=>[],"total"=>0]); exit;
+}
+
 // descobrir coluna de nome (nome|name)
 $nameCol = 'nome';
-try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
+try { $pdo->query("SELECT $nameCol FROM inov360.user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
-$wheres = [];
-$params = [];
+// montar WHERE
+$where = [];
+$params = [':me'=>$selfId];
 
-// Estado
 if ($state !== 'all') {
-    $wheres[] = "p.estado = ?";
-    $params[] = $state;
+    $where[] = "p.estado = :st";
+    $params[':st'] = $state;
 } else {
-    $wheres[] = "p.estado IN ('submitted','approved','rejected')";
+    $where[] = "p.estado IN ('submitted','approved','rejected')";
 }
 
-// Subordinados
-$wheres[] = "u.role IN (" . implode(',', array_fill(0, count($subs), '?')) . ")";
-$params = array_merge($params, $subs);
-
-// Mês (opcional)
 if ($monthStart && $monthEnd) {
-    $wheres[] = "p.period_start = ? AND p.period_end = ?";
-    $params[] = $monthStart;
-    $params[] = $monthEnd;
+    $where[] = "p.period_start = :ps AND p.period_end = :pe";
+    $params[':ps'] = $monthStart;
+    $params[':pe'] = $monthEnd;
 }
 
-$whereSql = implode(' AND ', $wheres);
+$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
+// períodos dos MEUS subordinados diretos (relação ativa/válida AGORA)
 $sql = "
   SELECT
-    p.id, p.user_id, p.period_start, p.period_end, p.estado, p.created_at,
-    u.$nameCol AS user_name, u.role AS user_role
-  FROM timesheet_periods p
-  JOIN user u ON u.id = p.user_id
-  WHERE $whereSql
+    p.id, p.user_id, p.period_start, p.period_end, p.estado, p.created_at, u.$nameCol AS user_name
+  FROM inov360.timesheet_periods p
+  JOIN inov360.user u ON u.id = p.user_id
+  JOIN inov360.colaborador_responsaveis cr
+       ON cr.colaborador_id = p.user_id
+      AND cr.responsavel_id = :me
+      AND cr.ativo = 1
+      AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+      AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+  $whereSql
   ORDER BY p.created_at ASC, p.id ASC
 ";
 $st = $pdo->prepare($sql);
 $st->execute($params);
 $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-// query para o resumo do período
+// resumo do período (WORK, OVERTIME, KM) — igual ao teu original
 $sumQ = $pdo->prepare("
   SELECT
     SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
     SUM(CASE WHEN tipo='OVERTIME' THEN minutos ELSE 0 END) AS otMin,
     SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km,
     COUNT(DISTINCT CASE WHEN tipo='WORK' AND minutos>0 THEN DATE(inicio) END) AS workedDays
-  FROM eventos
+  FROM inov360.eventos
   WHERE user_id=:u
     AND DATE(inicio) BETWEEN :s AND :e
     AND tipo IN ('WORK','OVERTIME','KM')
@@ -104,11 +107,13 @@ foreach ($rows as $r) {
     ]);
     $s = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"otMin"=>0,"km"=>0,"workedDays"=>0];
 
-    // etiqueta de mês/ano
     $m = (new DateTime($r['period_start']));
     $items[] = [
         "period_id"     => (int)$r['id'],
-        "colaborador"   => ["id"=>(int)$r['user_id'], "nome"=>$r['user_name'], "role"=>$r['user_role']],
+        "colaborador"   => [
+            "id"   => (int)$r['user_id'],
+            "nome" => $r['user_name'],
+        ],
         "mes"           => [
             "year"  => (int)$m->format('Y'),
             "month" => (int)$m->format('m'),
@@ -121,7 +126,7 @@ foreach ($rows as $r) {
             "otMin"      => (int)$s['otMin'],
             "km"         => (float)$s['km']
         ],
-        "estado"        => $r['estado'],            // submitted|approved|rejected
+        "estado"        => $r['estado'],   // submitted|approved|rejected
         "submetido_em"  => $r['created_at']
     ];
 }

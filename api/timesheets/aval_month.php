@@ -4,15 +4,13 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-/* ==== Sessão / roles ==== */
+/* ==== Sessão ==== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    http_response_code(401);
+    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
+    exit;
 }
-$role = $_SESSION['user']['role'] ?? '';
-$mgrRoles = ['inter2','inter','admin','adminrh','estrela'];
-if (!in_array($role, $mgrRoles, true)) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN_ROLE"]); exit;
-}
+$selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 /* ==== Helpers ==== */
 function ym_bounds(string $ym): array {
@@ -22,16 +20,6 @@ function ym_bounds(string $ym): array {
     return [$first->format('Y-m-d'), $last->format('Y-m-d')];
 }
 function is_date($d){ return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/',$d); }
-function can_review(string $r, string $target): bool {
-    return match ($r) {
-        'inter2'  => $target==='opera',
-        'inter'   => $target==='inter2',
-        'admin'   => $target==='inter',
-        'estrela' => in_array($target, ['admin','adminrh'], true),
-        'adminrh' => false,
-        default   => false,
-    };
-}
 
 /* ==== Input ==== */
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
@@ -50,21 +38,37 @@ require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/* ==== Descobrir role do colaborador alvo e validar hierarquia ==== */
+/* ==== Coluna de nome (nome|name) ==== */
 $nameCol = 'nome';
-try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
+try { $pdo->query("SELECT $nameCol FROM inov360.user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
-$uq = $pdo->prepare("SELECT id, role, $nameCol AS name FROM user WHERE id=:id LIMIT 1");
+/* ==== Carregar utilizador alvo ==== */
+$uq = $pdo->prepare("SELECT id, $nameCol AS name FROM inov360.user WHERE id=:id LIMIT 1");
 $uq->execute([':id'=>$userId]);
 $u = $uq->fetch(PDO::FETCH_ASSOC);
 if (!$u) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"USER_NOT_FOUND"]); exit; }
 
-if (!can_review($role, $u['role'])) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"HIERARCHY_FORBIDDEN"]); exit;
+/* ==== Gate de hierarquia (novo modelo) ==== */
+/* Tem de ser responsável ativo/válido do utilizador-alvo. */
+$gate = $pdo->prepare("
+  SELECT 1
+    FROM inov360.colaborador_responsaveis
+   WHERE colaborador_id = :target
+     AND responsavel_id  = :me
+     AND ativo = 1
+     AND (valido_desde IS NULL OR valido_desde <= NOW())
+     AND (valido_ate   IS NULL OR valido_ate   >= NOW())
+   LIMIT 1
+");
+$gate->execute([':target'=>$userId, ':me'=>$selfId]);
+if (!$gate->fetchColumn()) {
+    http_response_code(403);
+    echo json_encode(["ok"=>false,"code"=>"NOT_RESPONSAVEL"]);
+    exit;
 }
 
-/* ==== Constrói a grelha base de dias ==== */
+/* ==== Grelha base de dias ==== */
 $days = [];
 $cursor = new DateTime($start);
 $last   = new DateTime($end);
@@ -77,16 +81,16 @@ while ($cursor <= $last) {
         "oncallMin" => 0,
         "km"        => 0.0,
         "statuses"  => [],   // {"WORK":"draft",...}
-        "leaves"    => []    // [{"id":..., "requestId":..., "title":"..."}]
+        "leaves"    => []    // [{"id":..., "requestId":..., "title":"..." , "kind":"LEAVE|SUBSTITUTION"}]
     ];
     $cursor->modify('+1 day');
 }
 
-/* ==== Periodo do mês (se existir) ==== */
+/* ==== Período do mês (se existir) ==== */
 $period = null;
 $p = $pdo->prepare("
   SELECT id, estado, period_start AS start, period_end AS end, created_at
-    FROM timesheet_periods
+    FROM inov360.timesheet_periods
    WHERE user_id=:u AND period_start=:s AND period_end=:e
    LIMIT 1
 ");
@@ -100,7 +104,7 @@ $agg = $pdo->prepare("
          SUM(CASE WHEN tipo='OVERTIME' THEN minutos ELSE 0 END) AS otMin,
          SUM(CASE WHEN tipo='ONCALL'   THEN minutos ELSE 0 END) AS oncallMin,
          SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km
-    FROM eventos
+    FROM inov360.eventos
    WHERE user_id=:u
      AND DATE(inicio) BETWEEN :s AND :e
      AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
@@ -119,7 +123,7 @@ foreach ($agg as $row) {
 /* ==== Status por tipo e dia ==== */
 $sts = $pdo->prepare("
   SELECT DATE(inicio) AS dia, tipo, status
-    FROM eventos
+    FROM inov360.eventos
    WHERE user_id=:u
      AND DATE(inicio) BETWEEN :s AND :e
      AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
@@ -130,12 +134,12 @@ foreach ($sts as $r) {
     $days[$d]['statuses'][$r['tipo']] = $r['status'];
 }
 
-/* ==== Férias/Ausências (LEAVE) que toquem no mês ==== */
+/* ==== Férias/Ausências + Substituições (LEAVE e SUBSTITUTION) ==== */
 $leaveQ = $pdo->prepare("
-  SELECT id, titulo, inicio, fim, leave_request_id
-    FROM eventos
+  SELECT id, titulo, inicio, fim, leave_request_id, tipo
+    FROM inov360.eventos
    WHERE user_id=:u
-     AND tipo='LEAVE'
+     AND tipo IN ('LEAVE','SUBSTITUTION')
      AND DATE(fim)   >= :s
      AND DATE(inicio) <= :e
 ");
@@ -149,7 +153,8 @@ foreach ($leaveQ as $lv) {
             $days[$d]['leaves'][] = [
                 "id"        => (int)$lv['id'],
                 "requestId" => $lv['leave_request_id'] ? (int)$lv['leave_request_id'] : null,
-                "title"     => $lv['titulo'] ?? 'LEAVE'
+                "title"     => $lv['titulo'] ?? ($lv['tipo'] === 'SUBSTITUTION' ? 'Substituição' : 'LEAVE'),
+                "kind"      => $lv['tipo']
             ];
         }
         $ls->modify('+1 day');
@@ -168,7 +173,7 @@ foreach ($days as $d) {
 /* ==== Resposta ==== */
 echo json_encode([
     "ok"     => true,
-    "user"   => ["id"=>(int)$u['id'], "name"=>$u['name'], "role"=>$u['role']],
+    "user"   => ["id"=>(int)$u['id'], "name"=>$u['name']],
     "month"  => $month,
     "period" => $period,          // null se não existir
     "days"   => array_values($days),
