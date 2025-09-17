@@ -546,3 +546,238 @@ Erros
 400 MISSING_MONTH | INVALID_MONTH
 409 ALREADY_SUBMITTED
 500 DB_ERROR
+
+                                                            ______________________
+                                                            TIMESHEETS
+                                                            ______________________
+
+API 1: Listar períodos para eu aprovar
+Endpoint: GET /api/timesheets/aval_periods.php
+
+Objetivo: devolver os períodos “submitted | approved | rejected” dos teus subordinados diretos (relação ativa e válida neste momento).
+
+Autenticação: sessão válida.
+Autorização: tens de ter pelo menos um subordinado ativo em colaborador_responsaveis; se não tiveres, devolve ok=true e items=[].
+
+Parâmetros (query):
+
+state (opcional): submitted | approved | rejected | all (default: submitted)
+
+month (opcional): YYYY-MM. Se enviado, filtra por esse mês (period_start e period_end do mês).
+
+Resposta (200):
+
+ok: true
+
+state: o estado aplicado no filtro
+
+items: lista de períodos
+• period_id: id do período
+• colaborador: { id, nome }
+• mes: { year, month, start, end }
+• resumo: { workedDays, workMin, otMin, km }
+• estado: submitted | approved | rejected
+• submetido_em: timestamp de criação do período
+
+total: número de itens
+
+Erros:
+
+401 UNAUTHENTICATED
+
+200 ok=true items=[] total=0 quando não tens subordinados ativos
+
+500 DB_ERROR (mensagem técnica)
+
+Notas:
+
+A hierarquia é validada por cr.responsavel_id = <meu_id>, ativo=1 e validade por NOW().
+
+Não há mais filtragem por role antiga.
+
+—
+API 2: Ver o calendário mensal submetido de um colaborador
+Endpoint: GET /api/timesheets/aval_month.php
+
+Objetivo: ver, dia a dia, o mês de um colaborador para efeitos de revisão.
+
+Autenticação: sessão válida.
+Autorização (gate hierárquico): tens de ser o responsável ativo/válido do user_id (linhas em colaborador_responsaveis com ativo=1 e validade por NOW()).
+
+Parâmetros (query):
+
+user_id (obrigatório): id do colaborador
+
+month (obrigatório se não enviares date): YYYY-MM
+
+date (alternativo): qualquer data YYYY-MM-DD do mês pretendido
+
+Resposta (200):
+
+ok: true
+
+user: { id, name }
+
+month: YYYY-MM
+
+period: objeto do período se existir (id, estado, start, end, created_at) ou null
+
+days: array por dia com:
+• date, workMin, otMin, oncallMin, km
+• statuses: mapa por tipo { WORK | OVERTIME | ONCALL | KM → draft | submitted | approved | rejected }
+• leaves: ausências e substituições dentro do mês [{ id, requestId, title, kind (LEAVE|SUBSTITUTION) }]
+
+totals: { workMin, otMin, oncallMin, km }
+
+Erros:
+
+400 MISSING_USER, MISSING_MONTH, INVALID_MONTH
+
+401 UNAUTHENTICATED
+
+403 NOT_RESPONSAVEL (quando não és responsável do user_id)
+
+404 USER_NOT_FOUND
+
+Notas:
+
+A validação de hierarquia usa NOW() (não depende do mês selecionado).
+
+O endpoint não devolve role.
+
+—
+API 3: Aprovar/rejeitar um mês submetido
+Endpoint: POST /api/timesheets/aval_decide.php
+
+Objetivo: decidir (approve | reject) um período em estado submitted.
+
+Autenticação: sessão válida.
+Autorização: tens de ser o responsável ativo/válido do dono do período (verificado a partir do period_id).
+
+Body (JSON):
+
+period_id (obrigatório): inteiro
+
+action (obrigatório): approve | reject
+
+comment (obrigatório se action = reject): texto
+
+Comportamento:
+
+Verifica se o período existe e está em estado submitted.
+
+Se approve: timesheet_periods.estado → approved; decide metadados (decidido_por, decidido_em, comentário se enviado).
+
+Se reject: timesheet_periods.estado → rejected; comentário é obrigatório.
+
+Atualiza eventos desse mês e utilizador:
+• se approve: status dos eventos submitted → approved
+• se reject: status dos eventos submitted → draft
+
+Resposta (200):
+
+ok: true
+
+period_id: id do período
+
+novo_estado: approved | rejected
+
+comentario: eco do comentário (se houver)
+
+Erros:
+
+400 BAD_REQUEST (faltam campos)
+
+400 COMMENT_REQUIRED (rejeição sem comentário)
+
+401 UNAUTHENTICATED
+
+403 NOT_RESPONSAVEL (gate falhou)
+
+404 PERIOD_NOT_FOUND
+
+409 NOT_SUBMITTED (o período não está submitted)
+
+500 DB_ERROR
+
+—
+API 4: Listar períodos aprovados (back-office, permissão periods_info)
+Endpoint: GET /api/timesheets/periods_approved_list.php
+
+Objetivo: lista paginada de períodos aprovados, filtrável por mês e pesquisa livre (nome/email).
+Nota: NÃO depende de hierarquia; requer permissão de informação global.
+
+Autenticação: sessão válida.
+Autorização: o utilizador tem de ter permissions[] a incluir o id 3 (periods_info). Caso contrário, 403 FORBIDDEN_PERMISSION.
+
+Parâmetros (query):
+
+month (opcional): YYYY-MM
+
+q (opcional): string de pesquisa em nome/email
+
+limit (opcional): default 200
+
+offset (opcional): default 0
+
+Resposta (200):
+
+success: true
+
+filters: { month, q, limit, offset }
+
+total: inteiro (para paginação)
+
+rows: lista com
+• period_id, user_id, nome, email, company_name, month (YYYY-MM), period_start, period_end
+
+Erros:
+
+400 INVALID_MONTH_FORMAT
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION
+
+—
+API 5: Exportar períodos aprovados para Excel (back-office, permissão periods_info)
+Endpoint: GET /api/timesheets/periods_users_export.php
+
+Objetivo: gerar um XLSX com agregados por colaborador num mês, para um conjunto específico de utilizadores.
+
+Autenticação: sessão válida.
+Autorização: o utilizador tem de ter permissions[] a incluir o id 3 (periods_info). Caso contrário, 403 FORBIDDEN_PERMISSION.
+
+Parâmetros (query):
+
+month (obrigatório): YYYY-MM
+
+user_ids (obrigatório): pode ser matriz (user_ids[]=1&user_ids[]=2) ou CSV (user_ids=1,2,3)
+
+Condições do export:
+
+inclui apenas eventos com status = approved;
+
+mês determinado por DATE_FORMAT(e.dia, ‘%Y-%m’) = month;
+
+agrega por colaborador:
+• empresa, nome, email, dias com registo (DISTINCT dia),
+• horas trabalhadas, extra e presença (minutos convertidos para horas no ficheiro),
+• total de “Férias” e “Faltas” por palavras-chave no título (FERIA/FÉRIA/VACATION para férias; FALTA/ABSENCE para faltas),
+• quilómetros.
+
+Resposta (200):
+
+ficheiro XLSX (Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+
+nome: mapa_colaboradores_YYYY-MM.xlsx
+
+Erros:
+
+400 INVALID month (use YYYY-MM)
+
+400 Missing user_ids
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION
