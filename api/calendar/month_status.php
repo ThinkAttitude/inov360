@@ -59,7 +59,6 @@ try {
 $sumQ = $pdo->prepare("
   SELECT
     SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
-    SUM(CASE WHEN tipo='OVERTIME' THEN minutos ELSE 0 END) AS otMin,
     SUM(CASE WHEN tipo='ONCALL'   THEN minutos ELSE 0 END) AS oncallMin,
     SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km,
     COUNT(DISTINCT CASE WHEN tipo='WORK' AND minutos>0 THEN DATE(inicio) END) AS workedDays,
@@ -67,10 +66,10 @@ $sumQ = $pdo->prepare("
   FROM eventos
   WHERE user_id=:u
     AND DATE(inicio) BETWEEN :s AND :e
-    AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+    AND tipo IN ('WORK','ONCALL','KM')
 ");
 $sumQ->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
-$sum = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"otMin"=>0,"oncallMin"=>0,"km"=>0,"workedDays"=>0,"draftItems"=>0];
+$sum = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"oncallMin"=>0,"km"=>0,"workedDays"=>0,"draftItems"=>0];
 
 $hasDraft = ((int)$sum['draftItems'] > 0);
 
@@ -93,7 +92,6 @@ echo json_encode([
     "summary" => [
         "workedDays" => (int)$sum['workedDays'],
         "workMin"    => (int)$sum['workMin'],
-        "otMin"      => (int)$sum['otMin'],
         "oncallMin"  => (int)$sum['oncallMin'],
         "km"         => (float)$sum['km']
     ],

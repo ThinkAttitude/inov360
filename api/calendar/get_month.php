@@ -46,7 +46,6 @@ while ($cursor <= $last) {
     $days[$d] = [
         "date"      => $d,
         "workMin"   => 0,
-        "otMin"     => 0,
         "oncallMin" => 0,
         "km"        => 0.0,
         "statuses"  => [],    // ex.: {"WORK":"draft","KM":"submitted"}
@@ -70,17 +69,16 @@ try {
     // ignora se não existir a tabela
 }
 
-/* ==== Agregados por dia (WORK/OT/ONCALL/KM) ==== */
+/* ==== Agregados por dia (WORK/ONCALL/KM) ==== */
 $agg = $pdo->prepare("
   SELECT DATE(inicio) AS dia,
          SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
-         SUM(CASE WHEN tipo='OVERTIME' THEN minutos ELSE 0 END) AS otMin,
          SUM(CASE WHEN tipo='ONCALL'   THEN minutos ELSE 0 END) AS oncallMin,
          SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km
     FROM eventos
    WHERE user_id=:u
      AND DATE(inicio) BETWEEN :s AND :e
-     AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+     AND tipo IN ('WORK','ONCALL','KM')
 GROUP BY DATE(inicio)
 ");
 $agg->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
@@ -88,7 +86,6 @@ foreach ($agg as $row) {
     $d = $row['dia'];
     if (!isset($days[$d])) continue;
     $days[$d]['workMin']   = (int)$row['workMin'];
-    $days[$d]['otMin']     = (int)$row['otMin'];
     $days[$d]['oncallMin'] = (int)$row['oncallMin'];
     $days[$d]['km']        = (float)$row['km'];
 }
@@ -99,7 +96,7 @@ $sts = $pdo->prepare("
     FROM eventos
    WHERE user_id=:u
      AND DATE(inicio) BETWEEN :s AND :e
-     AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+     AND tipo IN ('WORK','ONCALL','KM')
 ");
 $sts->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
 foreach ($sts as $r) {
@@ -136,10 +133,9 @@ foreach ($leaveQ as $lv) {
 }
 
 /* ==== Totais do mês ==== */
-$totals = ["workMin"=>0,"otMin"=>0,"oncallMin"=>0,"km"=>0.0];
+$totals = ["workMin"=>0,"oncallMin"=>0,"km"=>0.0];
 foreach ($days as $d) {
     $totals['workMin']   += $d['workMin'];
-    $totals['otMin']     += $d['otMin'];
     $totals['oncallMin'] += $d['oncallMin'];
     $totals['km']        += $d['km'];
 }

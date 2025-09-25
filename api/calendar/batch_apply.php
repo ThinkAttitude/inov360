@@ -37,14 +37,13 @@ if (!is_valid_date($start) || !is_valid_date($end) || $start > $end) {
 $userId = $selfId; // por padrão edita o próprio
 
 $work   = array_key_exists('workMin',$in)   ? smin($in['workMin'])   : null;
-$ot     = array_key_exists('otMin',$in)     ? smin($in['otMin'])     : null;
 $oncall = array_key_exists('oncallMin',$in) ? smin($in['oncallMin']) : null;
 $km     = array_key_exists('km',$in)        ? skm($in['km'])         : null;
 
 $applyWeekend = !empty($in['applyWeekend']) || !empty($in['applyweekend']); // aceita as duas grafias
 $overwrite    = array_key_exists('overwrite',$in) ? (bool)$in['overwrite'] : true;
 
-if ($work===null && $ot===null && $oncall===null && $km===null) {
+if ($work===null && $oncall===null && $km===null) {
     http_response_code(400); echo json_encode(["ok"=>false,"code"=>"NO_FIELDS"]); exit;
 }
 
@@ -70,7 +69,7 @@ $upsertKm = $pdo->prepare("
 ");
 
 /* ===== LOOP ===== */
-$summary = ["daysApplied"=>0, "workMin"=>0, "otMin"=>0, "oncallMin"=>0, "km"=>0.0];
+$summary = ["daysApplied"=>0, "workMin"=>0, "oncallMin"=>0, "km"=>0.0];
 $skippedLocked = [];
 
 try {
@@ -95,14 +94,6 @@ try {
                 ':ow1'=>$overwrite?1:0, ':ow2'=>$overwrite?1:0, ':ow3'=>$overwrite?1:0, ':ow4'=>$overwrite?1:0
             ]);
             $summary['workMin'] += $work; $appliedToday = true;
-        }
-        if ($ot !== null) {
-            $upsertWork->execute([
-                ':uid'=>$userId, ':title'=>'OVERTIME', ':tipo'=>'OVERTIME',
-                ':d1'=>$date, ':d2'=>$date, ':min'=>$ot,
-                ':ow1'=>$overwrite?1:0, ':ow2'=>$overwrite?1:0, ':ow3'=>$overwrite?1:0, ':ow4'=>$overwrite?1:0
-            ]);
-            $summary['otMin'] += $ot; $appliedToday = true;
         }
         if ($oncall !== null) {
             $upsertWork->execute([
