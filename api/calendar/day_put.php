@@ -53,12 +53,11 @@ if (period_is_locked($pdo, $userId, $date)) {
 }
 
 $work   = array_key_exists('workMin',$in)   ? smin($in['workMin'])   : null;
-$ot     = array_key_exists('otMin',$in)     ? smin($in['otMin'])     : null;
 $oncall = array_key_exists('oncallMin',$in) ? smin($in['oncallMin']) : null;
 $km     = array_key_exists('km',$in)        ? skm($in['km'])         : null;
 $clear  = !empty($in['clear']);
 
-if ($work===null && $ot===null && $oncall===null && $km===null && !$clear) {
+if ($work===null && $oncall===null && $km===null && !$clear) {
     http_response_code(400); echo json_encode(["ok"=>false,"code"=>"NO_FIELDS"]); exit;
 }
 
@@ -86,10 +85,6 @@ try{
         $upsertWork->execute([':uid'=>$userId, ':title'=>'WORK',    ':tipo'=>'WORK',    ':d1'=>$date, ':d2'=>$date, ':min'=>$work]);
         $updated[]='WORK';
     }
-    if($ot!==null){
-        $upsertWork->execute([':uid'=>$userId, ':title'=>'OVERTIME',':tipo'=>'OVERTIME',':d1'=>$date, ':d2'=>$date, ':min'=>$ot]);
-        $updated[]='OVERTIME';
-    }
     if($oncall!==null){
         $upsertWork->execute([':uid'=>$userId, ':title'=>'ONCALL',  ':tipo'=>'ONCALL',  ':d1'=>$date, ':d2'=>$date, ':min'=>$oncall]);
         $updated[]='ONCALL';
@@ -100,7 +95,7 @@ try{
     }
 
     if($clear){
-        $sent=['WORK'=>$work!==null,'OVERTIME'=>$ot!==null,'ONCALL'=>$oncall!==null,'KM'=>$km!==null];
+        $sent=['WORK'=>$work!==null,'ONCALL'=>$oncall!==null,'KM'=>$km!==null];
         $toClear=array_keys(array_filter($sent, fn($v)=>!$v));
         if($toClear){
             $ph=implode(',', array_fill(0,count($toClear),'?'));

@@ -85,17 +85,16 @@ $st = $pdo->prepare($sql);
 $st->execute($params);
 $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-// resumo do período (WORK, OVERTIME, KM) — igual ao teu original
+// resumo do período (WORK, KM) — igual ao teu original
 $sumQ = $pdo->prepare("
   SELECT
     SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
-    SUM(CASE WHEN tipo='OVERTIME' THEN minutos ELSE 0 END) AS otMin,
     SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km,
     COUNT(DISTINCT CASE WHEN tipo='WORK' AND minutos>0 THEN DATE(inicio) END) AS workedDays
   FROM inov360.eventos
   WHERE user_id=:u
     AND DATE(inicio) BETWEEN :s AND :e
-    AND tipo IN ('WORK','OVERTIME','KM')
+    AND tipo IN ('WORK','KM')
 ");
 
 $items = [];
@@ -105,7 +104,7 @@ foreach ($rows as $r) {
         ':s' => $r['period_start'],
         ':e' => $r['period_end']
     ]);
-    $s = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"otMin"=>0,"km"=>0,"workedDays"=>0];
+    $s = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"km"=>0,"workedDays"=>0];
 
     $m = (new DateTime($r['period_start']));
     $items[] = [
@@ -123,7 +122,6 @@ foreach ($rows as $r) {
         "resumo"        => [
             "workedDays" => (int)$s['workedDays'],
             "workMin"    => (int)$s['workMin'],
-            "otMin"      => (int)$s['otMin'],
             "km"         => (float)$s['km']
         ],
         "estado"        => $r['estado'],   // submitted|approved|rejected

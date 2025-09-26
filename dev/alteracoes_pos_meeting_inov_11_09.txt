@@ -325,8 +325,20 @@ Erros: 401 UNAUTHENTICATED; 400 MISSING_FIELDS/INVALID_DATE/RANGE_ERROR/DOC_REQU
                                                             ______________________
                                                             CALENDAR
                                                             ______________________
+
+—
+Título: Convenções comuns
+
+Autenticação: sessão válida; todos os endpoints são “self-only”.
+Formato: JSON UTF-8.
+Datas: YYYY-MM-DD.
+Tipos suportados: WORK, ONCALL, KM (sem OVERTIME).
+Unidades: minutos inteiros para WORK/ONCALL; quilómetros numérico ≥ 0 para KM.
+
+—
+
 POST /api/calendar/batch_apply.php
-Aplica, em bloco, valores de WORK/OVERTIME/ONCALL/KM num intervalo de dias.
+Aplica, em bloco, valores de WORK/ONCALL/KM num intervalo de dias.
 
 Autenticação
 – Requer sessão válida. Self-only.
@@ -337,15 +349,14 @@ Content-Type
 Parâmetros (body JSON)
 – start (obrigatório) — data início, YYYY-MM-DD
 – end (obrigatório) — data fim, YYYY-MM-DD (≥ start)
-– workMin (opcional) — minutos de WORK por dia
-– otMin (opcional) — minutos de OVERTIME por dia
-– oncallMin (opcional) — minutos de ONCALL por dia
-– km (opcional) — quilómetros por dia
+– workMin (opcional) — minutos de WORK por dia (inteiro ≥ 0)
+– oncallMin (opcional) — minutos de ONCALL por dia (inteiro ≥ 0)
+– km (opcional) — quilómetros por dia (número ≥ 0)
 – applyWeekend (opcional, default false) — se false, ignora sábados e domingos
 – overwrite (opcional, default true) — se true, substitui valores existentes desse dia/tipo
 
 Comportamento
-– Para cada dia no intervalo (respeitando o applyWeekend e bloqueios do período):
+– Para cada dia no intervalo (respeitando applyWeekend e bloqueios do período):
 • Faz “upsert” na tabela eventos para cada tipo enviado, com status='draft' e source='manual'.
 • Se o dia estiver num período submitted|approved|locked, o dia é ignorado (listado em skippedLocked).
 – Não cria/edita períodos.
@@ -354,19 +365,19 @@ Resposta (JSON)
 ok: true
 user_id: id do utilizador da sessão
 range: [start, end]
-summary: { daysApplied, workMin, otMin, oncallMin, km }
+summary: { daysApplied, workMin, oncallMin, km }
 skippedLocked: [lista de datas ignoradas]
 
 Erros
 401 UNAUTHENTICATED
 400 INVALID_RANGE (datas inválidas)
-400 NO_FIELDS (nenhum dos campos work/ot/oncall/km enviado)
+400 NO_FIELDS (nenhum dos campos work/oncall/km enviado)
 500 DB_ERROR
 
 —
 
 DELETE /api/calendar/batch_clear.php
-Apaga, em bloco, eventos WORK/OVERTIME/ONCALL/KM em draft|rejected num intervalo de dias.
+Apaga, em bloco, eventos WORK/ONCALL/KM em draft|rejected num intervalo de dias.
 
 Autenticação
 – Requer sessão válida. Self-only.
@@ -377,7 +388,7 @@ Content-Type
 Parâmetros (body JSON)
 – start (obrigatório) — YYYY-MM-DD
 – end (obrigatório) — YYYY-MM-DD
-– applyWeekend (opcional, default true)
+– applyWeekend (opcional, default true) — se false, ignora sábados e domingos
 
 Comportamento
 – Para cada dia: se o período estiver bloqueado, a data vai para skippedLocked; caso contrário, apaga os eventos do dia/tipos indicados com status IN ('draft','rejected').
@@ -395,7 +406,7 @@ Erros
 —
 
 DELETE /api/calendar/day_delete.php
-Apaga, num único dia, todos os eventos WORK/OVERTIME/ONCALL/KM em draft|rejected.
+Apaga, num único dia, todos os eventos WORK/ONCALL/KM em draft|rejected.
 
 Autenticação
 – Requer sessão válida. Self-only.
@@ -424,7 +435,7 @@ Erros
 —
 
 PUT /api/calendar/day_put.php
-Escreve/atualiza valores do dia para WORK/OVERTIME/ONCALL/KM e, opcionalmente, limpa os tipos não enviados.
+Escreve/atualiza valores do dia para WORK/ONCALL/KM e, opcionalmente, limpa os tipos não enviados.
 
 Autenticação
 – Requer sessão válida. Self-only.
@@ -434,7 +445,7 @@ Content-Type
 
 Parâmetros (body JSON)
 – date (obrigatório) — YYYY-MM-DD
-– workMin, otMin, oncallMin, km (opcionais)
+– workMin, oncallMin, km (opcionais)
 – clear (opcional, boolean) — se true, apaga os tipos não enviados (mantém apenas os que vierem no body)
 
 Comportamento
@@ -468,7 +479,7 @@ Parâmetros (query)
 
 Comportamento
 – Constrói array de dias do mês.
-– Agrega workMin/otMin/oncallMin/km por dia a partir de eventos.
+– Agrega workMin/oncallMin/km por dia a partir de eventos.
 – Devolve statuses por tipo/dia (ex.: WORK: draft/submitted/approved/rejected).
 – Lista eventos LEAVE/SUBSTITUTION que intersectem o mês, expandindo-os pelos dias.
 – Se existir, inclui o período do mês em timesheet_periods.
@@ -477,8 +488,8 @@ Resposta (JSON)
 ok: true
 month: "YYYY-MM"
 period: { id, estado, start, end } | null
-days: [ { date, workMin, otMin, oncallMin, km, statuses {TIPO:status}, leaves [ { id, requestId|null, title, kind } ] } ]
-totals: { workMin, otMin, oncallMin, km }
+days: [ { date, workMin, oncallMin, km, statuses {TIPO:status}, leaves [ { id, requestId|null, title, kind } ] } ]
+totals: { workMin, oncallMin, km }
 
 Erros
 401 UNAUTHENTICATED
@@ -500,7 +511,8 @@ Comportamento
 – Agrega totais do mês e verifica se há itens draft|rejected.
 – Calcula flags:
 • isLocked = período em {submitted, approved, locked}
-• canSubmit = !isLocked e (estado in {open, rejected}) e hasDraft
+• hasDraft = existem eventos em draft|rejected no mês
+• canSubmit = !isLocked e hasDraft
 
 Resposta (JSON)
 ok: true
@@ -508,7 +520,7 @@ month, user_id
 period: { id, estado, start, end, decidido_por, decidido_em, comentario } | null
 estado: "open" | "submitted" | "approved" | "locked" | "rejected"
 flags: { canSubmit, isLocked, hasDraft }
-summary: { workedDays, workMin, otMin, oncallMin, km }
+summary: { workedDays, workMin, oncallMin, km }
 range: [start, end]
 
 Erros
@@ -539,14 +551,13 @@ Comportamento
 Resposta (JSON)
 ok: true
 period: { id, estado: "submitted", start, end }
-summary: { workedDays, workMin, otMin, oncallMin, km }
+summary: { workedDays, workMin, oncallMin, km }
 
 Erros
 401 UNAUTHENTICATED
 400 MISSING_MONTH | INVALID_MONTH
 409 ALREADY_SUBMITTED
 500 DB_ERROR
-
                                                             ______________________
                                                             TIMESHEETS
                                                             ______________________
@@ -560,42 +571,32 @@ Autenticação: sessão válida.
 Autorização: tens de ter pelo menos um subordinado ativo em colaborador_responsaveis; se não tiveres, devolve ok=true e items=[].
 
 Parâmetros (query):
-
-state (opcional): submitted | approved | rejected | all (default: submitted)
-
-month (opcional): YYYY-MM. Se enviado, filtra por esse mês (period_start e period_end do mês).
+• state (opcional): submitted | approved | rejected | all (default: submitted)
+• month (opcional): YYYY-MM. Se enviado, filtra por esse mês (period_start e period_end do mês).
 
 Resposta (200):
-
 ok: true
-
-state: o estado aplicado no filtro
-
+state: estado aplicado no filtro
 items: lista de períodos
 • period_id: id do período
 • colaborador: { id, nome }
 • mes: { year, month, start, end }
-• resumo: { workedDays, workMin, otMin, km }
+• resumo: { workedDays, workMin, km } [sem otMin]
 • estado: submitted | approved | rejected
 • submetido_em: timestamp de criação do período
-
 total: número de itens
 
 Erros:
-
 401 UNAUTHENTICATED
-
 200 ok=true items=[] total=0 quando não tens subordinados ativos
-
 500 DB_ERROR (mensagem técnica)
 
 Notas:
-
 A hierarquia é validada por cr.responsavel_id = <meu_id>, ativo=1 e validade por NOW().
-
 Não há mais filtragem por role antiga.
 
 —
+
 API 2: Ver o calendário mensal submetido de um colaborador
 Endpoint: GET /api/timesheets/aval_month.php
 
@@ -605,44 +606,29 @@ Autenticação: sessão válida.
 Autorização (gate hierárquico): tens de ser o responsável ativo/válido do user_id (linhas em colaborador_responsaveis com ativo=1 e validade por NOW()).
 
 Parâmetros (query):
-
-user_id (obrigatório): id do colaborador
-
-month (obrigatório se não enviares date): YYYY-MM
-
-date (alternativo): qualquer data YYYY-MM-DD do mês pretendido
+• user_id (obrigatório): id do colaborador
+• month (obrigatório se não enviares date): YYYY-MM
+• date (alternativo): qualquer data YYYY-MM-DD do mês pretendido
 
 Resposta (200):
-
 ok: true
-
 user: { id, name }
-
 month: YYYY-MM
-
 period: objeto do período se existir (id, estado, start, end, created_at) ou null
-
 days: array por dia com:
-• date, workMin, otMin, oncallMin, km
-• statuses: mapa por tipo { WORK | OVERTIME | ONCALL | KM → draft | submitted | approved | rejected }
+• date, workMin, oncallMin, km
+• statuses: mapa por tipo { WORK | ONCALL | KM → draft | submitted | approved | rejected }
 • leaves: ausências e substituições dentro do mês [{ id, requestId, title, kind (LEAVE|SUBSTITUTION) }]
-
-totals: { workMin, otMin, oncallMin, km }
+totals: { workMin, oncallMin, km } [sem otMin]
 
 Erros:
-
 400 MISSING_USER, MISSING_MONTH, INVALID_MONTH
-
 401 UNAUTHENTICATED
-
 403 NOT_RESPONSAVEL (quando não és responsável do user_id)
-
 404 USER_NOT_FOUND
 
 Notas:
-
 A validação de hierarquia usa NOW() (não depende do mês selecionado).
-
 O endpoint não devolve role.
 
 —
@@ -749,35 +735,27 @@ Autenticação: sessão válida.
 Autorização: o utilizador tem de ter permissions[] a incluir o id 3 (periods_info). Caso contrário, 403 FORBIDDEN_PERMISSION.
 
 Parâmetros (query):
-
-month (obrigatório): YYYY-MM
-
-user_ids (obrigatório): pode ser matriz (user_ids[]=1&user_ids[]=2) ou CSV (user_ids=1,2,3)
+• month (obrigatório): YYYY-MM
+• user_ids (obrigatório): pode ser matriz (user_ids[]=1&user_ids[]=2) ou CSV (user_ids=1,2,3)
 
 Condições do export:
-
-inclui apenas eventos com status = approved;
-
-mês determinado por DATE_FORMAT(e.dia, ‘%Y-%m’) = month;
-
-agrega por colaborador:
-• empresa, nome, email, dias com registo (DISTINCT dia),
-• horas trabalhadas, extra e presença (minutos convertidos para horas no ficheiro),
-• total de “Férias” e “Faltas” por palavras-chave no título (FERIA/FÉRIA/VACATION para férias; FALTA/ABSENCE para faltas),
-• quilómetros.
+• inclui apenas eventos com status = approved;
+• mês determinado pelo intervalo [primeiro e último dia do mês];
+• agrega por colaborador: empresa, nome, email, dias com registo (DISTINCT dia),
+horas trabalhadas (WORK, convertidas de minutos para horas no ficheiro),
+horas de presença (ONCALL, convertidas de minutos para horas),
+total de “Férias” e “Faltas” por palavras-chave no título (FERIA/FÉRIA/VACATION para férias; FALTA/ABSENCE para faltas),
+quilómetros (KM).
 
 Resposta (200):
-
 ficheiro XLSX (Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
-
 nome: mapa_colaboradores_YYYY-MM.xlsx
+Colunas: Empresa | Nome | Email | Dias com registo | Horas Trab. | Horas Pres. | Total Férias | Total Faltas | Quilómetros
 
 Erros:
-
 400 INVALID month (use YYYY-MM)
-
 400 Missing user_ids
-
 401 UNAUTHENTICATED
-
 403 FORBIDDEN_PERMISSION
+
+(se quiseres, junto também uma versão em EN para o colega)

@@ -80,17 +80,16 @@ try {
     $sumQ = $pdo->prepare("
     SELECT
       SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
-      SUM(CASE WHEN tipo='OVERTIME' THEN minutos ELSE 0 END) AS otMin,
       SUM(CASE WHEN tipo='ONCALL'   THEN minutos ELSE 0 END) AS oncallMin,
       SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km,
       COUNT(DISTINCT CASE WHEN tipo='WORK' AND minutos>0 THEN DATE(inicio) END) AS workedDays
     FROM eventos
     WHERE user_id=:u
       AND DATE(inicio) BETWEEN :s AND :e
-      AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+      AND tipo IN ('WORK','ONCALL','KM')
   ");
     $sumQ->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
-    $summary = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"otMin"=>0,"oncallMin"=>0,"km"=>0,"workedDays"=>0];
+    $summary = $sumQ->fetch(PDO::FETCH_ASSOC) ?: ["workMin"=>0,"oncallMin"=>0,"km"=>0,"workedDays"=>0];
 
     // marca eventos como submitted e liga ao período
     $upd = $pdo->prepare("
@@ -98,7 +97,7 @@ try {
        SET status='submitted', period_id=:pid
      WHERE user_id=:u
        AND DATE(inicio) BETWEEN :s AND :e
-       AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+       AND tipo IN ('WORK','ONCALL','KM')
        AND status IN ('draft','rejected')
   ");
 
@@ -116,7 +115,6 @@ try {
         "summary" => [
             "workedDays" => (int)$summary['workedDays'],
             "workMin"    => (int)$summary['workMin'],
-            "otMin"      => (int)$summary['otMin'],
             "oncallMin"  => (int)$summary['oncallMin'],
             "km"         => (float)$summary['km']
         ]

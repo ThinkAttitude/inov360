@@ -31,6 +31,12 @@ catch(Throwable $e){ $nameCol = 'name'; }
 $month = trim((string)($_GET['month'] ?? ''));
 if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { http_response_code(400); echo 'INVALID month (use YYYY-MM)'; exit; }
 
+/* Limites do mês (para uso de índice em e.dia) */
+$first = new DateTime("$month-01");
+$last  = (clone $first)->modify('last day of this month');
+$d1 = $first->format('Y-m-d');
+$d2 = $last->format('Y-m-d');
+
 /* user_ids: aceita array (user_ids[]=) ou CSV (user_ids=1,2) */
 $userIdsRaw = $_GET['user_ids'] ?? '';
 if (!is_array($userIdsRaw)) {
@@ -45,7 +51,7 @@ $FERIAS_LIKE = ["%FERIA%", "%FÉRIA%", "%VACATION%"];
 $FALTA_LIKE  = ["%FALTA%", "%ABSENCE%"];
 
 /* --- WHERE e parâmetros --- */
-$params = [':month' => $month];
+$params = [':d1' => $d1, ':d2' => $d2];
 $inPlaceholders = [];
 foreach ($userIds as $i => $id) {
     $ph = ":u{$i}";
@@ -54,7 +60,7 @@ foreach ($userIds as $i => $id) {
 }
 $where = "
     e.status = 'approved'
-    AND DATE_FORMAT(e.dia, '%Y-%m') = :month
+    AND e.dia BETWEEN :d1 AND :d2
     AND e.user_id IN (" . implode(',', $inPlaceholders) . ")
 ";
 
@@ -81,12 +87,11 @@ SELECT
     u.$nameCol                                 AS nome,
     u.email                                    AS email,
     COUNT(DISTINCT e.dia)                      AS dias_com_registo,
-    COALESCE(SUM(CASE WHEN e.tipo='WORK'     THEN e.minutos ELSE 0 END),0) AS m_trab,
-    COALESCE(SUM(CASE WHEN e.tipo='OVERTIME' THEN e.minutos ELSE 0 END),0) AS m_extra,
-    COALESCE(SUM(CASE WHEN e.tipo='ONCALL'   THEN e.minutos ELSE 0 END),0) AS m_pres,
+    COALESCE(SUM(CASE WHEN e.tipo='WORK'   THEN e.minutos ELSE 0 END),0) AS m_trab,
+    COALESCE(SUM(CASE WHEN e.tipo='ONCALL' THEN e.minutos ELSE 0 END),0) AS m_pres,
     COALESCE(SUM(CASE WHEN e.tipo='LEAVE' AND $feriasLikeSql THEN 1 ELSE 0 END),0) AS total_ferias,
     COALESCE(SUM(CASE WHEN e.tipo='LEAVE' AND $faltaLikeSql  THEN 1 ELSE 0 END),0) AS total_faltas,
-    COALESCE(SUM(CASE WHEN e.tipo='KM' THEN e.km ELSE 0 END),0) AS kms
+    COALESCE(SUM(CASE WHEN e.tipo='KM'     THEN e.km      ELSE 0 END),0) AS kms
 FROM eventos e
 JOIN user u         ON u.id = e.user_id
 LEFT JOIN company c ON c.id = u.company_id
@@ -107,10 +112,11 @@ $spread = new Spreadsheet();
 $sheet  = $spread->getActiveSheet();
 $sheet->setTitle('Mapa ' . $month);
 
+/* Cabeçalho sem 'Horas Extr.' */
 $headers = [
     'Empresa','Nome','Email',
     'Dias com registo',
-    'Horas Trab.','Horas Extr.','Horas Pres.',
+    'Horas Trab.','Horas Pres.',
     'Total Férias','Total Faltas',
     'Quilómetros'
 ];
@@ -123,27 +129,21 @@ foreach ($rows as $row) {
         $row['nome']    ?? '',
         $row['email']   ?? '',
         (int)$row['dias_com_registo'],
-        intdiv((int)$row['m_trab'], 60),
-        intdiv((int)$row['m_extra'], 60),
-        intdiv((int)$row['m_pres'], 60),
-        (int)$row['total_ferias'],
-        (int)$row['total_faltas'],
-        (float)$row['kms'],
+        intdiv((int)($row['m_trab'] ?? 0), 60),
+        intdiv((int)($row['m_pres'] ?? 0), 60),
+        (int)($row['total_ferias'] ?? 0),
+        (int)($row['total_faltas'] ?? 0),
+        (float)($row['kms'] ?? 0),
     ], null, "A{$r}");
     $r++;
 }
 $lastRow = max(1, $r-1);
 
 /* Aparência mínima + AutoFilter */
-foreach (range('A','J') as $col) { $sheet->getColumnDimension($col)->setAutoSize(true); }
+foreach (range('A','I') as $col) { $sheet->getColumnDimension($col)->setAutoSize(true); }
 $sheet->freezePane('A2');
-$sheet->getStyle("A1:J1")->getFont()->setBold(true);
-
-if ($lastRow >= 2) {
-    $sheet->setAutoFilter("A1:J{$lastRow}");
-} else {
-    $sheet->setAutoFilter("A1:J1");
-}
+$sheet->getStyle("A1:I1")->getFont()->setBold(true);
+$sheet->setAutoFilter($lastRow >= 2 ? "A1:I{$lastRow}" : "A1:I1");
 
 /* --- Output --- */
 $filename = 'mapa_colaboradores_'.$month.'.xlsx';

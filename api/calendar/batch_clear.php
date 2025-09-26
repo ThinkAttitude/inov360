@@ -50,7 +50,7 @@ try{
     DELETE FROM eventos
      WHERE user_id = ?
        AND DATE(inicio) = ?
-       AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+       AND tipo IN ('WORK','ONCALL','KM')
        AND status IN ('draft','rejected')
   ");
 

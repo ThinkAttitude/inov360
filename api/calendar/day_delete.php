@@ -60,13 +60,13 @@ if (period_is_locked($pdo, $userId, $date)) {
     exit;
 }
 
-/* ===== EXECUTA: limpa TUDO do dia (WORK, OVERTIME, ONCALL, KM) ===== */
+/* ===== EXECUTA: limpa TUDO do dia (WORK, ONCALL, KM) ===== */
 /* Se tens a coluna gerada `dia` em eventos, podes trocar DATE(inicio)=? por dia=? */
 try {
     $sql = "DELETE FROM eventos
            WHERE user_id = ?
              AND DATE(inicio) = ?
-             AND tipo IN ('WORK','OVERTIME','ONCALL','KM')
+             AND tipo IN ('WORK','ONCALL','KM')
              AND status IN ('draft','rejected')";
     $st = $pdo->prepare($sql);
     $st->execute([$userId, $date]);
