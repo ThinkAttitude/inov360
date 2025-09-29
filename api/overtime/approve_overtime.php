@@ -16,12 +16,13 @@ if (!is_array($myPerms) || !in_array(5, $myPerms, true)) { // perm 5: approve_ov
     echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
-/* === DB === */
+/* === Helpers / DB === */
+require_once __DIR__ . '/../lib/helper/periods.php';
 require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/* === Helpers === */
+/* === Utils === */
 function json_input(): array {
     $raw = file_get_contents('php://input');
     $d = json_decode($raw, true);
@@ -35,9 +36,9 @@ function json_input(): array {
    - comentario (opcional)
 */
 $in = json_input();
-$reqId     = isset($in['request_id']) ? (int)$in['request_id'] : 0;
-$decision  = strtolower(trim((string)($in['decision'] ?? '')));
-$comentario= isset($in['comentario']) ? trim((string)$in['comentario']) : null;
+$reqId      = isset($in['request_id']) ? (int)$in['request_id'] : 0;
+$decision   = strtolower(trim((string)($in['decision'] ?? '')));
+$comentario = isset($in['comentario']) ? trim((string)$in['comentario']) : null;
 
 if ($reqId <= 0 || ($decision !== 'approve' && $decision !== 'reject')) {
     http_response_code(400);
@@ -62,6 +63,15 @@ try {
         http_response_code(404);
         echo json_encode(['ok'=>false,'code'=>'REQUEST_NOT_FOUND']); exit;
     }
+
+    // 2) Bloqueio pelo deadline (vale para approve e reject)
+    $dia = substr($req['data_inicio'], 0, 10);
+    if (!ot_is_open_for_day($dia)) {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode(['ok'=>false,'code'=>'OVERTIME_CLOSED']); exit;
+    }
+
     if ($req['estado'] !== 'requested') {
         $pdo->rollBack();
         http_response_code(409);
@@ -71,16 +81,22 @@ try {
     $userId = (int)$req['user_id'];
     $inicio = $req['data_inicio'];
     $fim    = $req['data_fim'];
-    $dia    = substr($inicio, 0, 10);
 
     if ($decision === 'reject') {
-        // 2A) Rejeitar apenas atualiza o pedido
+        // 3A) Rejeitar: só atualiza o pedido
         $upd = $pdo->prepare("
             UPDATE request_overtime
                SET estado='rejected', decidido_por=:me, decidido_em=NOW(), comentario=:c
              WHERE id=:id
         ");
         $upd->execute([':me'=>$meId, ':c'=>$comentario, ':id'=>$reqId]);
+
+        // Ler decidido_em real da BD para responder com precisão
+        $getReq = $pdo->prepare("
+            SELECT decidido_em FROM request_overtime WHERE id=:id
+        ");
+        $getReq->execute([':id'=>$reqId]);
+        $decididoEm = $getReq->fetchColumn() ?: date('Y-m-d H:i:s');
 
         $pdo->commit();
         echo json_encode([
@@ -89,13 +105,13 @@ try {
             'request'=>[
                 'id'=>$reqId,'user_id'=>$userId,'dia'=>$dia,
                 'data_inicio'=>$inicio,'data_fim'=>$fim,'estado'=>'rejected',
-                'decidido_por'=>$meId,'decidido_em'=>date('Y-m-d H:i:s'),'comentario'=>$comentario
+                'decidido_por'=>$meId,'decidido_em'=>$decididoEm,'comentario'=>$comentario
             ]
         ]);
         exit;
     }
 
-    // 2B) Aprovar: garantir que não há overlap com overtime existente
+    // 3B) Aprovar: garantir que não há overlap com overtime existente
     $overlap = $pdo->prepare("
         SELECT id FROM overtime
          WHERE user_id = :u
@@ -109,8 +125,7 @@ try {
         echo json_encode(['ok'=>false,'code'=>'OVERTIME_CONFLICT']); exit;
     }
 
-    // 3) Tentar materializar no overtime
-    //    Preferimos ligar o request_id; se já existir o MESMO intervalo exacto, anexamos o request_id.
+    // 4) Materializar no overtime (preferir ligar request_id a um registo igual, senão inserir)
     $findExact = $pdo->prepare("
         SELECT id FROM overtime
          WHERE user_id=:u AND inicio=:ini AND fim=:fim
@@ -120,8 +135,10 @@ try {
     $otId = (int)($findExact->fetchColumn() ?: 0);
 
     if ($otId) {
-        // já existe exactamente o mesmo intervalo → só anexar o request_id (se ainda não tiver)
-        $upOt = $pdo->prepare("UPDATE overtime SET request_id=:rid WHERE id=:id AND (request_id IS NULL OR request_id<>:rid)");
+        $upOt = $pdo->prepare("
+            UPDATE overtime SET request_id=:rid
+             WHERE id=:id AND (request_id IS NULL OR request_id<>:rid)
+        ");
         $upOt->execute([':rid'=>$reqId, ':id'=>$otId]);
     } else {
         $insOt = $pdo->prepare("
@@ -132,7 +149,7 @@ try {
         $otId = (int)$pdo->lastInsertId();
     }
 
-    // 4) Atualizar o pedido para 'approved'
+    // 5) Atualizar o pedido para 'approved'
     $updReq = $pdo->prepare("
         UPDATE request_overtime
            SET estado='approved', decidido_por=:me, decidido_em=NOW(), comentario=:c
@@ -140,7 +157,7 @@ try {
     ");
     $updReq->execute([':me'=>$meId, ':c'=>$comentario, ':id'=>$reqId]);
 
-    // 5) Buscar overtime para responder
+    // 6) Buscar overtime e decidido_em para responder
     $getOt = $pdo->prepare("
         SELECT id, user_id, inicio, fim,
                TIMESTAMPDIFF(MINUTE, inicio, fim) AS minutos,
@@ -152,6 +169,10 @@ try {
     $getOt->execute([':id'=>$otId]);
     $ot = $getOt->fetch(PDO::FETCH_ASSOC);
 
+    $getReq = $pdo->prepare("SELECT decidido_em FROM request_overtime WHERE id=:id");
+    $getReq->execute([':id'=>$reqId]);
+    $decididoEm = $getReq->fetchColumn() ?: date('Y-m-d H:i:s');
+
     $pdo->commit();
 
     echo json_encode([
@@ -160,7 +181,7 @@ try {
         'request'=>[
             'id'=>$reqId,'user_id'=>$userId,'dia'=>$dia,
             'data_inicio'=>$inicio,'data_fim'=>$fim,'estado'=>'approved',
-            'decidido_por'=>$meId,'decidido_em'=>date('Y-m-d H:i:s'),'comentario'=>$comentario
+            'decidido_por'=>$meId,'decidido_em'=>$decididoEm,'comentario'=>$comentario
         ],
         'overtime'=>[
             'id'=>(int)$ot['id'],'user_id'=>(int)$ot['user_id'],

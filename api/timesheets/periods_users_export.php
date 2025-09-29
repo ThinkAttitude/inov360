@@ -3,19 +3,19 @@
 declare(strict_types=1);
 session_start();
 
-/* --- Auth --- */
+/* Auth */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) { http_response_code(401); exit; }
-
 $myPerms = $_SESSION['user']['permissions'] ?? [];
-if (!is_array($myPerms) || !in_array(3, $myPerms, true)) { // exige permissão 3
+if (!is_array($myPerms) || !in_array(3, $myPerms, true)) { // perm 3: periods_info (backoffice)
     http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
-/* --- Deps & DB --- */
+/* Deps & DB */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/periods.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
-
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -27,66 +27,48 @@ $nameCol = 'nome';
 try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
-/* --- Inputs --- */
+/* Inputs */
 $month = trim((string)($_GET['month'] ?? ''));
 if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { http_response_code(400); echo 'INVALID month (use YYYY-MM)'; exit; }
 
-/* Limites do mês (para uso de índice em e.dia) */
-$first = new DateTime("$month-01");
-$last  = (clone $first)->modify('last day of this month');
-$d1 = $first->format('Y-m-d');
-$d2 = $last->format('Y-m-d');
-
-/* user_ids: aceita array (user_ids[]=) ou CSV (user_ids=1,2) */
+/* user_ids (opcional) */
 $userIdsRaw = $_GET['user_ids'] ?? '';
 if (!is_array($userIdsRaw)) {
     $userIdsRaw = preg_split('/[,\s]+/', (string)$userIdsRaw, -1, PREG_SPLIT_NO_EMPTY);
 }
-$userIds = array_values(array_unique(array_map('intval', $userIdsRaw)));
-$userIds = array_values(array_filter($userIds, fn($v)=>$v>0));
-if (!$userIds) { http_response_code(400); echo 'Missing user_ids'; exit; }
+$userIds = array_values(array_filter(array_map('intval', $userIdsRaw), fn($v)=>$v>0));
 
-/* --- Palavras-chave para LEAVE (no título do evento) --- */
+/* Bounds 25..24 para a competência M */
+[$sDt,$eDt] = ts_bounds_from_label($month);
+$start = $sDt->format('Y-m-d');
+$end   = $eDt->format('Y-m-d');
+
+/* Palavras-chave para LEAVE no título */
 $FERIAS_LIKE = ["%FERIA%", "%FÉRIA%", "%VACATION%"];
 $FALTA_LIKE  = ["%FALTA%", "%ABSENCE%"];
 
-/* --- WHERE e parâmetros --- */
-$params = [':d1' => $d1, ':d2' => $d2];
-$inPlaceholders = [];
-foreach ($userIds as $i => $id) {
-    $ph = ":u{$i}";
-    $inPlaceholders[] = $ph;
-    $params[$ph] = $id;
+/* WHERE */
+$params = [':s'=>$start, ':e'=>$end];
+$in = '';
+if ($userIds) {
+    $ph = [];
+    foreach ($userIds as $i=>$id){ $k=":u$i"; $ph[]=$k; $params[$k]=$id; }
+    $in = ' AND e.user_id IN ('.implode(',',$ph).')';
 }
-$where = "
-    e.status = 'approved'
-    AND e.dia BETWEEN :d1 AND :d2
-    AND e.user_id IN (" . implode(',', $inPlaceholders) . ")
-";
 
-/* montar condições LIKE */
-$ferConds = [];
-foreach ($FERIAS_LIKE as $i => $kw) {
-    $ph = ":fer{$i}";
-    $ferConds[] = "UPPER(e.titulo) LIKE $ph";
-    $params[$ph] = strtoupper($kw);
-}
-$faltaConds = [];
-foreach ($FALTA_LIKE as $i => $kw) {
-    $ph = ":fal{$i}";
-    $faltaConds[] = "UPPER(e.titulo) LIKE $ph";
-    $params[$ph] = strtoupper($kw);
-}
-$feriasLikeSql = '(' . implode(' OR ', $ferConds) . ')';
-$faltaLikeSql  = '(' . implode(' OR ', $faltaConds) . ')';
+/* LIKEs */
+$ferConds=[]; foreach($FERIAS_LIKE as $i=>$kw){ $k=":fer$i"; $ferConds[]="UPPER(e.titulo) LIKE $k"; $params[$k]=strtoupper($kw); }
+$faltaConds=[]; foreach($FALTA_LIKE as $i=>$kw){ $k=":fal$i"; $faltaConds[]="UPPER(e.titulo) LIKE $k"; $params[$k]=strtoupper($kw); }
+$feriasLikeSql = '('.implode(' OR ',$ferConds).')';
+$faltaLikeSql  = '('.implode(' OR ',$faltaConds).')';
 
-/* --- Query (agregação por colaborador) --- */
+/* Query agregada (apenas eventos aprovados) */
 $sql = "
 SELECT
-    c.name                                     AS empresa,
-    u.$nameCol                                 AS nome,
-    u.email                                    AS email,
-    COUNT(DISTINCT e.dia)                      AS dias_com_registo,
+    c.name AS empresa,
+    u.$nameCol AS nome,
+    u.email AS email,
+    COUNT(DISTINCT e.dia) AS dias_com_registo,
     COALESCE(SUM(CASE WHEN e.tipo='WORK'   THEN e.minutos ELSE 0 END),0) AS m_trab,
     COALESCE(SUM(CASE WHEN e.tipo='ONCALL' THEN e.minutos ELSE 0 END),0) AS m_pres,
     COALESCE(SUM(CASE WHEN e.tipo='LEAVE' AND $feriasLikeSql THEN 1 ELSE 0 END),0) AS total_ferias,
@@ -95,62 +77,61 @@ SELECT
 FROM eventos e
 JOIN user u         ON u.id = e.user_id
 LEFT JOIN company c ON c.id = u.company_id
-WHERE $where
+WHERE e.status = 'approved'
+  AND e.dia BETWEEN :s AND :e
+  $in
 GROUP BY empresa, nome, email
 ORDER BY empresa ASC, nome ASC
 ";
-
 $sth = $pdo->prepare($sql);
-foreach ($params as $k=>$v) {
-    $sth->bindValue($k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
-}
+foreach ($params as $k=>$v) $sth->bindValue($k, $v, is_int($v)?PDO::PARAM_INT:PDO::PARAM_STR);
 $sth->execute();
 $rows = $sth->fetchAll(PDO::FETCH_ASSOC);
 
-/* --- Excel --- */
+/* Excel */
 $spread = new Spreadsheet();
 $sheet  = $spread->getActiveSheet();
-$sheet->setTitle('Mapa ' . $month);
+$sheet->setTitle('Mapa '.$month.' (25..24)');
 
-/* Cabeçalho sem 'Horas Extr.' */
 $headers = [
     'Empresa','Nome','Email',
     'Dias com registo',
-    'Horas Trab.','Horas Pres.',
-    'Total Férias','Total Faltas',
-    'Quilómetros'
+    'Horas Trab.','Horas Prev.','Total Férias','Total Faltas',
+    'Quilómetros',
+    'Período Início','Período Fim'
 ];
 $sheet->fromArray($headers, null, 'A1');
 
-$r = 2;
+$r=2;
 foreach ($rows as $row) {
+    $hTrab = intdiv((int)$row['m_trab'], 60);
+    $mTrab = ((int)$row['m_trab']) % 60;
+    $hPrev = intdiv((int)$row['m_pres'], 60);
+    $mPrev = ((int)$row['m_pres']) % 60;
+
     $sheet->fromArray([
         $row['empresa'] ?? '',
         $row['nome']    ?? '',
         $row['email']   ?? '',
         (int)$row['dias_com_registo'],
-        intdiv((int)($row['m_trab'] ?? 0), 60),
-        intdiv((int)($row['m_pres'] ?? 0), 60),
-        (int)($row['total_ferias'] ?? 0),
-        (int)($row['total_faltas'] ?? 0),
-        (float)($row['kms'] ?? 0),
+        sprintf('%d:%02d',$hTrab,$mTrab),
+        sprintf('%d:%02d',$hPrev,$mPrev),
+        (int)$row['total_ferias'],
+        (int)$row['total_faltas'],
+        (float)$row['kms'],
+        $start, $end
     ], null, "A{$r}");
     $r++;
 }
-$lastRow = max(1, $r-1);
+foreach (range('A','K') as $col) $sheet->getColumnDimension($col)->setAutoSize(true);
+$sheet->freezePane('A2'); $sheet->getStyle('A1:K1')->getFont()->setBold(true);
+$last = max(1,$r-1); $sheet->setAutoFilter("A1:K{$last}");
 
-/* Aparência mínima + AutoFilter */
-foreach (range('A','I') as $col) { $sheet->getColumnDimension($col)->setAutoSize(true); }
-$sheet->freezePane('A2');
-$sheet->getStyle("A1:I1")->getFont()->setBold(true);
-$sheet->setAutoFilter($lastRow >= 2 ? "A1:I{$lastRow}" : "A1:I1");
-
-/* --- Output --- */
-$filename = 'mapa_colaboradores_'.$month.'.xlsx';
+/* Output */
+$filename = 'mapa_timesheets_'.$month.'_25-24.xlsx';
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="'.$filename.'"');
 header('Cache-Control: max-age=0');
-
 $writer = new Xlsx($spread);
 $writer->save('php://output');
 exit;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
+require_once __DIR__ . '/../lib/helper/periods.php';
+
 /* === Auth === */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
@@ -56,6 +58,13 @@ if (!is_valid_time($horaIni) || !is_valid_time($horaFim)) {
     http_response_code(400);
     echo json_encode(['ok'=>false,'code'=>'INVALID_TIME_FORMAT']); exit;
 }
+
+// Bloquear Pedidos
+if (!ot_is_open_for_day($dia)) {
+    http_response_code(409);
+    echo json_encode(['ok'=>false,'code'=>'OVERTIME_CLOSED']); exit;
+}
+
 
 $inicio = $dia . ' ' . $horaIni . ':00';
 $fim    = $dia . ' ' . $horaFim . ':00';

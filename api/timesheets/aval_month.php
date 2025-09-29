@@ -4,53 +4,51 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-/* ==== Sessão ==== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
 }
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
-/* ==== Helpers ==== */
-function ym_bounds(string $ym): array {
-    if (!preg_match('/^\d{4}-\d{2}$/', $ym)) return [null, null];
-    $first = new DateTime($ym . '-01');
-    $last  = (clone $first)->modify('last day of this month');
-    return [$first->format('Y-m-d'), $last->format('Y-m-d')];
-}
+/* Helpers */
+require_once __DIR__ . '/../lib/helper/periods.php';
 function is_date($d){ return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/',$d); }
 
-/* ==== Input ==== */
+/* Input */
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 if ($userId <= 0) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_USER"]); exit; }
 
-$month = $_GET['month'] ?? null;
+$month = $_GET['month'] ?? null; // label M = YYYY-MM
 if (!$month && !empty($_GET['date']) && is_date($_GET['date'])) {
+    // se vier uma data, usa o mês dela como label
     $month = (new DateTime($_GET['date']))->format('Y-m');
 }
-if (!$month) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_MONTH"]); exit; }
-[$start,$end] = ym_bounds($month);
-if (!$start) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_MONTH"]); exit; }
+if (!$month || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/',$month)) {
+    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_OR_INVALID_MONTH"]); exit;
+}
 
-/* ==== DB ==== */
+/* Bounds 25..24 do mês M */
+[$sDt,$eDt] = ts_bounds_from_label($month);
+$start = $sDt->format('Y-m-d');
+$end   = $eDt->format('Y-m-d');
+
+/* DB */
 require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/* ==== Coluna de nome (nome|name) ==== */
+/* Coluna de nome (nome|name) */
 $nameCol = 'nome';
 try { $pdo->query("SELECT $nameCol FROM inov360.user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
-/* ==== Carregar utilizador alvo ==== */
+/* Utilizador alvo */
 $uq = $pdo->prepare("SELECT id, $nameCol AS name FROM inov360.user WHERE id=:id LIMIT 1");
 $uq->execute([':id'=>$userId]);
 $u = $uq->fetch(PDO::FETCH_ASSOC);
 if (!$u) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"USER_NOT_FOUND"]); exit; }
 
-/* ==== Gate de hierarquia (novo modelo) ==== */
-/* Tem de ser responsável ativo/válido do utilizador-alvo. */
+/* Gate de hierarquia (responsável ativo/válido) */
 $gate = $pdo->prepare("
   SELECT 1
     FROM inov360.colaborador_responsaveis
@@ -64,11 +62,10 @@ $gate = $pdo->prepare("
 $gate->execute([':target'=>$userId, ':me'=>$selfId]);
 if (!$gate->fetchColumn()) {
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"NOT_RESPONSAVEL"]);
-    exit;
+    echo json_encode(["ok"=>false,"code"=>"NOT_RESPONSAVEL"]); exit;
 }
 
-/* ==== Grelha base de dias ==== */
+/* Grelha base */
 $days = [];
 $cursor = new DateTime($start);
 $last   = new DateTime($end);
@@ -79,14 +76,13 @@ while ($cursor <= $last) {
         "workMin"   => 0,
         "oncallMin" => 0,
         "km"        => 0.0,
-        "statuses"  => [],   // {"WORK":"draft",...}
-        "leaves"    => []    // [{"id":..., "requestId":..., "title":"..." , "kind":"LEAVE|SUBSTITUTION"}]
+        "statuses"  => [],
+        "leaves"    => []
     ];
     $cursor->modify('+1 day');
 }
 
-/* ==== Período do mês (se existir) ==== */
-$period = null;
+/* Período (se existir) — exatamente as mesmas fronteiras 25..24 */
 $p = $pdo->prepare("
   SELECT id, estado, period_start AS start, period_end AS end, created_at
     FROM inov360.timesheet_periods
@@ -96,7 +92,7 @@ $p = $pdo->prepare("
 $p->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
 $period = $p->fetch(PDO::FETCH_ASSOC) ?: null;
 
-/* ==== Agregados por dia (WORK/ONCALL/KM) ==== */
+/* Agregados (WORK/ONCALL/KM) */
 $agg = $pdo->prepare("
   SELECT DATE(inicio) AS dia,
          SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
@@ -110,14 +106,13 @@ GROUP BY DATE(inicio)
 ");
 $agg->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
 foreach ($agg as $row) {
-    $d = $row['dia'];
-    if (!isset($days[$d])) continue;
+    $d = $row['dia']; if (!isset($days[$d])) continue;
     $days[$d]['workMin']   = (int)$row['workMin'];
     $days[$d]['oncallMin'] = (int)$row['oncallMin'];
     $days[$d]['km']        = (float)$row['km'];
 }
 
-/* ==== Status por tipo e dia ==== */
+/* Status por tipo/dia */
 $sts = $pdo->prepare("
   SELECT DATE(inicio) AS dia, tipo, status
     FROM inov360.eventos
@@ -131,7 +126,7 @@ foreach ($sts as $r) {
     $days[$d]['statuses'][$r['tipo']] = $r['status'];
 }
 
-/* ==== Férias/Ausências + Substituições (LEAVE e SUBSTITUTION) ==== */
+/* LEAVE/SUBSTITUTION cruzando o período 25..24 */
 $leaveQ = $pdo->prepare("
   SELECT id, titulo, inicio, fim, leave_request_id, tipo
     FROM inov360.eventos
@@ -158,7 +153,7 @@ foreach ($leaveQ as $lv) {
     }
 }
 
-/* ==== Totais ==== */
+/* Totais */
 $totals = ["workMin"=>0,"oncallMin"=>0,"km"=>0.0];
 foreach ($days as $d) {
     $totals['workMin']   += $d['workMin'];
@@ -166,12 +161,12 @@ foreach ($days as $d) {
     $totals['km']        += $d['km'];
 }
 
-/* ==== Resposta ==== */
+/* Resposta */
 echo json_encode([
     "ok"     => true,
     "user"   => ["id"=>(int)$u['id'], "name"=>$u['name']],
     "month"  => $month,
-    "period" => $period,          // null se não existir
+    "period" => $period,
     "days"   => array_values($days),
     "totals" => $totals
 ]);
