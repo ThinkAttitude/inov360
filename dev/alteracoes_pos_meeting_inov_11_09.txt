@@ -497,6 +497,11 @@ Erros
 
 —
 
+
+                                                            ______________________
+                                                            TIMESHEETS
+                                                            ______________________
+
 GET /api/timesheets/month_status.php
 Resumo e flags de submissão do mês corrente para o utilizador.
 
@@ -529,38 +534,43 @@ Erros
 
 —
 
-POST /api/timesheets/submit_month.php
-Submete o mês: marca eventos do mês como submitted e atualiza (ou cria) o período.
+API: Submeter o mês (timesheets 25→24)
+Endpoint: POST /api/calendar/submit_month.php
 
-Autenticação
-– Requer sessão válida. Self-only.
+Objetivo: submeter a competência do utilizador (WORK/ONCALL/KM) do período 25(M-1) 00:00:00 → 24(M) 23:59:59.
 
-Content-Type
-– application/json
+Autenticação: sessão válida (self-only).
+Bloqueio: não permite submissões a partir das 00:00 do dia 25(M). (Se agora ≥ 25(M) 00:00 → 409 PERIOD_CLOSED)
 
-Parâmetros (body JSON)
-– month (recomendado) — YYYY-MM
-– ou date — YYYY-MM-DD (mês inferido)
+Body (JSON)
+• month (recomendado): “YYYY-MM” (label do mês M; competência é 25(M-1)→24(M))
+• date (alternativo): “YYYY-MM-DD” (usa-se o mês dessa data para calcular a competência)
 
 Comportamento
-– Procura (ou cria) timesheet_periods para [start,end] do mês.
-– Se o período já estiver em {submitted, approved, locked} → 409 ALREADY_SUBMITTED.
-– Atualiza eventos do mês com status IN ('draft','rejected') para status='submitted' e preenche period_id.
-– Atualiza o período para estado='submitted'.
+• Calcula o intervalo 25(M-1)→24(M).
+• Procura (ou cria) um registo em timesheet_periods para esse intervalo e user atual.
+• Se o período já estiver em {submitted, approved, locked} → 409 ALREADY_SUBMITTED.
+• Marca os eventos do intervalo (tipos: WORK, ONCALL, KM) com status IN ('draft','rejected') como status='submitted' e define period_id.
+• Atualiza o período para estado='submitted'.
+• Devolve um resumo (workedDays, workMin, oncallMin, km) do intervalo.
 
-Resposta (JSON)
+Resposta (200)
 ok: true
 period: { id, estado: "submitted", start, end }
 summary: { workedDays, workMin, oncallMin, km }
 
 Erros
+400 MISSING_OR_INVALID_MONTH
 401 UNAUTHENTICATED
-400 MISSING_MONTH | INVALID_MONTH
+409 PERIOD_CLOSED
 409 ALREADY_SUBMITTED
 500 DB_ERROR
-                                                            ______________________
-                                                            TIMESHEETS
-                                                            ______________________
+
+Notas
+• LEAVE/SUBSTITUTION não são alterados por este endpoint.
+• Sempre competência 25→24 do label “month”.
+
+_________
 
 API 1: Listar períodos para eu aprovar
 Endpoint: GET /api/timesheets/aval_periods.php
@@ -597,94 +607,83 @@ Não há mais filtragem por role antiga.
 
 —
 
-API 2: Ver o calendário mensal submetido de um colaborador
+API: Ver mês para revisão (25(M-1)→24(M))
 Endpoint: GET /api/timesheets/aval_month.php
 
-Objetivo: ver, dia a dia, o mês de um colaborador para efeitos de revisão.
+Objetivo: visualizar, dia a dia, a competência do colaborador para efeitos de revisão/aprovação.
 
 Autenticação: sessão válida.
-Autorização (gate hierárquico): tens de ser o responsável ativo/válido do user_id (linhas em colaborador_responsaveis com ativo=1 e validade por NOW()).
+Autorização: tens de ser o responsável ativo/válido do user_id (colaborador_responsaveis com ativo=1 e validade por NOW()).
 
-Parâmetros (query):
+Importante sobre o “month”: o label YYYY-MM representa o mês M cuja competência vai de 25 (M-1) 00:00:00 a 24 (M) 23:59:59.
+
+Parâmetros (query)
 • user_id (obrigatório): id do colaborador
-• month (obrigatório se não enviares date): YYYY-MM
-• date (alternativo): qualquer data YYYY-MM-DD do mês pretendido
+• month (obrigatório se não enviares date): YYYY-MM (competência 25(M-1)→24(M))
+• date (alternativo): qualquer YYYY-MM-DD; o mês M é inferido a partir desta data
 
-Resposta (200):
-ok: true
-user: { id, name }
-month: YYYY-MM
-period: objeto do período se existir (id, estado, start, end, created_at) ou null
-days: array por dia com:
-• date, workMin, oncallMin, km
-• statuses: mapa por tipo { WORK | ONCALL | KM → draft | submitted | approved | rejected }
-• leaves: ausências e substituições dentro do mês [{ id, requestId, title, kind (LEAVE|SUBSTITUTION) }]
-totals: { workMin, oncallMin, km } [sem otMin]
+Resposta (200)
+• ok: true
+• user: { id, name }
+• month: "YYYY-MM" (label de competência)
+• period: { id, estado, start, end, created_at } | null — se existir em timesheet_periods exatamente com start=25(M-1) e end=24(M)
+• days: [ {
+date,
+workMin, oncallMin, km,
+statuses: { WORK|ONCALL|KM → draft|submitted|approved|rejected },
+leaves: [ { id, requestId|null, title, kind (LEAVE|SUBSTITUTION) } ]
+} ]
+• totals: { workMin, oncallMin, km }
 
-Erros:
-400 MISSING_USER, MISSING_MONTH, INVALID_MONTH
-401 UNAUTHENTICATED
-403 NOT_RESPONSAVEL (quando não és responsável do user_id)
-404 USER_NOT_FOUND
+Erros
+• 400 MISSING_USER | MISSING_MONTH/INVALID_MONTH
+• 401 UNAUTHENTICATED
+• 403 NOT_RESPONSAVEL
+• 404 USER_NOT_FOUND
 
-Notas:
-A validação de hierarquia usa NOW() (não depende do mês selecionado).
-O endpoint não devolve role.
+Notas
+• O período listado é sempre a competência 25→24 do label “month”.
+• Só agrega WORK, ONCALL e KM; as ausências surgem em leaves.
 
 —
-API 3: Aprovar/rejeitar um mês submetido
-Endpoint: POST /api/timesheets/aval_decide.php
+API: Decidir um período submetido (approve/reject)
+Endpoint: POST /api/timesheets/aval_decision.php
 
-Objetivo: decidir (approve | reject) um período em estado submitted.
+Objetivo: aprovar ou rejeitar um período em estado submitted.
 
 Autenticação: sessão válida.
-Autorização: tens de ser o responsável ativo/válido do dono do período (verificado a partir do period_id).
+Autorização: responsável ativo/válido do dono do período (validado via period_id).
 
-Body (JSON):
+Bloqueio: decisões ficam bloqueadas às 00:00 do dia 25(M). O label M é inferido por period_end (25→24). Se agora ≥ 25(M) 00:00 → 409 PERIOD_CLOSED.
 
-period_id (obrigatório): inteiro
+Body (JSON)
+• period_id (obrigatório): inteiro
+• action (obrigatório): "approve" | "reject"
+• comment (obrigatório se action="reject")
 
-action (obrigatório): approve | reject
+Comportamento
+• Valida: período existe e estado = submitted.
+• Se approve: timesheet_periods.estado → approved; define decidido_por, decidido_em, comentário (se enviado).
+• Se reject: timesheet_periods.estado → rejected; comentário obrigatório.
+• Atualiza eventos do intervalo 25(M-1)→24(M) do mesmo utilizador (apenas WORK/ONCALL/KM):
+– approve: status submitted → approved
+– reject: status submitted → draft
 
-comment (obrigatório se action = reject): texto
+Resposta (200)
+• ok: true
+• period_id: id do período
+• novo_estado: approved | rejected
+• comentario: eco do comentário (se houver)
 
-Comportamento:
-
-Verifica se o período existe e está em estado submitted.
-
-Se approve: timesheet_periods.estado → approved; decide metadados (decidido_por, decidido_em, comentário se enviado).
-
-Se reject: timesheet_periods.estado → rejected; comentário é obrigatório.
-
-Atualiza eventos desse mês e utilizador:
-• se approve: status dos eventos submitted → approved
-• se reject: status dos eventos submitted → draft
-
-Resposta (200):
-
-ok: true
-
-period_id: id do período
-
-novo_estado: approved | rejected
-
-comentario: eco do comentário (se houver)
-
-Erros:
-
-400 BAD_REQUEST (faltam campos)
-
-400 COMMENT_REQUIRED (rejeição sem comentário)
-
-401 UNAUTHENTICATED
-
-403 NOT_RESPONSAVEL (gate falhou)
-
-404 PERIOD_NOT_FOUND
-
-409 NOT_SUBMITTED (o período não está submitted)
-
-500 DB_ERROR
+Erros
+• 400 BAD_REQUEST (campos em falta)
+• 400 COMMENT_REQUIRED (reject sem comentário)
+• 401 UNAUTHENTICATED
+• 403 NOT_RESPONSAVEL
+• 404 PERIOD_NOT_FOUND
+• 409 NOT_SUBMITTED (período não está submitted)
+• 409 PERIOD_CLOSED (após 25(M) 00:00)
+• 500 DB_ERROR
 
 —
 API 4: Listar períodos aprovados (back-office, permissão periods_info)
@@ -726,92 +725,83 @@ Erros:
 403 FORBIDDEN_PERMISSION
 
 —
-API 5: Exportar períodos aprovados para Excel (back-office, permissão periods_info)
+API: Exportar mapa de timesheets (25→24) — backoffice
 Endpoint: GET /api/timesheets/periods_users_export.php
 
-Objetivo: gerar um XLSX com agregados por colaborador num mês, para um conjunto específico de utilizadores.
+Objetivo: gerar um XLSX com agregados por colaborador (WORK/ONCALL/LEAVE/KM) da competência 25(M-1)→24(M) para um conjunto de utilizadores.
 
 Autenticação: sessão válida.
-Autorização: o utilizador tem de ter permissions[] a incluir o id 3 (periods_info). Caso contrário, 403 FORBIDDEN_PERMISSION.
+Autorização: permission id 3 (periods_info). Caso contrário, 403 FORBIDDEN_PERMISSION.
 
-Parâmetros (query):
-• month (obrigatório): YYYY-MM
-• user_ids (obrigatório): pode ser matriz (user_ids[]=1&user_ids[]=2) ou CSV (user_ids=1,2,3)
+Parâmetros (query)
+• month (obrigatório): YYYY-MM — representa a competência 25(M-1)→24(M)
+• user_ids (opcional): matriz (user_ids[]=1&user_ids[]=2) ou CSV (user_ids=1,2,3). Se omitido, exporta todos (conforme implementação atual).
 
-Condições do export:
-• inclui apenas eventos com status = approved;
-• mês determinado pelo intervalo [primeiro e último dia do mês];
-• agrega por colaborador: empresa, nome, email, dias com registo (DISTINCT dia),
-horas trabalhadas (WORK, convertidas de minutos para horas no ficheiro),
-horas de presença (ONCALL, convertidas de minutos para horas),
-total de “Férias” e “Faltas” por palavras-chave no título (FERIA/FÉRIA/VACATION para férias; FALTA/ABSENCE para faltas),
-quilómetros (KM).
+Condições do export
+• Inclui apenas eventos com status = approved.
+• Intervalo filtrado por dia entre 25(M-1) e 24(M).
+• Agrega por colaborador:
+– empresa, nome, email
+– dias com registo (DISTINCT dia)
+– horas trabalhadas (WORK, minutos → H:MM)
+– horas de presença (ONCALL, minutos → H:MM)
+– total de “Férias” e “Faltas” por palavras-chave no título (FERIA/FÉRIA/VACATION para férias; FALTA/ABSENCE para faltas)
+– quilómetros (KM)
+– inclui também “Período Início” e “Período Fim” no ficheiro (25→24) para referência
 
-Resposta (200):
-ficheiro XLSX (Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
-nome: mapa_colaboradores_YYYY-MM.xlsx
-Colunas: Empresa | Nome | Email | Dias com registo | Horas Trab. | Horas Pres. | Total Férias | Total Faltas | Quilómetros
+Resposta (200)
+• ficheiro XLSX (Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+• nome sugerido: mapa_timesheets_YYYY-MM_25-24.xlsx
+• colunas: Empresa | Nome | Email | Dias com registo | Horas Trab. | Horas Pres. | Total Férias | Total Faltas | Quilómetros | Período Início | Período Fim
 
-Erros:
-400 INVALID month (use YYYY-MM)
-400 Missing user_ids
-401 UNAUTHENTICATED
-403 FORBIDDEN_PERMISSION
+Erros
+• 400 INVALID month (use YYYY-MM)
+• 401 UNAUTHENTICATED
+• 403 FORBIDDEN_PERMISSION
 
-(se quiseres, junto também uma versão em EN para o colega)
 
                                                             ______________________
                                                             OVERTIME
                                                             ______________________
 
-API 1 — Criar pedido de horas extra
-Método e URL: POST /api/overtime/request_overtime.php
-Objetivo: criar um pedido de overtime para um user_id, num dia e intervalo (hora_inicio → hora_fim).
-Permissão: sessão válida e permissão 4 (request_overtime).
-Content-Type: application/json
+API: Pedir horas extra
+Endpoint: POST /api/overtime/request_overtime.php
 
-Parâmetros (body):
+Objetivo: criar um pedido de horas extra para um colaborador num dia específico.
 
-user_id (inteiro, obrigatório)
+Autenticação: sessão válida.
+Autorização: permission id 4 (request_overtime).
 
-dia (YYYY-MM-DD, obrigatório)
+Fecho mensal (overtime): pedidos são aceites só até ao deadline do mês da data pedida: 00:00 do dia 11 do mês seguinte (M+1). Depois disso → 409 OVERTIME_CLOSED.
 
-hora_inicio (HH:MM 24h, obrigatório)
+Body (JSON)
+• user_id (obrigatório): id do colaborador alvo
+• dia (obrigatório): “YYYY-MM-DD”
+• hora_inicio (obrigatório): “HH:MM” (24h)
+• hora_fim (obrigatório): “HH:MM” (24h)
+• justificacao (obrigatório): texto
+• ficheiro (opcional): string/URL ou referência a anexo (não binário)
 
-hora_fim (HH:MM 24h, obrigatório; > hora_inicio)
+Regras/validações
+• hora_fim > hora_inicio; granularidade de 15 minutos; máximo 12h.
+• Rejeita se já existir overlap com pedido pendente (requested) no mesmo user para o mesmo intervalo.
+• Rejeita se colidir com overtime já aprovado.
+• Não usa hierarquia — qualquer utilizador com permissão pode pedir para qualquer user.
 
-justificacao (texto, obrigatório)
+Comportamento
+• Insere em request_overtime com estado 'requested'.
+• Devolve a linha criada (inclui minutos calculados, hora_inicio/fim, etc.).
 
-ficheiro (texto/URL, opcional)
+Resposta (200)
+ok: true
+request: { id, user_id, dia, hora_inicio, hora_fim, data_inicio, data_fim, minutos, estado, criado_em, criado_por }
 
-Regras:
-
-Granularidade de 15 min (erros: INVALID_GRANULARITY_15MIN).
-
-Máximo diário 12h (erro: MAX_HOURS_EXCEEDED).
-
-Janela de pedidos: até dia 10 do mês seguinte (erro: OVERTIME_CLOSED).
-
-Sem hierarquia: quem tem permissão 4 pode pedir para qualquer user.
-
-Sem sobreposição com pedidos “requested” ou overtime aprovado (erros: DUPLICATE_REQUEST_OVERLAP, ALREADY_HAS_APPROVED_OVERTIME).
-
-Resposta (200):
-
-ok=true, objeto request com id, user_id, dia, hora_inicio, hora_fim, data_inicio, data_fim, minutos, estado=requested, criado_em, criado_por.
-
-Erros:
-
+Erros
+400 MISSING_FIELDS | INVALID_DATE | INVALID_TIME_FORMAT | INVALID_TIME_RANGE | INVALID_GRANULARITY_15MIN | MAX_HOURS_EXCEEDED
 401 UNAUTHENTICATED
-
 403 FORBIDDEN_PERMISSION
-
-400 MISSING_FIELDS, INVALID_DATE, INVALID_TIME_FORMAT, INVALID_TIME_RANGE, INVALID_GRANULARITY_15MIN, MAX_HOURS_EXCEEDED
-
 404 USER_NOT_FOUND
-
-409 DUPLICATE_REQUEST_OVERLAP, ALREADY_HAS_APPROVED_OVERTIME, OVERTIME_CLOSED
-
+409 OVERTIME_CLOSED | DUPLICATE_REQUEST_OVERLAP | ALREADY_HAS_APPROVED_OVERTIME
 500 DB_ERROR
 
 —
@@ -877,50 +867,40 @@ Erros:
 500 DB_ERROR
 
 —
-API 3 — Aprovar ou rejeitar pedido
-Método e URL: POST /api/overtime/approve_overtime.php
-Objetivo: aprovar ou rejeitar um pedido (request_overtime.id). Se aprovar, grava em overtime e associa o request_id.
-Permissão: sessão válida e permissão 5 (approve_overtime).
-Content-Type: application/json
+API: Aprovar/Rejeitar pedido de horas extra
+Endpoint: POST /api/overtime/approve_overtime.php
 
-Parâmetros (body):
+Objetivo: decidir um pedido de horas extra (requested) — aprovar cria/liga registo em overtime; rejeitar apenas muda estado.
 
-request_id (inteiro, obrigatório)
+Autenticação: sessão válida.
+Autorização: permission id 5 (approve_overtime).
 
-decision (approve | reject, obrigatório)
+Fecho mensal (overtime): decisões só são permitidas até ao deadline do mês da data do pedido: 00:00 do dia 11 do mês seguinte (M+1). Depois disso → 409 OVERTIME_CLOSED.
 
-comentario (texto, opcional)
+Body (JSON)
+• request_id (obrigatório): id do pedido em request_overtime
+• decision (obrigatório): "approve" | "reject"
+• comentario (opcional)
 
-Regras:
+Comportamento
+• Carrega o pedido (FOR UPDATE). Tem de existir e estar em estado 'requested'.
+• Verifica o fecho (com base no mês de data_inicio).
+• Se decision="reject": atualiza o pedido para 'rejected' com decidido_por, decidido_em e comentário (se enviado).
+• Se decision="approve": valida que não há overlap com overtime existente; cria (ou anexa) registro em overtime (origem 'approval', com request_id); depois atualiza o pedido para 'approved'.
+• Devolve o estado final do pedido e, quando aprovado, o registo overtime criado/associado.
 
-Só decide pedidos em estado requested (senão erro ALREADY_DECIDED).
+Resposta (200)
+ok: true
+decision: "approved" | "rejected"
+request: { id, user_id, dia, data_inicio, data_fim, estado, decidido_por, decidido_em, comentario }
+overtime (se approved): { id, user_id, dia, inicio, fim, minutos, request_id }
 
-Para approve:
-
-valida janela do mês (até dia 10 M+1; erro OVERTIME_CLOSED)
-
-impede sobreposição com registos overtime existentes (erro OVERTIME_CONFLICT)
-
-cria (ou associa) registo em overtime (inicio, fim, dia, user_id, request_id)
-
-Resposta (200):
-
-ok=true, decision=approved ou rejected
-
-request com dados atualizados (estado, decidido_por, decidido_em, comentario)
-
-overtime (apenas em approved): id, user_id, dia, inicio, fim, minutos, request_id
-
-Erros:
-
+Erros
+400 MISSING_FIELDS
 401 UNAUTHENTICATED
-
 403 FORBIDDEN_PERMISSION
-
 404 REQUEST_NOT_FOUND
-
-409 ALREADY_DECIDED, OVERTIME_CONFLICT, OVERTIME_CLOSED
-
+409 ALREADY_DECIDED | OVERTIME_CLOSED | OVERTIME_CONFLICT
 500 DB_ERROR
 
 —
