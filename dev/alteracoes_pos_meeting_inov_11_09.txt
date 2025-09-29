@@ -759,3 +759,260 @@ Erros:
 403 FORBIDDEN_PERMISSION
 
 (se quiseres, junto também uma versão em EN para o colega)
+
+                                                            ______________________
+                                                            OVERTIME
+                                                            ______________________
+
+API 1 — Criar pedido de horas extra
+Método e URL: POST /api/overtime/request_overtime.php
+Objetivo: criar um pedido de overtime para um user_id, num dia e intervalo (hora_inicio → hora_fim).
+Permissão: sessão válida e permissão 4 (request_overtime).
+Content-Type: application/json
+
+Parâmetros (body):
+
+user_id (inteiro, obrigatório)
+
+dia (YYYY-MM-DD, obrigatório)
+
+hora_inicio (HH:MM 24h, obrigatório)
+
+hora_fim (HH:MM 24h, obrigatório; > hora_inicio)
+
+justificacao (texto, obrigatório)
+
+ficheiro (texto/URL, opcional)
+
+Regras:
+
+Granularidade de 15 min (erros: INVALID_GRANULARITY_15MIN).
+
+Máximo diário 12h (erro: MAX_HOURS_EXCEEDED).
+
+Janela de pedidos: até dia 10 do mês seguinte (erro: OVERTIME_CLOSED).
+
+Sem hierarquia: quem tem permissão 4 pode pedir para qualquer user.
+
+Sem sobreposição com pedidos “requested” ou overtime aprovado (erros: DUPLICATE_REQUEST_OVERLAP, ALREADY_HAS_APPROVED_OVERTIME).
+
+Resposta (200):
+
+ok=true, objeto request com id, user_id, dia, hora_inicio, hora_fim, data_inicio, data_fim, minutos, estado=requested, criado_em, criado_por.
+
+Erros:
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION
+
+400 MISSING_FIELDS, INVALID_DATE, INVALID_TIME_FORMAT, INVALID_TIME_RANGE, INVALID_GRANULARITY_15MIN, MAX_HOURS_EXCEEDED
+
+404 USER_NOT_FOUND
+
+409 DUPLICATE_REQUEST_OVERLAP, ALREADY_HAS_APPROVED_OVERTIME, OVERTIME_CLOSED
+
+500 DB_ERROR
+
+—
+API 2 — Listar pedidos de overtime
+Método e URL: GET /api/overtime/request_list.php
+Objetivo: listar pedidos de overtime com o respetivo estado.
+Permissões/escopo:
+
+Permissão 5 (approve_overtime): vê todos os pedidos (pode filtrar por user_id).
+
+Apenas permissão 4: vê pedidos onde é autor ou alvo.
+
+Parâmetros (query):
+
+state (opcional): requested | approved | rejected | cancelled | all (default all)
+
+month (opcional): YYYY-MM (filtra por mês civil via campo dia)
+
+user_id (opcional; só com permissão 5)
+
+q (opcional): pesquisa em nome/email (colaborador e criador)
+
+limit (opcional, default 200)
+
+offset (opcional, default 0)
+
+Resposta (200):
+
+ok=true
+
+filters com os filtros aplicados
+
+total (inteiro)
+
+items (lista), cada item com:
+
+id
+
+colaborador { id, nome, email }
+
+dia, hora_inicio, hora_fim, data_inicio, data_fim, minutos
+
+estado (requested | approved | rejected | cancelled)
+
+isApproved (boolean)
+
+criado_em
+
+criado_por { id, nome }
+
+decidido_por { id, nome } ou null
+
+decidido_em, comentario, ficheiro
+
+Erros:
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION ou FORBIDDEN_SCOPE (tentar user_id sem perm 5)
+
+400 INVALID_MONTH_FORMAT
+
+500 DB_ERROR
+
+—
+API 3 — Aprovar ou rejeitar pedido
+Método e URL: POST /api/overtime/approve_overtime.php
+Objetivo: aprovar ou rejeitar um pedido (request_overtime.id). Se aprovar, grava em overtime e associa o request_id.
+Permissão: sessão válida e permissão 5 (approve_overtime).
+Content-Type: application/json
+
+Parâmetros (body):
+
+request_id (inteiro, obrigatório)
+
+decision (approve | reject, obrigatório)
+
+comentario (texto, opcional)
+
+Regras:
+
+Só decide pedidos em estado requested (senão erro ALREADY_DECIDED).
+
+Para approve:
+
+valida janela do mês (até dia 10 M+1; erro OVERTIME_CLOSED)
+
+impede sobreposição com registos overtime existentes (erro OVERTIME_CONFLICT)
+
+cria (ou associa) registo em overtime (inicio, fim, dia, user_id, request_id)
+
+Resposta (200):
+
+ok=true, decision=approved ou rejected
+
+request com dados atualizados (estado, decidido_por, decidido_em, comentario)
+
+overtime (apenas em approved): id, user_id, dia, inicio, fim, minutos, request_id
+
+Erros:
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION
+
+404 REQUEST_NOT_FOUND
+
+409 ALREADY_DECIDED, OVERTIME_CONFLICT, OVERTIME_CLOSED
+
+500 DB_ERROR
+
+—
+API 4 — Exportar mapa de horas extra (XLSX)
+Método e URL: GET /api/overtime/sheets_export.php
+Objetivo: exportar mapa de overtime do mês civil em Excel (duas folhas).
+Permissão: sessão válida e permissão 5 (approve_overtime).
+
+Parâmetros (query):
+
+month (YYYY-MM, obrigatório)
+
+user_ids (opcional): CSV (ex.: 70,73) ou array (user_ids[]=70&user_ids[]=73)
+
+Saída (ficheiro):
+
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+Nome: mapa_overtime_YYYY-MM.xlsx
+
+Conteúdo do Excel:
+
+Sheet 1 “Horas Extra YYYY-MM” (Resumo por colaborador)
+
+Colunas: Empresa, Nome, Email, Nº Registos, Min Extra, Horas Extra (H:MM), 1º Início, Último Fim
+
+Sheet 2 “Detalhe YYYY-MM” (Linha a linha)
+
+Colunas: Empresa, Nome, Email, Dia, Início, Fim, Minutos, Horas (H:MM)
+
+Erros:
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION
+
+400 INVALID month (use YYYY-MM)
+
+500 DB_ERROR
+
+—
+API 5 — Rever pedidos decididos (approved/rejected) antes do export
+Método e URL: GET /api/overtime/sheets_review.php
+Objetivo: listar pedidos decididos (approved e/ou rejected) de um mês civil, para revisão; quando approved, mostra o registo em overtime e uma flag de consistência (minutos do pedido vs minutos do overtime).
+Permissão: sessão válida e permissão 5 (approve_overtime).
+
+Parâmetros (query):
+
+month (YYYY-MM, obrigatório)
+
+state (opcional): approved | rejected | both (default both)
+
+user_id (opcional)
+
+q (opcional): pesquisa por nome/email
+
+limit (opcional, default 200)
+
+offset (opcional, default 0)
+
+Resposta (200):
+
+ok=true
+
+filters com os filtros aplicados
+
+totals: approved (contagem), rejected (contagem), all (soma)
+
+items (lista), cada item com:
+
+id
+
+colaborador { id, nome, email, empresa }
+
+dia, hora_inicio, hora_fim, req_minutos
+
+estado (approved | rejected)
+
+decidido_por { id, nome } ou null
+
+decidido_em, comentario, ficheiro
+
+overtime (apenas se approved): { id, inicio, fim, minutos }
+
+consistencia (boolean ou null)
+
+Erros:
+
+401 UNAUTHENTICATED
+
+403 FORBIDDEN_PERMISSION
+
+400 INVALID_MONTH
+
+500 DB_ERROR
