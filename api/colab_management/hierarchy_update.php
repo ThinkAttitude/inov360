@@ -119,5 +119,10 @@ try {
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(['ok'=>false,'code'=>'SERVER_ERROR']); exit;
+    echo json_encode([
+        'ok' => false,
+        'code' => 'SERVER_ERROR',
+        'message' => $e->getMessage()
+    ]);
+    exit;
 }

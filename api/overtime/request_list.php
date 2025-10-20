@@ -52,7 +52,7 @@ $where  = [];
 $params = [];
 
 if ($state !== 'all') { $where[] = "ro.estado = :st"; $params[':st'] = $state; }
-if ($d1 && $d2) { $where[] = "ro.dia BETWEEN :d1 AND :d2"; $params[':d1']=$d1; $params[':d2']=$d2; }
+if ($d1 && $d2) { $where[] = "DATE(ro.data_inicio) BETWEEN :d1 AND :d2"; $params[':d1']=$d1; $params[':d2']=$d2; }
 if ($hasP5 && $userId > 0) { $where[] = "ro.user_id = :uid"; $params[':uid']=$userId; }
 
 /* pesquisa textual — placeholders distintos */
@@ -81,7 +81,7 @@ SELECT
   u.email              AS user_email,
   ro.data_inicio,
   ro.data_fim,
-  ro.dia,
+  DATE(ro.data_inicio) AS dia,
   TIMESTAMPDIFF(MINUTE, ro.data_inicio, ro.data_fim) AS minutos,
   ro.estado,
   ro.criado_em,
