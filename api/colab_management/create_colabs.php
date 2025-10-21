@@ -53,22 +53,45 @@ try {
     $created = [];
     $errors  = [];
 
-    $checkEmail = $pdo->prepare("SELECT 1 FROM `inov360`.`user` WHERE email=? LIMIT 1");
-    $checkCompany = $pdo->prepare("SELECT 1 FROM `inov360`.`company` WHERE id=? LIMIT 1");
-    $ins = $pdo->prepare("INSERT INTO `inov360`.`user` (name,email,password,company_id) VALUES (?,?,?,?)");
+    // prepared statements reutilizáveis
+    $checkEmail   = $pdo->prepare("SELECT 1 FROM inov360.`user` WHERE email=? LIMIT 1");
+    $checkCompany = $pdo->prepare("SELECT 1 FROM inov360.`company` WHERE id=? LIMIT 1");
+
+    $insUser = $pdo->prepare("
+        INSERT INTO inov360.`user` (name,email,password,company_id)
+        VALUES (?,?,?,?)
+    ");
+
+    $insFicha = $pdo->prepare("
+        INSERT INTO inov360.colaborador_dados (user_id, email)
+        VALUES (?, ?)
+        ON DUPLICATE KEY UPDATE email = VALUES(email)
+    ");
+
+    $insEmerg = $pdo->prepare("
+        INSERT INTO inov360.contactos_emergencia (user_id, nome, parentesco, telefone)
+        VALUES (?, '', '', '')
+        ON DUPLICATE KEY UPDATE user_id = user_id
+    ");
+
+    $insFinance = $pdo->prepare("
+        INSERT INTO inov360.finance_profiles (user_id, created_at, updated_at)
+        VALUES (?, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE updated_at = NOW()
+    ");
 
     foreach ($items as $i => $row) {
-        $nome  = trim((string)($row['nome'] ?? ''));
-        $email = trim((string)($row['email'] ?? ''));
-        $pass  = (string)($row['password'] ?? '');
+        $nome      = trim((string)($row['nome'] ?? ''));
+        $email     = trim((string)($row['email'] ?? ''));
+        $passPlain = (string)($row['password'] ?? '');
         $companyId = to_company_id($row['company_id'] ?? ($row['company'] ?? null));
 
+        // validações
         $errs = [];
         if ($nome === '') $errs[] = 'NOME_REQUIRED';
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errs[] = 'EMAIL_INVALID';
-        if (strlen($pass) < 6) $errs[] = 'PASSWORD_TOO_SHORT';
+        if (strlen($passPlain) < 6) $errs[] = 'PASSWORD_TOO_SHORT';
 
-        // se vier company_id, validar existência
         if (!is_null($companyId)) {
             $checkCompany->execute([$companyId]);
             if (!$checkCompany->fetchColumn()) $errs[] = 'COMPANY_NOT_FOUND';
@@ -76,22 +99,37 @@ try {
 
         if ($errs) { $errors[] = ['index'=>$i,'email'=>$email,'errors'=>$errs]; continue; }
 
+        // email único
         $checkEmail->execute([$email]);
         if ($checkEmail->fetchColumn()) {
             $errors[] = ['index'=>$i,'email'=>$email,'errors'=>['EMAIL_IN_USE']];
             continue;
         }
 
-        $hash = password_hash($pass, PASSWORD_DEFAULT);
+        $hash = password_hash($passPlain, PASSWORD_DEFAULT);
+
         try {
-            $ins->execute([$nome, $email, $hash, $companyId]); // $companyId pode ser NULL
+            $pdo->beginTransaction();
+
+            // 1) user
+            $insUser->execute([$nome, $email, $hash, $companyId]); // $companyId pode ser NULL
+            $newUserId = (int)$pdo->lastInsertId();
+
+            // 2) fichas associadas
+            $insFicha->execute([$newUserId, $email]);
+            $insEmerg->execute([$newUserId]);
+            $insFinance->execute([$newUserId]);
+
+            $pdo->commit();
+
             $created[] = [
-                'id'         => (int)$pdo->lastInsertId(),
+                'id'         => $newUserId,
                 'nome'       => $nome,
                 'email'      => $email,
                 'company_id' => $companyId
             ];
         } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
             $errors[] = ['index'=>$i,'email'=>$email,'errors'=>['INSERT_FAILED']];
         }
     }
