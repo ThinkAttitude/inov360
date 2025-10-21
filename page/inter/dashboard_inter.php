@@ -302,7 +302,7 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
     </main>
 </div>
 
-<script src="../../js/dashboard_inter.js?v=20250825"></script>
+<script src="../../js/legacy/dashboard_inter.js?v=20250825"></script>
 <script src="../../js/theme.js?v=20250825"></script>
 <script>
 // Logout confirmation (optional, lightweight)

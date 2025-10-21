@@ -3,7 +3,7 @@ session_start();
 
 // Verificar se está logado e tem permissão
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'opera') {
-    header('Location: ../page_login.php');
+    header('Location: ../login.html');
     exit();
 }
 ?>

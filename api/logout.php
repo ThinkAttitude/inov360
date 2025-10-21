@@ -8,5 +8,5 @@ $_SESSION = [];
 session_destroy();
 
 // Redireciona para a página de login
-header("Location: ../page/page_login.php"); // ou ajuste se o login estiver noutro local
+header("Location: ../page/login.html"); // ou ajuste se o login estiver noutro local
 exit;

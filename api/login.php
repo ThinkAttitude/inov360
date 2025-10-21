@@ -78,7 +78,7 @@ try {
     exit;
 
 } catch (Throwable $e) {
-    // opcional: error_log($e->getMessage());
+    error_log($e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Erro interno do servidor.']);
     exit;
 }
