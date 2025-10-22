@@ -24,10 +24,10 @@ async function apiFetch(endpoint, options = {}) {
     }
 }
 
-export async function login(username, password) {
+export async function login(email, password) {
     return apiFetch('login.php', {
         method: 'POST',
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ email, password })
     });
 }
 

@@ -1,3 +1,13 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user'])) {
+    header('Location: login.html');
+    exit;
+}
+
+$userName = $_SESSION['user']['name'] ?? '';
+?>
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -71,7 +81,7 @@
                         <polyline points="20,6 9,17 4,12"></polyline>
                     </svg>
                     Aprovar Férias/Ausências
-                </a>z
+                </a>
             </li>
             <li>
                 <a href="#" data-content="consulta_pedidos">
@@ -124,7 +134,7 @@
     <!-- Main content -->
     <main class="main-content" id="main-content">
         <div class="main-header">
-            <h2>Bem-vindo, !</h2>
+            <h2>Bem-vindo, <?= htmlspecialchars($userName) ?>!</h2>
             <p>Gerencie o sistema, aprove pedidos e supervisione todas as operações do RH360.</p>
         </div>
 

@@ -201,10 +201,14 @@ body{
 
 .main-header > div { flex:1; min-width:0; }
 .main-header h2{
-    margin:0 0 6px;
-    font-size:1.9rem;
-    font-weight:700;
-    color:var(--text-dark);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--navy-blue), var(--light-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 .main-header p{
     margin:0;
@@ -343,7 +347,7 @@ body{
 .error{ color:var(--danger); }
 .success{ color:var(--success); }
 
-/* content-section visibility helpers used by dashboard.html */
+/* content-section visibility helpers used by dashboard.php */
 .content-section{ display:block; width:100%; max-width:var(--max-page-width); margin:0 auto 18px; }
 .content-section[hidden]{ display:none !important; }
 

@@ -31,8 +31,15 @@ const handleSubmit = async (event) => {
     setLoadingState(true);
 
     try {
-        await login(emailInput.value, passwordInput.value);
-        window.location.href = 'dashboard.html';
+        const response = await login(emailInput.value, passwordInput.value);
+        if (response.success) {
+            const user = {
+                id: response.user.id,
+                name: response.user.name
+            }
+            sessionStorage.setItem('inov360_user', JSON.stringify(user));
+            window.location.href = 'dashboard.php';
+        }
     } catch (error) {
         showError(error.message);
     } finally {
