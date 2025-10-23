@@ -39,7 +39,7 @@ try {
     // lista base de users
     $stmt = $pdo->prepare("
         SELECT u.id, u.name, u.email
-        FROM `inov360`.`user` u
+        FROM `user` u
         $whereSql
         ORDER BY u.name ASC
         LIMIT $limit OFFSET $offset
@@ -50,7 +50,7 @@ try {
     if (!$users) { echo json_encode(['ok'=>true, 'total'=>0, 'items'=>[]]); exit; }
 
     // total para paginação
-    $stmtTot = $pdo->prepare("SELECT COUNT(*) FROM `inov360`.`user` u $whereSql");
+    $stmtTot = $pdo->prepare("SELECT COUNT(*) FROM `user` u $whereSql");
     $stmtTot->execute($params);
     $total = (int)$stmtTot->fetchColumn();
 
@@ -59,8 +59,8 @@ try {
     $in = implode(',', array_fill(0, count($ids), '?'));
     $permStmt = $pdo->prepare("
         SELECT up.user_id, p.id AS permission_id
-        FROM `inov360`.`user_permission` up
-        JOIN `inov360`.`permission` p ON p.id = up.permission_id
+        FROM `user_permission` up
+        JOIN `permission` p ON p.id = up.permission_id
         WHERE up.user_id IN ($in)
         ORDER BY p.id
     ");

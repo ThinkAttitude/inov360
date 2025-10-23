@@ -44,7 +44,7 @@ if (!$di || !$df || $di > $df) {
 /* ===== Confirmar que o colaborador tem responsáveis ativos/válidos ===== */
 $hasResp = $pdo->prepare("
   SELECT 1
-  FROM inov360.colaborador_responsaveis
+  FROM colaborador_responsaveis
   WHERE colaborador_id = ?
     AND ativo = 1
     AND (valido_desde IS NULL OR valido_desde <= NOW())
@@ -96,7 +96,7 @@ if (isset($_FILES['ficheiro']) && $_FILES['ficheiro']['error'] === UPLOAD_ERR_OK
 /* ===== Insert (sempre sem responsavel_id; fica NULL) ===== */
 try {
     $stmt = $pdo->prepare("
-      INSERT INTO inov360.pedidos_ferias
+      INSERT INTO pedidos_ferias
         (user_id, tipo, data_inicio, data_fim, justificacao, ficheiro, estado)
       VALUES
         (:u, :t, :di, :df, :j, :f, 'pendente')

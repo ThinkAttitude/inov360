@@ -4,22 +4,33 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-/* auth */
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+/* --------- auth --------- */
+if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']);
+    exit;
 }
-$role = $_SESSION['user']['role'] ?? '';
-if (!in_array($role, ['admin_rh','*'], true)) {
-    http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN"]); exit;
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(7, $perms, true)) {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'Do not have permission']);
+    exit;
 }
 
 /* input */
 $in = json_decode(file_get_contents('php://input'), true);
 if (!is_array($in)) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"BAD_JSON"]); exit; }
 $userId = (int)($in['user_id'] ?? 0);
-if ($userId <= 0) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_USER"]); exit; }
+if ($userId <= 0) {
+    http_response_code(400);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'MISSING_USER']);
+    exit;
+}
 
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

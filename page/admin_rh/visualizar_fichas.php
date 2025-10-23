@@ -31,7 +31,7 @@ try {
     <h2>Fichas de Colaboradores</h2>
     <p>Consulte informações detalhadas de todos os colaboradores da organização.</p>
     <div class="page-actions" style="margin-top:10px; display:flex; justify-content:flex-end;">
-        <a id="exportar_fichas_financeiras" href="/api/finance/profiles_export_all.php" target="_blank" rel="noopener" class="btn" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; border:none; padding:10px 14px; border-radius:10px; text-decoration:none; font-weight:600;">
+        <a id="exportar_fichas_financeiras" href="/api/employee_info/finance/profiles_export_all.php" target="_blank" rel="noopener" class="btn" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; border:none; padding:10px 14px; border-radius:10px; text-decoration:none; font-weight:600;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>

@@ -17,7 +17,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 /* ===== Confirmar que o colaborador tem responsáveis ativos/válidos ===== */
 $hasResp = $pdo->prepare("
   SELECT 1
-  FROM inov360.colaborador_responsaveis
+  FROM colaborador_responsaveis
   WHERE colaborador_id = ?
     AND ativo = 1
     AND (valido_desde IS NULL OR valido_desde <= NOW())
