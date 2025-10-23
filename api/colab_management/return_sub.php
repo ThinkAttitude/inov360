@@ -18,13 +18,13 @@ if ($selfId <= 0) {
 }
 
 /* --- DB --- */
-require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* Nome do colaborador: 'nome' ou 'name' */
 $nameCol = 'nome';
-try { $pdo->query("SELECT $nameCol FROM inov360.user LIMIT 1"); }
+try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
 /* --- Filtros opcionais --- */
@@ -68,8 +68,8 @@ SELECT
     cr.valido_ate,
     cr.created_by,
     cr.created_at
-FROM inov360.colaborador_responsaveis cr
-JOIN inov360.user u ON u.id = cr.colaborador_id
+FROM colaborador_responsaveis cr
+JOIN user u ON u.id = cr.colaborador_id
 $whereSql
 ORDER BY u.$nameCol ASC, u.id ASC
 ";

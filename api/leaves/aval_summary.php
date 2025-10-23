@@ -19,7 +19,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 /* ===== Verificar se o utilizador é responsável de alguém (subs) ===== */
 $hasSubsStmt = $pdo->prepare("
   SELECT 1
-  FROM inov360.colaborador_responsaveis cr
+  FROM colaborador_responsaveis cr
   WHERE cr.responsavel_id = ?
     AND cr.ativo = 1
     AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
@@ -37,8 +37,8 @@ if (!$hasSubs) {
 /* ===== Contar pedidos pendentes dos meus subs diretos ===== */
 $pendingStmt = $pdo->prepare("
   SELECT COUNT(*) AS c
-  FROM inov360.pedidos_ferias p
-  JOIN inov360.colaborador_responsaveis cr
+  FROM pedidos_ferias p
+  JOIN colaborador_responsaveis cr
     ON cr.colaborador_id = p.user_id
    AND cr.responsavel_id = ?
    AND cr.ativo = 1

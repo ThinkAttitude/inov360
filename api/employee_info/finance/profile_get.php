@@ -27,7 +27,7 @@ if ($userId <= 0) {
     exit;
 }
 
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../../includes/db.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

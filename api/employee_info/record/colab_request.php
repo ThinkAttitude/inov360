@@ -52,20 +52,20 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // 5) Impedir pedidos pendentes existentes (um de cada vez por tipo)
-    $qPending = $pdo->prepare("SELECT COUNT(*) FROM inov360.colaborador_edicoes WHERE user_id=? AND estado='pendente'");
+    $qPending = $pdo->prepare("SELECT COUNT(*) FROM colaborador_edicoes WHERE user_id=? AND estado='pendente'");
     $qPending->execute([$userId]);
     if ((int)$qPending->fetchColumn() > 0) {
         echo json_encode(['success'=>false,'error'=>'PENDING_EXISTS']); exit;
     }
 
-    $qPendingEm = $pdo->prepare("SELECT COUNT(*) FROM inov360.contactos_emergencia_edicoes WHERE user_id=? AND estado='pendente'");
+    $qPendingEm = $pdo->prepare("SELECT COUNT(*) FROM contactos_emergencia_edicoes WHERE user_id=? AND estado='pendente'");
     $qPendingEm->execute([$userId]);
     $hasPendingEm = ((int)$qPendingEm->fetchColumn() > 0);
 
     // 6) Buscar atuais para comparação
     $st = $pdo->prepare("
         SELECT email, telefone, morada, nib
-        FROM inov360.colaborador_dados
+        FROM colaborador_dados
         WHERE user_id=? LIMIT 1
     ");
     $st->execute([$userId]);
@@ -74,7 +74,7 @@ try {
 
     $st2 = $pdo->prepare("
         SELECT nome, parentesco, telefone
-        FROM inov360.contactos_emergencia
+        FROM contactos_emergencia
         WHERE user_id=? LIMIT 1
     ");
     $st2->execute([$userId]);
@@ -105,7 +105,7 @@ try {
     if ($chgProfile) {
         // Tabela: colaborador_edicoes (id, user_id, email, telefone, estado, avaliado_por, avaliado_em, criado_em, morada, nib)
         $ins = $pdo->prepare("
-            INSERT INTO inov360.colaborador_edicoes
+            INSERT INTO colaborador_edicoes
                 (user_id, email, telefone, morada, nib, estado)
             VALUES
                 (?, ?, ?, ?, ?, 'pendente')
@@ -122,7 +122,7 @@ try {
     if ($chgEmergency) {
         // Tabela: contactos_emergencia_edicoes (id, user_id, nome, parentesco, telefone, estado, criado_em, avaliado_por, avaliado_em)
         $insEm = $pdo->prepare("
-            INSERT INTO inov360.contactos_emergencia_edicoes
+            INSERT INTO contactos_emergencia_edicoes
                 (user_id, nome, parentesco, telefone, estado)
             VALUES
                 (?, ?, ?, ?, 'pendente')

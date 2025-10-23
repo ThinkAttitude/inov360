@@ -64,8 +64,8 @@ try {
             c.name      AS company_name,
             c.slug      AS company_slug,
             c.logo_path AS company_logo
-        FROM inov360.`user` u
-        LEFT JOIN inov360.`company` c ON c.id = u.company_id
+        FROM `user` u
+        LEFT JOIN `company` c ON c.id = u.company_id
         $sqlWhere
         ORDER BY $orderCol $orderDir, u.id ASC
         LIMIT :lim OFFSET :off
@@ -82,8 +82,8 @@ try {
     // Total para paginação
     $sqlCount = "
         SELECT COUNT(*)
-        FROM inov360.`user` u
-        LEFT JOIN inov360.`company` c ON c.id = u.company_id
+        FROM `user` u
+        LEFT JOIN `company` c ON c.id = u.company_id
         $sqlWhere
     ";
     $stmtCount = $pdo->prepare($sqlCount);

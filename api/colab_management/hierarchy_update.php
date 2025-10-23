@@ -53,7 +53,7 @@ try {
     // validar existência dos IDs envolvidos
     $idsToCheck = array_values(array_unique(array_merge([$userId], $responsaveis, $subs)));
     $ph = implode(',', array_fill(0, count($idsToCheck), '?'));
-    $q = $pdo->prepare("SELECT id FROM `inov360`.`user` WHERE id IN ($ph)");
+    $q = $pdo->prepare("SELECT id FROM `user` WHERE id IN ($ph)");
     $q->execute($idsToCheck);
     $found = array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
     $missing = array_values(array_diff($idsToCheck, $found));
@@ -62,12 +62,12 @@ try {
     $pdo->beginTransaction();
 
     // 1) Atualizar responsáveis do userId (substituir pelos fornecidos)
-    $pdo->prepare("DELETE FROM `inov360`.`colaborador_responsaveis` WHERE colaborador_id = ?")
+    $pdo->prepare("DELETE FROM `colaborador_responsaveis` WHERE colaborador_id = ?")
         ->execute([$userId]);
 
     if ($responsaveis) {
         $insResp = $pdo->prepare("
-            INSERT IGNORE INTO `inov360`.`colaborador_responsaveis` (colaborador_id, responsavel_id, created_by)
+            INSERT IGNORE INTO `colaborador_responsaveis` (colaborador_id, responsavel_id, created_by)
             VALUES (?, ?, ?)
         ");
         $createdBy = (int)($_SESSION['user']['id'] ?? 0);
@@ -83,7 +83,7 @@ try {
         if ($responsaveis) {
             $phr = implode(',', array_fill(0, count($responsaveis), '?'));
             $del = $pdo->prepare("
-                DELETE FROM `inov360`.`colaborador_responsaveis`
+                DELETE FROM `colaborador_responsaveis`
                 WHERE colaborador_id = ?
                   AND responsavel_id IN ($phr)
             ");
@@ -94,7 +94,7 @@ try {
 
         // adicionar ligações (sub -> userId)
         $insSub = $pdo->prepare("
-            INSERT IGNORE INTO `inov360`.`colaborador_responsaveis` (colaborador_id, responsavel_id, created_by)
+            INSERT IGNORE INTO `colaborador_responsaveis` (colaborador_id, responsavel_id, created_by)
             VALUES (?, ?, ?)
         ");
         $createdBy = (int)($_SESSION['user']['id'] ?? 0);

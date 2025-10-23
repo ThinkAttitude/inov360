@@ -46,7 +46,7 @@ try {
     }
 
     // user existe?
-    $q = $pdo->prepare("SELECT id FROM `inov360`.`user` WHERE id=? LIMIT 1");
+    $q = $pdo->prepare("SELECT id FROM `user` WHERE id=? LIMIT 1");
     $q->execute([$userId]);
     if (!$q->fetchColumn()) {
         http_response_code(400);
@@ -56,7 +56,7 @@ try {
     // validar permissões (se vier lista vazia, apagamos todas)
     if (!empty($permissionIds)) {
         $ph = implode(',', array_fill(0, count($permissionIds), '?'));
-        $q = $pdo->prepare("SELECT id FROM `inov360`.`permission` WHERE id IN ($ph)");
+        $q = $pdo->prepare("SELECT id FROM `permission` WHERE id IN ($ph)");
         $q->execute($permissionIds);
         $found = array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
         $missing = array_values(array_diff($permissionIds, $found));

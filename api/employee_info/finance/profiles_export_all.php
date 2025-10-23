@@ -19,8 +19,8 @@ if (!is_array($perms) || !in_array(7, $perms, true)) {
 }
 
 /* --------- deps & db --------- */
-require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../includes/db.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
