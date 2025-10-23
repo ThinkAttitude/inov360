@@ -1,5 +1,5 @@
 <?php
-// api/employee_info/record/view_all.php
+// api/employee_info/view_self.php
 declare(strict_types=1);
 
 session_start();
