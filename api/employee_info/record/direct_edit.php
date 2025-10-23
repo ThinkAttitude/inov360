@@ -158,7 +158,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // garantir user
-    $st = $pdo->prepare("SELECT id, email FROM inov360.`user` WHERE id=? LIMIT 1");
+    $st = $pdo->prepare("SELECT id, email FROM `user` WHERE id=? LIMIT 1");
     $st->execute([$userId]);
     $u = $st->fetch(PDO::FETCH_ASSOC);
     if (!$u) { http_response_code(404); echo json_encode(['success'=>false,'error'=>'USER_NOT_FOUND']); exit; }
@@ -167,7 +167,7 @@ try {
 
     // -------- colaborador_dados: UPDATE-first; senão INSERT
     if ($cdUpdates) {
-        $ex = $pdo->prepare("SELECT user_id FROM inov360.colaborador_dados WHERE user_id=? LIMIT 1");
+        $ex = $pdo->prepare("SELECT user_id FROM colaborador_dados WHERE user_id=? LIMIT 1");
         $ex->execute([$userId]);
         $exists = (bool)$ex->fetchColumn();
 
@@ -180,7 +180,7 @@ try {
             }
             if ($set) {
                 $params[] = $userId;
-                $sql = "UPDATE inov360.colaborador_dados SET ".implode(', ', $set)." WHERE user_id = ?";
+                $sql = "UPDATE colaborador_dados SET ".implode(', ', $set)." WHERE user_id = ?";
                 $pdo->prepare($sql)->execute($params);
             }
         } else {
@@ -194,7 +194,7 @@ try {
             foreach ($cdUpdates as $col => $val) {
                 $cols[] = "`$col`"; $vals[] = '?'; $params[] = $val;
             }
-            $sql = "INSERT INTO inov360.colaborador_dados (".implode(',', $cols).") VALUES (".implode(',', $vals).")";
+            $sql = "INSERT INTO colaborador_dados (".implode(',', $cols).") VALUES (".implode(',', $vals).")";
             $pdo->prepare($sql)->execute($params);
         }
 
@@ -204,11 +204,11 @@ try {
                 throw new RuntimeException('USER_EMAIL_EMPTY_NOT_ALLOWED');
             }
             if ($cdUpdates['email'] !== null) {
-                $chk = $pdo->prepare("SELECT id FROM inov360.`user` WHERE email=? AND id<>? LIMIT 1");
+                $chk = $pdo->prepare("SELECT id FROM `user` WHERE email=? AND id<>? LIMIT 1");
                 $chk->execute([$cdUpdates['email'], $userId]);
                 if ($chk->fetch()) throw new RuntimeException('EMAIL_IN_USE');
 
-                $pdo->prepare("UPDATE inov360.`user` SET email=? WHERE id=?")
+                $pdo->prepare("UPDATE `user` SET email=? WHERE id=?")
                     ->execute([$cdUpdates['email'], $userId]);
             }
         }
@@ -216,7 +216,7 @@ try {
 
     // -------- contactos_emergencia: UPDATE-first; senão INSERT
     if ($emUpdates) {
-        $ex = $pdo->prepare("SELECT id FROM inov360.contactos_emergencia WHERE user_id=? LIMIT 1");
+        $ex = $pdo->prepare("SELECT id FROM contactos_emergencia WHERE user_id=? LIMIT 1");
         $ex->execute([$userId]);
         $row = $ex->fetch(PDO::FETCH_ASSOC);
 
@@ -229,7 +229,7 @@ try {
             }
             if ($set) {
                 $params[] = $userId;
-                $sql = "UPDATE inov360.contactos_emergencia SET ".implode(', ', $set)." WHERE user_id = ?";
+                $sql = "UPDATE contactos_emergencia SET ".implode(', ', $set)." WHERE user_id = ?";
                 $pdo->prepare($sql)->execute($params);
             }
         } else {
@@ -239,7 +239,7 @@ try {
             foreach ($emUpdates as $col => $val) {
                 $cols[] = "`$col`"; $vals[] = '?'; $params[] = $val;
             }
-            $sql = "INSERT INTO inov360.contactos_emergencia (".implode(',', $cols).") VALUES (".implode(',', $vals).")";
+            $sql = "INSERT INTO contactos_emergencia (".implode(',', $cols).") VALUES (".implode(',', $vals).")";
             $pdo->prepare($sql)->execute($params);
         }
     }
@@ -247,11 +247,11 @@ try {
     $pdo->commit();
 
     // -------- devolver ficha atualizada
-    $stmtProfile = $pdo->prepare("SELECT * FROM inov360.colaborador_dados WHERE user_id=? LIMIT 1");
+    $stmtProfile = $pdo->prepare("SELECT * FROM colaborador_dados WHERE user_id=? LIMIT 1");
     $stmtProfile->execute([$userId]);
     $profile = $stmtProfile->fetch(PDO::FETCH_ASSOC) ?: null;
 
-    $stmtEmerg = $pdo->prepare("SELECT id, user_id, nome, parentesco, telefone FROM inov360.contactos_emergencia WHERE user_id=? LIMIT 1");
+    $stmtEmerg = $pdo->prepare("SELECT id, user_id, nome, parentesco, telefone FROM contactos_emergencia WHERE user_id=? LIMIT 1");
     $stmtEmerg->execute([$userId]);
     $emergency = $stmtEmerg->fetch(PDO::FETCH_ASSOC) ?: null;
 

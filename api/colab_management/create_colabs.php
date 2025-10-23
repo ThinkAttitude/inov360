@@ -54,28 +54,28 @@ try {
     $errors  = [];
 
     // prepared statements reutilizáveis
-    $checkEmail   = $pdo->prepare("SELECT 1 FROM inov360.`user` WHERE email=? LIMIT 1");
-    $checkCompany = $pdo->prepare("SELECT 1 FROM inov360.`company` WHERE id=? LIMIT 1");
+    $checkEmail   = $pdo->prepare("SELECT 1 FROM `user` WHERE email=? LIMIT 1");
+    $checkCompany = $pdo->prepare("SELECT 1 FROM `company` WHERE id=? LIMIT 1");
 
     $insUser = $pdo->prepare("
-        INSERT INTO inov360.`user` (name,email,password,company_id)
+        INSERT INTO `user` (name,email,password,company_id)
         VALUES (?,?,?,?)
     ");
 
     $insFicha = $pdo->prepare("
-        INSERT INTO inov360.colaborador_dados (user_id, email)
+        INSERT INTO colaborador_dados (user_id, email)
         VALUES (?, ?)
         ON DUPLICATE KEY UPDATE email = VALUES(email)
     ");
 
     $insEmerg = $pdo->prepare("
-        INSERT INTO inov360.contactos_emergencia (user_id, nome, parentesco, telefone)
+        INSERT INTO contactos_emergencia (user_id, nome, parentesco, telefone)
         VALUES (?, '', '', '')
         ON DUPLICATE KEY UPDATE user_id = user_id
     ");
 
     $insFinance = $pdo->prepare("
-        INSERT INTO inov360.finance_profiles (user_id, created_at, updated_at)
+        INSERT INTO finance_profiles (user_id, created_at, updated_at)
         VALUES (?, NOW(), NOW())
         ON DUPLICATE KEY UPDATE updated_at = NOW()
     ");

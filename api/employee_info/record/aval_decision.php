@@ -38,11 +38,11 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Buscar TODOS os pendentes do user (perfil e emergência)
-    $stmt = $pdo->prepare("SELECT * FROM inov360.colaborador_edicoes WHERE user_id=? AND estado='pendente' ORDER BY id ASC");
+    $stmt = $pdo->prepare("SELECT * FROM colaborador_edicoes WHERE user_id=? AND estado='pendente' ORDER BY id ASC");
     $stmt->execute([$userId]);
     $pendProfile = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmt = $pdo->prepare("SELECT * FROM inov360.contactos_emergencia_edicoes WHERE user_id=? AND estado='pendente' ORDER BY id ASC");
+    $stmt = $pdo->prepare("SELECT * FROM contactos_emergencia_edicoes WHERE user_id=? AND estado='pendente' ORDER BY id ASC");
     $stmt->execute([$userId]);
     $pendEmerg = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -55,13 +55,13 @@ try {
     if ($decision === 'reject') {
         if ($pendProfile) {
             $ids = implode(',', array_map('intval', array_column($pendProfile, 'id')));
-            $pdo->exec("UPDATE inov360.colaborador_edicoes
+            $pdo->exec("UPDATE colaborador_edicoes
                         SET estado='recusado', avaliado_por={$actorId}, avaliado_em=NOW()
                         WHERE id IN ($ids) AND estado='pendente'");
         }
         if ($pendEmerg) {
             $ids = implode(',', array_map('intval', array_column($pendEmerg, 'id')));
-            $pdo->exec("UPDATE inov360.contactos_emergencia_edicoes
+            $pdo->exec("UPDATE contactos_emergencia_edicoes
                         SET estado='recusado', avaliado_por={$actorId}, avaliado_em=NOW()
                         WHERE id IN ($ids) AND estado='pendente'");
         }
@@ -79,20 +79,20 @@ try {
 
         // Se houver email novo, garantir unicidade no user
         if (!empty($lastP['email'])) {
-            $chk = $pdo->prepare("SELECT id FROM inov360.`user` WHERE email=? AND id<>? LIMIT 1");
+            $chk = $pdo->prepare("SELECT id FROM `user` WHERE email=? AND id<>? LIMIT 1");
             $chk->execute([$lastP['email'], $userId]);
             if ($chk->fetch()) {
                 $pdo->rollBack();
                 http_response_code(409);
                 echo json_encode(['success'=>false,'error'=>'EMAIL_IN_USE']); exit;
             }
-            $updUser = $pdo->prepare("UPDATE inov360.`user` SET email=? WHERE id=?");
+            $updUser = $pdo->prepare("UPDATE `user` SET email=? WHERE id=?");
             $updUser->execute([$lastP['email'], $userId]);
         }
 
         // Aplicar na ficha principal
         $updProfile = $pdo->prepare("
-            UPDATE inov360.colaborador_dados
+            UPDATE colaborador_dados
             SET email    = COALESCE(?, email),
                 telefone = COALESCE(?, telefone),
                 morada   = COALESCE(?, morada),
@@ -109,7 +109,7 @@ try {
 
         // Aprovar TODOS os pendentes desse tipo
         $ids = implode(',', array_map('intval', array_column($pendProfile, 'id')));
-        $pdo->exec("UPDATE inov360.colaborador_edicoes
+        $pdo->exec("UPDATE colaborador_edicoes
                     SET estado='aprovado', avaliado_por={$actorId}, avaliado_em=NOW()
                     WHERE id IN ($ids) AND estado='pendente'");
     }
@@ -119,7 +119,7 @@ try {
         $lastE = end($pendEmerg);
 
         $updEm = $pdo->prepare("
-            UPDATE inov360.contactos_emergencia
+            UPDATE contactos_emergencia
             SET nome       = COALESCE(?, nome),
                 parentesco = COALESCE(?, parentesco),
                 telefone   = COALESCE(?, telefone)
@@ -133,7 +133,7 @@ try {
         ]);
 
         $ids = implode(',', array_map('intval', array_column($pendEmerg, 'id')));
-        $pdo->exec("UPDATE inov360.contactos_emergencia_edicoes
+        $pdo->exec("UPDATE contactos_emergencia_edicoes
                     SET estado='aprovado', avaliado_por={$actorId}, avaliado_em=NOW()
                     WHERE id IN ($ids) AND estado='pendente'");
     }

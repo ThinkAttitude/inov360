@@ -32,7 +32,7 @@ if ($action === 'reject' && ($comment === null || $comment === '')) {
 /* Carregar período */
 $q = $pdo->prepare("
   SELECT p.id, p.user_id, p.period_start, p.period_end, p.estado
-    FROM inov360.timesheet_periods p
+    FROM timesheet_periods p
    WHERE p.id = :id
    LIMIT 1
 ");
@@ -47,7 +47,7 @@ if ($P['estado'] !== 'submitted') {
 /* Gate de hierarquia (responsável ativo/válido AGORA) */
 $gate = $pdo->prepare("
   SELECT 1
-    FROM inov360.colaborador_responsaveis
+    FROM colaborador_responsaveis
    WHERE colaborador_id = :target
      AND responsavel_id  = :me
      AND ativo = 1
@@ -76,7 +76,7 @@ try {
 
     // Atualiza período
     $upd = $pdo->prepare("
-        UPDATE inov360.timesheet_periods
+        UPDATE timesheet_periods
            SET estado      = :e,
                decidido_por= :dp,
                decidido_em = NOW(),
@@ -92,7 +92,7 @@ try {
 
     // Atualiza eventos submetidos no intervalo (só WORK/ONCALL/KM)
     $evt = $pdo->prepare("
-        UPDATE inov360.eventos
+        UPDATE eventos
            SET status    = :st,
                source    = 'approval',
                updated_at= NOW()

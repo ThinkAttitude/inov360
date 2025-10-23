@@ -36,7 +36,7 @@ $avaliadorId = (int)$_SESSION['user']['id'];
 
 try {
     /* ===== Carregar pedido ===== */
-    $q = $pdo->prepare("SELECT * FROM inov360.pedidos_ferias WHERE id = ? LIMIT 1");
+    $q = $pdo->prepare("SELECT * FROM pedidos_ferias WHERE id = ? LIMIT 1");
     $q->execute([$pedidoId]);
     $ped = $q->fetch(PDO::FETCH_ASSOC);
     if (!$ped) {
@@ -55,7 +55,7 @@ try {
     /* ===== NOVO: validar hierarquia (sou responsável do colaborador?) ===== */
     $chk = $pdo->prepare("
         SELECT 1
-          FROM inov360.colaborador_responsaveis
+          FROM colaborador_responsaveis
          WHERE colaborador_id = ?
            AND responsavel_id = ?
            AND ativo = 1
@@ -75,7 +75,7 @@ try {
     /* ===== Atualizar estado do pedido ===== */
     $novoEstado = $acao === 'aprovar' ? 'aprovado' : 'rejeitado';
     $upd = $pdo->prepare("
-        UPDATE inov360.pedidos_ferias
+        UPDATE pedidos_ferias
            SET estado = :e,
                decidido_por = :dp,
                comentario = COALESCE(:c, comentario)
@@ -90,7 +90,7 @@ try {
 
     /* ===== Eventos (mantém a tua lógica antiga) ===== */
     // limpa qualquer evento anterior associado ao pedido
-    $pdo->prepare("DELETE FROM inov360.eventos WHERE leave_request_id = ?")
+    $pdo->prepare("DELETE FROM eventos WHERE leave_request_id = ?")
         ->execute([$pedidoId]);
 
     $eventoLeave = null;
@@ -99,7 +99,7 @@ try {
     if ($acao === 'aprovar') {
         // criar LEAVE para o colaborador
         $ins = $pdo->prepare("
-            INSERT INTO inov360.eventos
+            INSERT INTO eventos
               (user_id, titulo, tipo, inicio, fim, minutos, km, status, source, leave_request_id, period_id, created_at, updated_at)
             VALUES
               (:u, :title, 'LEAVE',
@@ -116,7 +116,7 @@ try {
 
         // zerar minutos de WORK/OVERTIME/ONCALL que colidam
         $zero = $pdo->prepare("
-            UPDATE inov360.eventos
+            UPDATE eventos
                SET minutos = CASE WHEN tipo IN ('WORK','OVERTIME','ONCALL') THEN 0 ELSE minutos END,
                    updated_at = NOW()
              WHERE user_id = :u
@@ -132,12 +132,12 @@ try {
 
         // (opcional legacy) criar SUBSTITUTION se o pedido tiver responsavel_id preenchido
         if (!empty($ped['responsavel_id'])) {
-            $uStmt = $pdo->prepare("SELECT `name` FROM inov360.`user` WHERE id = ? LIMIT 1");
+            $uStmt = $pdo->prepare("SELECT `name` FROM `user` WHERE id = ? LIMIT 1");
             $uStmt->execute([(int)$ped['user_id']]);
             $reqNome = (string)($uStmt->fetchColumn() ?: 'utilizador');
 
             $insSub = $pdo->prepare("
-                INSERT INTO inov360.eventos
+                INSERT INTO eventos
                   (user_id, titulo, tipo, inicio, fim, minutos, km, status, source, leave_request_id, period_id, created_at, updated_at)
                 VALUES
                   (:u, :title, 'SUBSTITUTION',

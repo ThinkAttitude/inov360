@@ -34,8 +34,8 @@ try {
     $stmtUser = $pdo->prepare("
         SELECT u.id, u.name, u.email, u.company_id,
                c.name AS company_name, c.slug AS company_slug, c.logo_path AS company_logo
-        FROM inov360.`user` u
-        LEFT JOIN inov360.`company` c ON c.id = u.company_id
+        FROM `user` u
+        LEFT JOIN `company` c ON c.id = u.company_id
         WHERE u.id = ?
         LIMIT 1
     ");
@@ -49,7 +49,7 @@ try {
     // Ficha de colaborador
     $stmtProfile = $pdo->prepare("
         SELECT *
-        FROM inov360.colaborador_dados
+        FROM colaborador_dados
         WHERE user_id = ?
         LIMIT 1
     ");
@@ -59,7 +59,7 @@ try {
     // Contacto de emergência
     $stmtEmerg = $pdo->prepare("
         SELECT id, user_id, nome, parentesco, telefone
-        FROM inov360.contactos_emergencia
+        FROM contactos_emergencia
         WHERE user_id = ?
         LIMIT 1
     ");

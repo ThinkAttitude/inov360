@@ -39,11 +39,11 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* Coluna de nome (nome|name) */
 $nameCol = 'nome';
-try { $pdo->query("SELECT $nameCol FROM inov360.user LIMIT 1"); }
+try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
 /* Utilizador alvo */
-$uq = $pdo->prepare("SELECT id, $nameCol AS name FROM inov360.user WHERE id=:id LIMIT 1");
+$uq = $pdo->prepare("SELECT id, $nameCol AS name FROM user WHERE id=:id LIMIT 1");
 $uq->execute([':id'=>$userId]);
 $u = $uq->fetch(PDO::FETCH_ASSOC);
 if (!$u) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"USER_NOT_FOUND"]); exit; }
@@ -51,7 +51,7 @@ if (!$u) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"USER_
 /* Gate de hierarquia (responsável ativo/válido) */
 $gate = $pdo->prepare("
   SELECT 1
-    FROM inov360.colaborador_responsaveis
+    FROM colaborador_responsaveis
    WHERE colaborador_id = :target
      AND responsavel_id  = :me
      AND ativo = 1
@@ -85,7 +85,7 @@ while ($cursor <= $last) {
 /* Período (se existir) — exatamente as mesmas fronteiras 25..24 */
 $p = $pdo->prepare("
   SELECT id, estado, period_start AS start, period_end AS end, created_at
-    FROM inov360.timesheet_periods
+    FROM timesheet_periods
    WHERE user_id=:u AND period_start=:s AND period_end=:e
    LIMIT 1
 ");
@@ -98,7 +98,7 @@ $agg = $pdo->prepare("
          SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
          SUM(CASE WHEN tipo='ONCALL'   THEN minutos ELSE 0 END) AS oncallMin,
          SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km
-    FROM inov360.eventos
+    FROM eventos
    WHERE user_id=:u
      AND DATE(inicio) BETWEEN :s AND :e
      AND tipo IN ('WORK','ONCALL','KM')
@@ -115,7 +115,7 @@ foreach ($agg as $row) {
 /* Status por tipo/dia */
 $sts = $pdo->prepare("
   SELECT DATE(inicio) AS dia, tipo, status
-    FROM inov360.eventos
+    FROM eventos
    WHERE user_id=:u
      AND DATE(inicio) BETWEEN :s AND :e
      AND tipo IN ('WORK','ONCALL','KM')
@@ -129,7 +129,7 @@ foreach ($sts as $r) {
 /* LEAVE/SUBSTITUTION cruzando o período 25..24 */
 $leaveQ = $pdo->prepare("
   SELECT id, titulo, inicio, fim, leave_request_id, tipo
-    FROM inov360.eventos
+    FROM eventos
    WHERE user_id=:u
      AND tipo IN ('LEAVE','SUBSTITUTION')
      AND DATE(fim)   >= :s

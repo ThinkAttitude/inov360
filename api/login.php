@@ -34,8 +34,8 @@ try {
     // 2) Permissões (array de IDs)
     $stmtPerm = $conn->prepare("
         SELECT p.id
-        FROM inov360.user_permission up
-        JOIN inov360.permission p ON p.id = up.permission_id
+        FROM user_permission up
+        JOIN permission p ON p.id = up.permission_id
         WHERE up.user_id = ?
     ");
     $stmtPerm->execute([$user["id"]]);
@@ -44,7 +44,7 @@ try {
     // 3) Responsáveis (array de IDs)
     $stmtResp = $conn->prepare("
         SELECT cr.responsavel_id
-        FROM inov360.colaborador_responsaveis cr
+        FROM colaborador_responsaveis cr
         WHERE cr.colaborador_id = ?
           AND cr.ativo = 1
           AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())

@@ -19,7 +19,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 /* ===== Verificar se tenho subs diretos ===== */
 $hasSubsStmt = $pdo->prepare("
   SELECT 1
-  FROM inov360.colaborador_responsaveis cr
+  FROM colaborador_responsaveis cr
   WHERE cr.responsavel_id = ?
     AND cr.ativo = 1
     AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
@@ -54,12 +54,12 @@ $sqlTpl = fn(string $nameCol) => "
     p.criado_em,
     p.decidido_por,
     du.$nameCol AS decidido_por_nome
-  FROM inov360.pedidos_ferias p
-  JOIN inov360.colaborador_responsaveis cr
+  FROM pedidos_ferias p
+  JOIN colaborador_responsaveis cr
     ON cr.colaborador_id = p.user_id
-  JOIN inov360.user u
+  JOIN user u
     ON u.id = p.user_id
-  LEFT JOIN inov360.user du
+  LEFT JOIN user du
     ON du.id = p.decidido_por
   WHERE $whereSql
   ORDER BY p.criado_em DESC, p.id DESC

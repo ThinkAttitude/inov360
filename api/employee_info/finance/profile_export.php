@@ -27,8 +27,8 @@ if ($userId <= 0) {
 }
 
 /* --------- deps & db --------- */
-require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../includes/db.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;

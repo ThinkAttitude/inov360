@@ -30,7 +30,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 // confirmar se tem pelo menos um sub (ativo/válido)
 $hasSubs = $pdo->prepare("
   SELECT 1
-    FROM inov360.colaborador_responsaveis cr
+    FROM colaborador_responsaveis cr
    WHERE cr.responsavel_id = :me
      AND cr.ativo = 1
      AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
@@ -44,7 +44,7 @@ if (!$hasSubs->fetchColumn()) {
 
 // descobrir coluna de nome (nome|name)
 $nameCol = 'nome';
-try { $pdo->query("SELECT $nameCol FROM inov360.user LIMIT 1"); }
+try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
 catch(Throwable $e){ $nameCol = 'name'; }
 
 // montar WHERE
@@ -70,9 +70,9 @@ $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 $sql = "
   SELECT
     p.id, p.user_id, p.period_start, p.period_end, p.estado, p.created_at, u.$nameCol AS user_name
-  FROM inov360.timesheet_periods p
-  JOIN inov360.user u ON u.id = p.user_id
-  JOIN inov360.colaborador_responsaveis cr
+  FROM timesheet_periods p
+  JOIN user u ON u.id = p.user_id
+  JOIN colaborador_responsaveis cr
        ON cr.colaborador_id = p.user_id
       AND cr.responsavel_id = :me
       AND cr.ativo = 1
@@ -91,7 +91,7 @@ $sumQ = $pdo->prepare("
     SUM(CASE WHEN tipo='WORK'     THEN minutos ELSE 0 END) AS workMin,
     SUM(CASE WHEN tipo='KM'       THEN km      ELSE 0 END) AS km,
     COUNT(DISTINCT CASE WHEN tipo='WORK' AND minutos>0 THEN DATE(inicio) END) AS workedDays
-  FROM inov360.eventos
+  FROM eventos
   WHERE user_id=:u
     AND DATE(inicio) BETWEEN :s AND :e
     AND tipo IN ('WORK','KM')

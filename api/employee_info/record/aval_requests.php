@@ -49,18 +49,18 @@ try {
         ee.criado_em  AS emergency_created_at
 
       FROM (
-        SELECT user_id FROM inov360.colaborador_edicoes WHERE estado='pendente'
+        SELECT user_id FROM colaborador_edicoes WHERE estado='pendente'
         UNION
-        SELECT user_id FROM inov360.contactos_emergencia_edicoes WHERE estado='pendente'
+        SELECT user_id FROM contactos_emergencia_edicoes WHERE estado='pendente'
       ) uw
-      JOIN inov360.`user` u ON u.id = uw.user_id
+      JOIN `user` u ON u.id = uw.user_id
 
       LEFT JOIN (
         SELECT ce1.*
-        FROM inov360.colaborador_edicoes ce1
+        FROM colaborador_edicoes ce1
         JOIN (
           SELECT user_id, MAX(id) AS max_id
-          FROM inov360.colaborador_edicoes
+          FROM colaborador_edicoes
           WHERE estado='pendente'
           GROUP BY user_id
         ) m ON m.user_id = ce1.user_id AND m.max_id = ce1.id
@@ -68,10 +68,10 @@ try {
 
       LEFT JOIN (
         SELECT ee1.*
-        FROM inov360.contactos_emergencia_edicoes ee1
+        FROM contactos_emergencia_edicoes ee1
         JOIN (
           SELECT user_id, MAX(id) AS max_id
-          FROM inov360.contactos_emergencia_edicoes
+          FROM contactos_emergencia_edicoes
           WHERE estado='pendente'
           GROUP BY user_id
         ) m ON m.user_id = ee1.user_id AND m.max_id = ee1.id
