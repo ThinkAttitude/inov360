@@ -544,7 +544,7 @@ CREATE TABLE `permission` (
 --
 
 INSERT INTO `permission` (`id`, `code`, `label`) VALUES
-(1, 'colab_managment', 'Criar colabs, dar update de permissões e hierarquia'),
+(1, 'collab_management', 'Criar colabs, dar update de permissões e hierarquia'),
 (2, 'direct_leave', 'Adicionar falta direta a colab'),
 (3, 'periods_info', 'Ver e exportar todos os eventos de colabs'),
 (4, 'request_overtime', 'Pedir horas extra'),

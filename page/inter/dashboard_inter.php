@@ -1,9 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "inter") {
-    echo "<p>Acesso negado.</p>";
-    exit;
-}
+
 // Prevent caching of this dynamic HTML to avoid showing stale company/theme
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');

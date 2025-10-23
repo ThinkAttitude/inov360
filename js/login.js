@@ -19,6 +19,7 @@ const setLoadingState = (isLoading) => {
     submitButton.textContent = isLoading ? 'Logging in...' : 'Login';
 };
 
+// TODO: Implement a better error display mechanism
 const showError = (message) => {
     console.error(message);
 };
@@ -37,7 +38,6 @@ const handleSubmit = async (event) => {
                 id: response.user.id,
                 name: response.user.name
             }
-            sessionStorage.setItem('inov360_user', JSON.stringify(user));
             window.location.href = 'dashboard.php';
         }
     } catch (error) {

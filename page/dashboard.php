@@ -82,8 +82,8 @@ $userName = $_SESSION['user']['name'] ?? '';
                     Pedidos de Férias/Ausências
                 </a>
             </li>
-            <li>
-                <a href="#" data-content="ficha_colab">
+            <li data-anchor="ficha_collab">
+                <a href="#" data-content="ficha_collab">
                     <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -97,14 +97,6 @@ $userName = $_SESSION['user']['name'] ?? '';
             </li>
         </ul>
         <div class="sidebar-footer">
-            <div class="role-indicator" id="roleIndicator">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                    <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <span id="roleLabel">Administrador</span>
-            </div>
-
             <a href="#" id="logoutBtn" class="logout-btn">Terminar Sessão</a>
         </div>
     </nav>
@@ -166,7 +158,7 @@ $userName = $_SESSION['user']['name'] ?? '';
                     </svg>
                 </a>
             </div>
-            <div class="welcome-card" id="ficha_collab">
+            <div class="welcome-card" data-anchor="ficha_collab">
                 <div class="card-icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                          stroke-linecap="round" stroke-linejoin="round">
@@ -179,7 +171,7 @@ $userName = $_SESSION['user']['name'] ?? '';
                 </div>
                 <h3>A Minha Ficha</h3>
                 <p>Visualize e edite a sua própria ficha pessoal de colaborador.</p>
-                <a href="#" class="card-link" data-content="ficha_colab">
+                <a href="#" class="card-link" data-content="ficha_collab">
                     Ver Ficha
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                          stroke-linecap="round" stroke-linejoin="round">
