@@ -1,0 +1,407 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Overtime
+  version: 1.0.0
+  description: Pedidos e aprovações de horas extra + exportações/revisões.
+servers:
+  - url: /api
+tags:
+  - name: overtime
+    description: Operações de horas extra (pedidos, aprovação, listagens, exportação)
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    OkError:
+      type: object
+      required: [ok]
+      properties:
+        ok:   { type: boolean, example: false }
+        code: { type: string, nullable: true, example: UNAUTHENTICATED }
+        msg:  { type: string, nullable: true }
+
+    YMD:
+      type: string
+      format: date
+      example: "2025-07-15"
+
+    HHMM:
+      type: string
+      pattern: '^(?:[01]\d|2[0-3]):[0-5]\d$'
+      example: "18:30"
+
+    OvertimeState:
+      type: string
+      enum: [requested, approved, rejected, cancelled]
+
+    # -------- Request (create) --------
+    RequestOvertimeRequest:
+      type: object
+      required: [user_id, dia, hora_inicio, hora_fim, justificacao]
+      properties:
+        user_id:       { type: integer, example: 42 }
+        dia:           { $ref: '#/components/schemas/YMD' }
+        hora_inicio:   { $ref: '#/components/schemas/HHMM' }
+        hora_fim:      { $ref: '#/components/schemas/HHMM' }
+        justificacao:  { type: string, example: "Entrega crítica" }
+        ficheiro:
+          type: string
+          nullable: true
+          description: Referência/URL (texto). **Não** recebe binário.
+
+    RequestOvertimeResponse:
+      type: object
+      required: [ok, request]
+      properties:
+        ok: { type: boolean, example: true }
+        request:
+          type: object
+          required: [id,user_id,dia,hora_inicio,hora_fim,data_inicio,data_fim,minutos,estado,criado_em,criado_por]
+          properties:
+            id:           { type: integer }
+            user_id:      { type: integer }
+            dia:          { $ref: '#/components/schemas/YMD' }
+            hora_inicio:  { $ref: '#/components/schemas/HHMM' }
+            hora_fim:     { $ref: '#/components/schemas/HHMM' }
+            data_inicio:  { type: string, example: "2025-07-15 18:00:00" }
+            data_fim:     { type: string, example: "2025-07-15 20:00:00" }
+            minutos:      { type: integer, example: 120 }
+            estado:       { $ref: '#/components/schemas/OvertimeState' }
+            criado_em:    { type: string, example: "2025-07-15 20:05:12" }
+            criado_por:   { type: integer, example: 7 }
+
+    # -------- Approve / Reject --------
+    ApproveOvertimeRequest:
+      type: object
+      required: [request_id, decision]
+      properties:
+        request_id: { type: integer, example: 123 }
+        decision:
+          type: string
+          enum: [approve, reject]
+        comentario:
+          type: string
+          nullable: true
+          description: Opcional; recomendado ao rejeitar.
+
+    ApproveOvertimeResponse:
+      type: object
+      required: [ok, decision, request]
+      properties:
+        ok:       { type: boolean, example: true }
+        decision: { type: string, enum: [approved, rejected] }
+        request:
+          type: object
+          required: [id,user_id,dia,data_inicio,data_fim,estado,decidido_por,decidido_em]
+          properties:
+            id:           { type: integer }
+            user_id:      { type: integer }
+            dia:          { $ref: '#/components/schemas/YMD' }
+            data_inicio:  { type: string }
+            data_fim:     { type: string }
+            estado:       { $ref: '#/components/schemas/OvertimeState' }
+            decidido_por: { type: integer }
+            decidido_em:  { type: string }
+            comentario:   { type: string, nullable: true }
+        overtime:
+          type: object
+          nullable: true
+          properties:
+            id:         { type: integer }
+            user_id:    { type: integer }
+            dia:        { $ref: '#/components/schemas/YMD' }
+            inicio:     { type: string }
+            fim:        { type: string }
+            minutos:    { type: integer }
+            request_id: { type: integer }
+
+    # -------- Listagem de pedidos --------
+    OvertimeRequestItem:
+      type: object
+      properties:
+        id:        { type: integer }
+        colaborador:
+          type: object
+          properties:
+            id:    { type: integer }
+            nome:  { type: string }
+            email: { type: string }
+        dia:          { $ref: '#/components/schemas/YMD' }
+        hora_inicio:  { $ref: '#/components/schemas/HHMM' }
+        hora_fim:     { $ref: '#/components/schemas/HHMM' }
+        data_inicio:  { type: string }
+        data_fim:     { type: string }
+        minutos:      { type: integer }
+        estado:       { $ref: '#/components/schemas/OvertimeState' }
+        isApproved:   { type: boolean }
+        criado_em:    { type: string }
+        criado_por:
+          type: object
+          properties:
+            id:   { type: integer }
+            nome: { type: string }
+        decidido_por:
+          type: object
+          nullable: true
+          properties:
+            id:   { type: integer }
+            nome: { type: string }
+        decidido_em:  { type: string, nullable: true }
+        comentario:   { type: string, nullable: true }
+        ficheiro:     { type: string, nullable: true }
+
+    RequestListResponse:
+      type: object
+      required: [ok, filters, total, items]
+      properties:
+        ok: { type: boolean, example: true }
+        filters:
+          type: object
+          properties:
+            state:   { type: string, enum: [requested, approved, rejected, cancelled, all] }
+            month:   { type: string, nullable: true, example: "2025-07" }
+            user_id: { type: integer, nullable: true }
+            q:       { type: string, nullable: true }
+            limit:   { type: integer }
+            offset:  { type: integer }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OvertimeRequestItem' }
+
+    # -------- Sheets review --------
+    SheetsReviewItem:
+      type: object
+      properties:
+        id:          { type: integer }
+        colaborador:
+          type: object
+          properties:
+            id:      { type: integer }
+            nome:    { type: string }
+            email:   { type: string }
+            empresa: { type: string, nullable: true }
+        dia:          { $ref: '#/components/schemas/YMD' }
+        hora_inicio:  { $ref: '#/components/schemas/HHMM' }
+        hora_fim:     { $ref: '#/components/schemas/HHMM' }
+        req_minutos:  { type: integer }
+        estado:       { type: string, enum: [approved, rejected] }
+        decidido_por:
+          type: object
+          nullable: true
+          properties:
+            id:   { type: integer }
+            nome: { type: string }
+        decidido_em:  { type: string, nullable: true }
+        comentario:   { type: string, nullable: true }
+        ficheiro:     { type: string, nullable: true }
+        overtime:
+          type: object
+          nullable: true
+          properties:
+            id:      { type: integer }
+            inicio:  { type: string }
+            fim:     { type: string }
+            minutos: { type: integer }
+        consistencia:
+          type: boolean
+          nullable: true
+          description: true se minutos do overtime == minutos do pedido (quando aprovado)
+
+    SheetsReviewResponse:
+      type: object
+      required: [ok, filters, totals, items]
+      properties:
+        ok: { type: boolean, example: true }
+        filters:
+          type: object
+          properties:
+            month:   { type: string, example: "2025-07" }
+            state:   { type: string, enum: [approved, rejected, both] }
+            user_id: { type: integer, nullable: true }
+            q:       { type: string, nullable: true }
+            limit:   { type: integer }
+            offset:  { type: integer }
+        totals:
+          type: object
+          properties:
+            approved: { type: integer }
+            rejected: { type: integer }
+            all:      { type: integer }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/SheetsReviewItem' }
+
+paths:
+
+  /lovertime/request_overtime.php:
+    post:
+      tags: [overtime]
+      summary: Criar pedido de horas extra (granularidade 15 min; máx. 12h)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RequestOvertimeRequest' }
+            examples:
+              sample:
+                value:
+                  user_id: 42
+                  dia: "2025-07-15"
+                  hora_inicio: "18:00"
+                  hora_fim: "20:30"
+                  justificacao: "Entrega de projeto"
+                  ficheiro: null
+      responses:
+        '200':
+          description: Pedido criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestOvertimeResponse' }
+        '400':
+          description: MISSING_FIELDS | INVALID_DATE | INVALID_TIME_FORMAT | INVALID_TIME_RANGE | INVALID_GRANULARITY_15MIN | MAX_HOURS_EXCEEDED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '403': { description: FORBIDDEN_PERMISSION, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '404': { description: USER_NOT_FOUND, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '409': { description: OVERTIME_CLOSED | DUPLICATE_REQUEST_OVERLAP | ALREADY_HAS_APPROVED_OVERTIME, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '500': { description: DB_ERROR, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+
+  /lovertime/approve_overtime.php:
+    post:
+      tags: [overtime]
+      summary: Aprovar ou rejeitar um pedido de horas extra
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ApproveOvertimeRequest' }
+      responses:
+        '200':
+          description: Decisão aplicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ApproveOvertimeResponse' }
+        '400': { description: MISSING_FIELDS, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '403': { description: FORBIDDEN_PERMISSION, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '404': { description: REQUEST_NOT_FOUND, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '409':
+          description: OVERTIME_CLOSED | ALREADY_DECIDED | OVERTIME_CONFLICT
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '500': { description: DB_ERROR, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+
+  /lovertime/request_list.php:
+    get:
+      tags: [overtime]
+      summary: Listar pedidos de horas extra (paginado, filtros, escopos por permissão)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: state
+          schema: { type: string, enum: [requested, approved, rejected, cancelled, all], default: all }
+        - in: query
+          name: month
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: "2025-07" }
+        - in: query
+          name: user_id
+          schema: { type: integer, minimum: 1 }
+          description: Requer permissão 5; caso contrário é ignorado/403.
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Pesquisa por nome/email do colaborador/criador.
+        - in: query
+          name: limit
+          schema: { type: integer, default: 200, minimum: 1 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RequestListResponse' }
+        '400': { description: INVALID_MONTH_FORMAT, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '403':
+          description: FORBIDDEN_PERMISSION | FORBIDDEN_SCOPE
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  /lovertime/sheets_review.php:
+    get:
+      tags: [overtime]
+      summary: Revisão de pedidos decididos (approved/rejected) com ligação ao overtime
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: "2025-07" }
+        - in: query
+          name: state
+          schema: { type: string, enum: [approved, rejected, both], default: both }
+        - in: query
+          name: user_id
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 200, minimum: 1 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SheetsReviewResponse' }
+        '400': { description: INVALID_MONTH, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '403': { description: FORBIDDEN_PERMISSION, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+
+  /lovertime/sheets_export.php:
+    get:
+      tags: [overtime]
+      summary: Exporta Excel (resumo + detalhe) das horas extra do mês
+      description: |
+        Aceita `user_ids` como array (`user_ids=1&user_ids=2`) **ou** CSV (`user_ids=1,2`).
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: "2025-07" }
+        - in: query
+          name: user_ids
+          schema:
+            type: array
+            items: { type: integer, minimum: 1 }
+            style: form
+            explode: true
+          description: IDs filtrados. Também aceita CSV simples.
+      responses:
+        '200':
+          description: Ficheiro Excel
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: INVALID month (use YYYY-MM)
+        '401':
+          description: UNAUTHENTICATED
+        '403':
+          description: FORBIDDEN_PERMISSION

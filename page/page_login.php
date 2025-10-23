@@ -28,7 +28,7 @@
       </div>
 
       <!-- Login Form -->
-      <form id="loginForm" class="login-form" action="../api/login.php" method="POST">
+      <form id="loginForm" class="login-form" action="../api/auth/login.php" method="POST">
         <div class="form-group">
           <label for="email">Email</label>
           <div class="input-wrapper">

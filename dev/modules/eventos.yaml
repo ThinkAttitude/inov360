@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Eventos
+  version: 1.0.0
+  description: Endpoints de eventos pessoais (férias, baixas, licenças, etc.)
+tags:
+  - name: eventos
+    description: Listagem de eventos do utilizador autenticado
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    ErrorString:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: "Sessão não iniciada."
+
+    EventItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        title:
+          type: string
+          example: "Férias"
+        start:
+          type: string
+          format: date
+          example: "2025-08-01"
+        end:
+          type: string
+          format: date
+          description: >
+            Data final **exclusiva** (calendários tipo FullCalendar). No backend é `data_fim + 1 dia`.
+          example: "2025-08-16"
+        color:
+          type: string
+          description: Cor hex calculada a partir do `tipo` (fallback `#343a40`).
+          example: "#28a745"
+
+paths:
+  /eventos/listar_eventos.php:
+    get:
+      tags: [eventos]
+      summary: Lista os eventos do utilizador autenticado
+      description: |
+        Devolve os eventos do utilizador da sessão (`operador_id = $_SESSION['user']['id']`).
+        O campo `end` é enviado como **data_fim + 1 dia** para compatibilidade com calendários
+        que usam fim exclusivo.
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Array de eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventItem'
+              examples:
+                exemplo:
+                  value:
+                    - id: 10
+                      title: "Férias"
+                      start: "2025-07-01"
+                      end: "2025-07-08"
+                      color: "#28a745"
+                    - id: 11
+                      title: "Consulta médica"
+                      start: "2025-07-15"
+                      end: "2025-07-16"
+                      color: "#20c997"
+        '401':
+          description: Sessão não iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '500':
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'

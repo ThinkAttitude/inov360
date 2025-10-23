@@ -1,0 +1,695 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Calendar Module
+  version: 1.0.0
+  description: Endpoints de calendário (work/oncall/km, grelha mensal e submissões)
+tags:
+  - name: calendar
+    description: Operações de calendário e timesheets
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    Error:
+      type: object
+      required: [ok, code]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        code:
+          type: string
+          example: UNAUTHENTICATED
+        msg:
+          type: string
+          nullable: true
+
+    DateRange:
+      type: object
+      required: [start, end]
+      properties:
+        start:
+          type: string
+          format: date
+          example: "2025-03-01"
+        end:
+          type: string
+          format: date
+          example: "2025-03-31"
+
+    BatchApplyRequest:
+      allOf:
+        - $ref: '#/components/schemas/DateRange'
+        - type: object
+          properties:
+            workMin:
+              type: integer
+              minimum: 0
+              nullable: true
+              example: 480
+            oncallMin:
+              type: integer
+              minimum: 0
+              nullable: true
+              example: 120
+            km:
+              type: number
+              minimum: 0
+              nullable: true
+              example: 35.5
+            applyWeekend:
+              type: boolean
+              default: false
+            overwrite:
+              type: boolean
+              default: true
+
+    BatchApplyResponse:
+      type: object
+      required: [ok, user_id, range, summary, skippedLocked]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+          example: 42
+        range:
+          type: array
+          items:
+            type: string
+            format: date
+          example: ["2025-03-01", "2025-03-31"]
+        summary:
+          type: object
+          properties:
+            daysApplied:
+              type: integer
+              example: 20
+            workMin:
+              type: integer
+              example: 9600
+            oncallMin:
+              type: integer
+              example: 600
+            km:
+              type: number
+              example: 220.0
+        skippedLocked:
+          type: array
+          items:
+            type: string
+            format: date
+
+    BatchClearRequest:
+      allOf:
+        - $ref: '#/components/schemas/DateRange'
+        - type: object
+          properties:
+            applyWeekend:
+              type: boolean
+              default: true
+
+    BatchClearResponse:
+      type: object
+      required: [ok, user_id, range, deleted, skippedLocked]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+        range:
+          type: array
+          items:
+            type: string
+            format: date
+        deleted:
+          type: integer
+          example: 18
+        skippedLocked:
+          type: array
+          items:
+            type: string
+            format: date
+
+    DayDeleteRequest:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2025-03-12"
+
+    DayDeleteResponse:
+      type: object
+      required: [ok, user_id, date, deleted]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        deleted:
+          type: integer
+          example: 3
+
+    DayPutRequest:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+        workMin:
+          type: integer
+          minimum: 0
+          nullable: true
+        oncallMin:
+          type: integer
+          minimum: 0
+          nullable: true
+        km:
+          type: number
+          minimum: 0
+          nullable: true
+        clear:
+          type: boolean
+          default: false
+
+    DayPutResponse:
+      type: object
+      required: [ok, user_id, date, updated, cleared, status]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        updated:
+          type: array
+          items:
+            type: string
+            enum: [WORK, ONCALL, KM]
+        cleared:
+          type: array
+          items:
+            type: string
+            enum: [WORK, ONCALL, KM]
+        status:
+          type: string
+          example: draft
+
+    MonthDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        workMin:
+          type: integer
+        oncallMin:
+          type: integer
+        km:
+          type: number
+        statuses:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [draft, submitted, approved, rejected, locked]
+          example:
+            WORK: draft
+            KM: submitted
+        leaves:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              requestId:
+                type: integer
+                nullable: true
+              title:
+                type: string
+              kind:
+                type: string
+                enum: [LEAVE, SUBSTITUTION]
+
+    Period:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+        estado:
+          type: string
+          enum: [open, submitted, approved, rejected, locked]
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        decidido_por:
+          type: integer
+          nullable: true
+        decidido_em:
+          type: string
+          format: date-time
+          nullable: true
+        comentario:
+          type: string
+          nullable: true
+
+    GetMonthResponse:
+      type: object
+      required: [ok, month, period, days, totals]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        month:
+          type: string
+          example: "2025-03"
+        period:
+          $ref: '#/components/schemas/Period'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonthDay'
+        totals:
+          type: object
+          properties:
+            workMin:
+              type: integer
+            oncallMin:
+              type: integer
+            km:
+              type: number
+
+    MonthStatusResponse:
+      type: object
+      required: [ok, month, user_id, estado, flags, summary, range]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        month:
+          type: string
+          example: "2025-03"
+        user_id:
+          type: integer
+        period:
+          $ref: '#/components/schemas/Period'
+        estado:
+          type: string
+          enum: [open, submitted, approved, rejected, locked]
+        flags:
+          type: object
+          properties:
+            canSubmit:
+              type: boolean
+            isLocked:
+              type: boolean
+            hasDraft:
+              type: boolean
+        summary:
+          type: object
+          properties:
+            workedDays:
+              type: integer
+            workMin:
+              type: integer
+            oncallMin:
+              type: integer
+            km:
+              type: number
+        range:
+          type: array
+          items:
+            type: string
+            format: date
+
+    SubmitMonthRequest:
+      type: object
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+        date:
+          type: string
+          format: date
+          description: Alternativa para derivar o month
+
+    SubmitMonthResponse:
+      type: object
+      required: [ok, period, summary]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        period:
+          type: object
+          properties:
+            id:
+              type: integer
+            estado:
+              type: string
+              example: submitted
+            start:
+              type: string
+              format: date
+            end:
+              type: string
+              format: date
+        summary:
+          type: object
+          properties:
+            workedDays:
+              type: integer
+            workMin:
+              type: integer
+            oncallMin:
+              type: integer
+            km:
+              type: number
+
+paths:
+  /calendar/batch_apply.php:
+    post:
+      tags: [calendar]
+      summary: Aplicar valores a um intervalo de dias
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchApplyRequest'
+            examples:
+              default:
+                value:
+                  start: "2025-03-01"
+                  end: "2025-03-31"
+                  workMin: 480
+                  km: 10.5
+                  applyWeekend: false
+                  overwrite: true
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchApplyResponse'
+        '400':
+          description: Intervalo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro DB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/batch_clear.php:
+    delete:
+      tags: [calendar]
+      summary: Apagar WORK/ONCALL/KM num intervalo
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchClearRequest'
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchClearResponse'
+        '400':
+          description: Intervalo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Método inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro DB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/day_delete.php:
+    delete:
+      tags: [calendar]
+      summary: Limpa totalmente um dia (WORK/ONCALL/KM)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DayDeleteRequest'
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayDeleteResponse'
+        '400':
+          description: Data inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Período bloqueado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro DB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/day_put.php:
+    put:
+      tags: [calendar]
+      summary: Upsert de valores num dia (e opcionalmente limpar tipos não enviados)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DayPutRequest'
+            examples:
+              exemplo1:
+                value:
+                  date: "2025-03-12"
+                  workMin: 480
+              exemplo2:
+                value:
+                  date: "2025-03-12"
+                  workMin: 480
+                  km: 12.3
+                  clear: true
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DayPutResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Período bloqueado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro DB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/get_month.php:
+    get:
+      tags: [calendar]
+      summary: Grelha do mês (agregados por dia + ausências)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          required: false
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          required: false
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMonthResponse'
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/month_status.php:
+    get:
+      tags: [calendar]
+      summary: Estado do mês (flags para UI + resumo)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthStatusResponse'
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /calendar/submit_month.php:
+    post:
+      tags: [calendar]
+      summary: Submete o mês (25..24) e marca eventos como submitted
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitMonthRequest'
+            examples:
+              por-month:
+                value:
+                  month: "2025-03"
+              por-date:
+                value:
+                  date: "2025-03-07"
+      responses:
+        '200':
+          description: Submetido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitMonthResponse'
+        '400':
+          description: Mês inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Período fechado / já submetido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro DB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

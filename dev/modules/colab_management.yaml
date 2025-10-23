@@ -1,0 +1,501 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Colab Management
+  version: 1.0.0
+  description: Gestão de colaboradores, permissões e hierarquia
+tags:
+  - name: colab_management
+    description: Operações administrativas sobre colaboradores
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    Error:
+      type: object
+      required: [ok, code]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        code:
+          type: string
+          example: UNAUTHENTICATED
+        message:
+          type: string
+          nullable: true
+
+    Pager:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 123
+        items:
+          type: array
+
+    UserBrief:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        nome:
+          type: string
+          example: Ana Silva
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        permissoes:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 5]
+
+    ColabListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Pager'
+        - type: object
+          required: [ok, total, items]
+          properties:
+            ok:
+              type: boolean
+              example: true
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserBrief'
+
+    CreateColabItem:
+      type: object
+      required: [nome, email, password]
+      properties:
+        nome:
+          type: string
+          example: José Santos
+        email:
+          type: string
+          format: email
+          example: jose@example.com
+        password:
+          type: string
+          minLength: 6
+          example: 'secret123'
+        company_id:
+          type: integer
+          nullable: true
+          example: 3
+        company:
+          type: integer
+          nullable: true
+          description: Alias para company_id (aceite no backend)
+
+    CreateColabsRequestJson:
+      oneOf:
+        - $ref: '#/components/schemas/CreateColabItem'
+        - type: array
+          items:
+            $ref: '#/components/schemas/CreateColabItem'
+      description: Aceita um objeto único ou array de objetos (JSON).
+
+    CreateColabsResponse:
+      type: object
+      required: [ok, created, errors]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        created:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              nome:
+                type: string
+              email:
+                type: string
+                format: email
+              company_id:
+                type: integer
+                nullable: true
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+                description: Índice do item na lista (para input em array)
+              email:
+                type: string
+                format: email
+                nullable: true
+              errors:
+                type: array
+                items:
+                  type: string
+                example: [EMAIL_IN_USE]
+
+    HierarchyUpdateRequest:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          type: integer
+          example: 77
+        responsaveis:
+          type: array
+          items:
+            type: integer
+          description: IDs de responsáveis diretos do user_id
+          example: [3, 9]
+        subs:
+          type: array
+          items:
+            type: integer
+          description: IDs de subordinados a ligar ao user_id (rewire)
+          example: [101, 102]
+
+    HierarchyUpdateResponse:
+      type: object
+      required: [ok, updated]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        updated:
+          type: object
+          properties:
+            user_id:
+              type: integer
+            responsaveis:
+              type: array
+              items:
+                type: integer
+            subs:
+              type: array
+              items:
+                type: integer
+
+    PermissionsUpdateRequest:
+      type: object
+      required: [user_id]
+      properties:
+        user_id:
+          type: integer
+          example: 77
+        permissions:
+          type: array
+          items:
+            type: integer
+          description: Lista completa a ficar no utilizador (overwrite)
+          example: [1, 2, 4]
+
+    PermissionsUpdateResponse:
+      type: object
+      required: [ok, user_id, permissions]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+        permissions:
+          type: array
+          items:
+            type: integer
+
+    SubRelacaoItem:
+      type: object
+      properties:
+        rel_id:
+          type: integer
+        colaborador:
+          type: object
+          properties:
+            id:
+              type: integer
+            nome:
+              type: string
+            email:
+              type: string
+              format: email
+              nullable: true
+        relacao:
+          type: object
+          properties:
+            ativo:
+              type: boolean
+            valido_desde:
+              type: string
+              nullable: true
+            valido_ate:
+              type: string
+              nullable: true
+            created_by:
+              type: integer
+              nullable: true
+            created_at:
+              type: string
+              format: date-time
+
+    ReturnSubsResponse:
+      type: object
+      required: [ok, state, total, items]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        state:
+          type: string
+          enum: [active, all, inactive]
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubRelacaoItem'
+
+paths:
+
+  /colab_management/colab_list.php:
+    get:
+      tags: [colab_management]
+      summary: Lista de colaboradores (paginada)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Filtro por nome ou email (LIKE)
+        - in: query
+          name: company_id
+          schema:
+            type: integer
+            nullable: true
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 200
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColabListResponse'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Sem permissão (exige permissão 1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /colab_management/create_colabs.php:
+    post:
+      tags: [colab_management]
+      summary: Criação de colaboradores (um ou vários)
+      description: >
+        Aceita JSON com um objeto único **ou** um array de objetos.
+        Em `multipart/form-data`, aceita um único registo com os mesmos campos.
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateColabsRequestJson'
+            examples:
+              unico:
+                value:
+                  nome: "Maria Costa"
+                  email: "maria@example.com"
+                  password: "secret123"
+                  company_id: 2
+              varios:
+                value:
+                  - { nome: "A", email: "a@ex.com", password: "secret123", company_id: 1 }
+                  - { nome: "B", email: "b@ex.com", password: "secret123" }
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateColabItem'
+      responses:
+        '200':
+          description: Resultado da criação (sucessos e erros por item)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateColabsResponse'
+        '400':
+          description: Input vazio/ inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /colab_management/hierarchy_update.php:
+    post:
+      tags: [colab_management]
+      summary: Atualiza responsáveis do utilizador e faz rewire dos subordinados
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HierarchyUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HierarchyUpdateRequest'
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HierarchyUpdateResponse'
+        '400':
+          description: Dados inválidos (ex. SELF_REFERENCE, USER_NOT_FOUND, RESP_SUB_CONFLICT)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /colab_management/permissions_update.php:
+    post:
+      tags: [colab_management]
+      summary: Overwrite total das permissões de um utilizador
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionsUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PermissionsUpdateRequest'
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsUpdateResponse'
+        '400':
+          description: USER_ID_REQUIRED / USER_NOT_FOUND / PERMISSION_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /colab_management/return_sub.php:
+    get:
+      tags: [colab_management]
+      summary: Lista os meus subordinados (relação colaborador_responsaveis)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: state
+          description: Filtra o estado da relação
+          schema:
+            type: string
+            enum: [active, all, inactive]
+            default: active
+        - in: query
+          name: q
+          description: Pesquisa por nome/email do subordinado
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnSubsResponse'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

@@ -1,0 +1,533 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Employee Info
+  version: 1.0.0
+  description: Endpoints de informação de colaborador, aprovações e finanças
+tags:
+  - name: employee_info
+    description: Fichas e pedidos de atualização
+  - name: employee_finance
+    description: Perfil financeiro e exports
+  - name: employee_record
+    description: Gestão e aprovação de pedidos de alteração
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    # ---- genéricos ----
+    ErrorSuccess:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, example: false }
+        error:   { type: string, example: UNAUTHENTICATED }
+
+    ErrorOk:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean, example: false }
+        code: { type: string, nullable: true }
+
+    CompanyMini:
+      type: object
+      properties:
+        id:   { type: integer, nullable: true }
+        name: { type: string, nullable: true }
+        slug: { type: string, nullable: true }
+        logo: { type: string, nullable: true }
+
+    UserMini:
+      type: object
+      properties:
+        id:    { type: integer }
+        name:  { type: string }
+        email: { type: string, format: email }
+        company:
+          $ref: '#/components/schemas/CompanyMini'
+
+    Pager:
+      type: object
+      properties:
+        page:        { type: integer, example: 1 }
+        page_size:   { type: integer, example: 25 }
+        total:       { type: integer, example: 123 }
+        total_pages: { type: integer, example: 5 }
+
+    # ---- employee_info ----
+    AvalListAllItem:
+      type: object
+      properties:
+        id:    { type: integer }
+        name:  { type: string }
+        email: { type: string, format: email }
+        company:
+          $ref: '#/components/schemas/CompanyMini'
+
+    AvalListAllResponse:
+      allOf:
+        - $ref: '#/components/schemas/Pager'
+        - type: object
+          required: [success, items, total]
+          properties:
+            success: { type: boolean, example: true }
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/AvalListAllItem'
+
+    ViewSelfResponse:
+      type: object
+      required: [success, user]
+      properties:
+        success: { type: boolean, example: true }
+        user:
+          $ref: '#/components/schemas/UserMini'
+        profile:
+          type: object
+          nullable: true
+          description: Linha completa de colaborador_dados
+        emergency:
+          type: object
+          nullable: true
+          description: nome/parentesco/telefone
+        finance:
+          type: object
+          nullable: true
+          description: Linha completa de finance_profiles
+
+    # ---- finance ----
+    FinanceGetResponse:
+      type: object
+      required: [ok, user_id, exists, data]
+      properties:
+        ok: { type: boolean, example: true }
+        user_id: { type: integer }
+        exists: { type: boolean }
+        data:
+          type: object
+          description: Linha completa de finance_profiles (ou {})
+
+    FinanceUpdateRequest:
+      type: object
+      required: [user_id]
+      properties:
+        user_id: { type: integer, example: 77 }
+        # campos são livres; backend filtra por whitelist
+      additionalProperties: true
+
+    FinanceUpdateResponse:
+      type: object
+      required: [ok, user_id, updated]
+      properties:
+        ok: { type: boolean, example: true }
+        user_id: { type: integer }
+        updated: { type: integer, example: 1 }
+        fields:
+          type: array
+          items: { type: string }
+
+    # ---- record / approvals ----
+    AvalRequestsItem:
+      type: object
+      properties:
+        user_id: { type: integer }
+        user_name: { type: string }
+        user_email: { type: string, format: email }
+        profile_req_id: { type: integer, nullable: true }
+        profile_email: { type: string, nullable: true }
+        profile_telefone: { type: string, nullable: true }
+        profile_morada: { type: string, nullable: true }
+        profile_nib: { type: string, nullable: true }
+        profile_created_at: { type: string, nullable: true }
+        emergency_req_id: { type: integer, nullable: true }
+        emergency_nome: { type: string, nullable: true }
+        emergency_parentesco: { type: string, nullable: true }
+        emergency_telefone: { type: string, nullable: true }
+        emergency_created_at: { type: string, nullable: true }
+
+    AvalRequestsResponse:
+      type: object
+      required: [success, page, page_size, items]
+      properties:
+        success: { type: boolean, example: true }
+        page: { type: integer }
+        page_size: { type: integer }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvalRequestsItem'
+
+    AvalDecisionRequest:
+      type: object
+      required: [user_id, decision]
+      properties:
+        user_id: { type: integer, example: 77 }
+        decision:
+          type: string
+          enum: [approve, reject]
+
+    AvalDecisionResponse:
+      type: object
+      required: [success, result, affected]
+      properties:
+        success: { type: boolean, example: true }
+        result:  { type: string, example: approved }
+        affected:
+          type: object
+          properties:
+            profile:   { type: integer }
+            emergency: { type: integer }
+
+    AvalViewRecordResponse:
+      type: object
+      required: [success, user]
+      properties:
+        success: { type: boolean, example: true }
+        user:
+          $ref: '#/components/schemas/UserMini'
+        profile:
+          type: object
+          nullable: true
+        emergency:
+          type: object
+          nullable: true
+
+    ColabRequestRequest:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        contacto_telefone: { type: string }
+        morada: { type: string }
+        nib: { type: string }
+        emergencia_nome: { type: string }
+        emergencia_parentesco: { type: string }
+        emergencia_telefone: { type: string }
+
+    DirectEditRequest:
+      type: object
+      required: [user_id]
+      properties:
+        user_id: { type: integer }
+        sync_user_email:
+          type: boolean
+          default: false
+      additionalProperties: true
+
+    DirectEditResponse:
+      type: object
+      required: [success, updated]
+      properties:
+        success: { type: boolean, example: true }
+        updated:
+          type: object
+          properties:
+            profile: { type: object, nullable: true }
+            emergency: { type: object, nullable: true }
+
+paths:
+
+  # -------- employee_info --------
+  /employee_info/aval_list_all.php:
+    get:
+      tags: [employee_info]
+      summary: Lista de colaboradores (com empresa) para avaliação
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 200, default: 25 }
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Pesquisa por nome/email
+        - in: query
+          name: company_id
+          schema: { type: integer }
+        - in: query
+          name: order_by
+          schema:
+            type: string
+            enum: [name, email, id, company]
+            default: name
+        - in: query
+          name: order_dir
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalListAllResponse' }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão (perm. 6)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  /employee_info/view_self.php:
+    get:
+      tags: [employee_info]
+      summary: Devolve a ficha completa do utilizador autenticado
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/ViewSelfResponse' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  # -------- finance --------
+  /employee_info/finance/profile_get.php:
+    get:
+      tags: [employee_finance]
+      summary: Lê perfil financeiro de um utilizador
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/FinanceGetResponse' } } }
+        '400':
+          description: MISSING_USER
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorOk' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorOk' } } }
+        '403':
+          description: Sem permissão (perm. 7)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorOk' } } }
+
+  /employee_info/finance/profile_update.php:
+    post:
+      tags: [employee_finance]
+      summary: Upsert de campos do perfil financeiro
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FinanceUpdateRequest' }
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/FinanceUpdateResponse' } } }
+        '400':
+          description: BAD_JSON / MISSING_USER
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorOk' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorOk' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorOk' } } }
+
+  /employee_info/finance/profile_export.php:
+    get:
+      tags: [employee_finance]
+      summary: Exporta a ficha financeira de um utilizador (Excel)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Ficheiro Excel
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: MISSING_USER
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  /employee_info/finance/profile_export_all.php:
+    get:
+      tags: [employee_finance]
+      summary: Exporta Excel com todas as fichas financeiras
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Ficheiro Excel
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  # -------- record / approvals --------
+  /employee_info/record/aval_requests.php:
+    get:
+      tags: [employee_record]
+      summary: Lista de utilizadores com pedidos pendentes (último de cada tipo)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/AvalRequestsResponse' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  /employee_info/record/aval_decision.php:
+    post:
+      tags: [employee_record]
+      summary: Aprova ou rejeita todos os pedidos pendentes de um utilizador
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AvalDecisionRequest' }
+          application/x-www-form-urlencoded:
+            schema: { $ref: '#/components/schemas/AvalDecisionRequest' }
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/AvalDecisionResponse' } } }
+        '400':
+          description: BAD_REQUEST / EMAIL_IN_USE (409 no código)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '404':
+          description: NO_PENDING_REQUESTS
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  /employee_info/record/aval_view_record.php:
+    get:
+      tags: [employee_record]
+      summary: Visualiza a ficha atual de um utilizador (para aprovação)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/AvalViewRecordResponse' } } }
+        '400':
+          description: BAD_REQUEST
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '404':
+          description: USER_NOT_FOUND
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  /employee_info/record/colab_request.php:
+    post:
+      tags: [employee_record]
+      summary: Submissão (pelo próprio) de pedido de alteração de dados
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ColabRequestRequest' }
+          application/x-www-form-urlencoded:
+            schema: { $ref: '#/components/schemas/ColabRequestRequest' }
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '400':
+          description: NO_FIELDS / EMAIL_INVALID / PHONE_INVALID / NIB_INVALID / NO_CHANGES / PENDING_EXISTS / PENDING_EMERGENCY_EXISTS / PROFILE_NOT_FOUND
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+
+  /employee_info/record/direct_edit.php:
+    post:
+      tags: [employee_record]
+      summary: Edição direta de ficha e contacto de emergência (admin – perm. 6)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DirectEditRequest' }
+          application/x-www-form-urlencoded:
+            schema: { $ref: '#/components/schemas/DirectEditRequest' }
+      responses:
+        '200':
+          description: Sucesso
+          content: { application/json: { schema: { $ref: '#/components/schemas/DirectEditResponse' } } }
+        '400':
+          description: BAD_REQUEST / NO_FIELDS / EMAIL_INVALID / PHONE_INVALID / EM_PHONE_INVALID / NIB_INVALID / DATE_INVALID / USER_EMAIL_EMPTY_NOT_ALLOWED
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '403':
+          description: Sem permissão
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '404':
+          description: USER_NOT_FOUND
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
+        '409':
+          description: EMAIL_IN_USE
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }

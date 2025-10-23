@@ -1,0 +1,306 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Timesheets (período 25..24)
+  version: 1.0.0
+servers:
+  - url: /api
+tags:
+  - name: timesheets
+    description: Submissão, aprovação e reporting de períodos 25..24
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    OkError:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean, example: false }
+        code: { type: string, nullable: true, example: UNAUTHENTICATED }
+        msg: { type: string, nullable: true }
+
+    PeriodState:
+      type: string
+      enum: [submitted, approved, rejected]
+
+    # ---- AVAL DECISION ----
+    AvalDecisionRequest:
+      type: object
+      required: [period_id, action]
+      properties:
+        period_id: { type: integer, example: 123 }
+        action: { type: string, enum: [approve, reject] }
+        comment:
+          type: string
+          nullable: true
+          description: Obrigatório quando action=reject.
+
+    AvalDecisionResponse:
+      type: object
+      required: [ok, period_id, novo_estado]
+      properties:
+        ok: { type: boolean, example: true }
+        period_id: { type: integer }
+        novo_estado: { $ref: '#/components/schemas/PeriodState' }
+        comentario: { type: string, nullable: true }
+
+    # ---- AVAL MONTH (grid 25..24) ----
+    AvalMonthPeriod:
+      type: object
+      nullable: true
+      properties:
+        id: { type: integer }
+        estado: { $ref: '#/components/schemas/PeriodState' }
+        start: { type: string, example: "2025-03-25" }
+        end: { type: string, example: "2025-04-24" }
+        created_at: { type: string }
+
+    AvalMonthDay:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        workMin: { type: integer }
+        oncallMin: { type: integer }
+        km: { type: number, format: float }
+        statuses:
+          type: object
+          additionalProperties:
+            type: string
+          description: Mapa por tipo (WORK|ONCALL|KM) → status (draft|submitted|approved).
+        leaves:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              requestId: { type: integer, nullable: true }
+              title: { type: string }
+              kind: { type: string, enum: [LEAVE, SUBSTITUTION] }
+
+    AvalMonthResponse:
+      type: object
+      required: [ok, user, month, days, totals]
+      properties:
+        ok: { type: boolean, example: true }
+        user:
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string }
+        month: { type: string, example: "2025-04" }
+        period: { $ref: '#/components/schemas/AvalMonthPeriod' }
+        days:
+          type: array
+          items: { $ref: '#/components/schemas/AvalMonthDay' }
+        totals:
+          type: object
+          properties:
+            workMin: { type: integer }
+            oncallMin: { type: integer }
+            km: { type: number, format: float }
+
+    # ---- AVAL PERIODS (lista para aprovação) ----
+    AvalPeriodsItem:
+      type: object
+      properties:
+        period_id: { type: integer }
+        colaborador:
+          type: object
+          properties:
+            id: { type: integer }
+            nome: { type: string }
+        mes:
+          type: object
+          properties:
+            year: { type: integer }
+            month: { type: integer }
+            start: { type: string }
+            end: { type: string }
+        resumo:
+          type: object
+          properties:
+            workedDays: { type: integer }
+            workMin: { type: integer }
+            km: { type: number, format: float }
+        estado: { $ref: '#/components/schemas/PeriodState' }
+        submetido_em: { type: string }
+
+    AvalPeriodsResponse:
+      type: object
+      required: [ok, state, items, total]
+      properties:
+        ok: { type: boolean, example: true }
+        state: { type: string, enum: [submitted, approved, rejected, all] }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AvalPeriodsItem' }
+        total: { type: integer }
+
+    # ---- PERIODS APPROVED LIST (backoffice JSON) ----
+    PeriodsApprovedListResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        filters:
+          type: object
+          properties:
+            month: { type: string, nullable: true, example: "2025-04" }
+            q: { type: string, nullable: true }
+            limit: { type: integer }
+            offset: { type: integer }
+        total: { type: integer }
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              period_id: { type: integer }
+              user_id: { type: integer }
+              nome: { type: string }
+              email: { type: string }
+              company_name: { type: string, nullable: true }
+              month: { type: string, example: "2025-04" }
+              period_start: { type: string }
+              period_end: { type: string }
+
+paths:
+
+  /timesheets/aval_decision.php:
+    post:
+      tags: [timesheets]
+      summary: Aprova ou rejeita um período submetido 25..24
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AvalDecisionRequest' }
+      responses:
+        '200':
+          description: Decisão aplicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalDecisionResponse' }
+        '400':
+          description: BAD_REQUEST | COMMENT_REQUIRED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '403': { description: NOT_RESPONSAVEL, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '404': { description: PERIOD_NOT_FOUND, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '409': { description: NOT_SUBMITTED | PERIOD_CLOSED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '500': { description: DB_ERROR, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+
+  /timesheets/aval_month.php:
+    get:
+      tags: [timesheets]
+      summary: Grelha diária 25..24 do colaborador (para aprovação)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: month
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+          description: Label de competência (YYYY-MM). Se ausente, pode usar ?date=YYYY-MM-DD.
+        - in: query
+          name: date
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+          description: Alternativa; o mês desta data definirá a competência.
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalMonthResponse' }
+        '400': { description: MISSING_USER | MISSING_OR_INVALID_MONTH, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '403': { description: NOT_RESPONSAVEL, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+        '404': { description: USER_NOT_FOUND, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+
+  /timesheets/aval_periods.php:
+    get:
+      tags: [timesheets]
+      summary: Lista períodos 25..24 dos subordinados (por estado/mês)
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: state
+          schema: { type: string, enum: [submitted, approved, rejected, all], default: submitted }
+        - in: query
+          name: month
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+          description: Opcional; filtra exatamente o período 25..24 dessa competência.
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalPeriodsResponse' }
+        '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
+
+  /timesheets/periods_approved_list.php:
+    get:
+      tags: [timesheets]
+      summary: (Backoffice) Lista períodos aprovados, com filtros/paginação
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' }
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Nome ou email.
+        - in: query
+          name: limit
+          schema: { type: integer, default: 200, minimum: 1 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PeriodsApprovedListResponse' }
+        '400': { description: INVALID_MONTH_FORMAT (use YYYY-MM) }
+        '401': { description: UNAUTHENTICATED }
+        '403': { description: FORBIDDEN_PERMISSION }
+
+  /timesheets/periods_users_export.php:
+    get:
+      tags: [timesheets]
+      summary: (Backoffice) Exporta Excel do mapa mensal (25..24) por utilizador
+      description: |
+        Aceita `user_ids` como array (`user_ids=1&user_ids=2`) **ou** como CSV (`user_ids=1,2`).
+        Apenas eventos **approved** no intervalo 25..24 da competência.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: "2025-04" }
+        - in: query
+          name: user_ids
+          schema:
+            type: array
+            items: { type: integer, minimum: 1 }
+            style: form
+            explode: true
+          description: IDs a filtrar (também aceita CSV).
+      responses:
+        '200':
+          description: Ficheiro Excel
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        '400': { description: INVALID month (use YYYY-MM) }
+        '401': { description: UNAUTHENTICATED }
+        '403': { description: FORBIDDEN_PERMISSION }

@@ -1,0 +1,431 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Leaves
+  version: 1.0.0
+  description: Gestão de pedidos de férias/licenças/baixas (colaborador e responsável)
+servers:
+  - url: /api
+tags:
+  - name: leaves
+    description: Operações de pedidos de ausência
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    OkError:
+      type: object
+      required: [ok]
+      properties:
+        ok:    { type: boolean, example: false }
+        code:  { type: string, nullable: true, example: UNAUTHENTICATED }
+        msg:   { type: string, nullable: true }
+
+    LeaveType:
+      type: string
+      description: Tipos suportados (validados por ENUM na BD).
+      enum: [ferias, baixa_medica, baixa_seguro, licenca_paternidade, licenca_maternidade, casamento, consulta_medica, pessoal]
+
+    DateYMD:
+      type: string
+      format: date
+      example: "2025-07-15"
+
+    # -------- Listagens (responsável) --------
+    AvalHistoryItem:
+      type: object
+      properties:
+        pedido_id: { type: integer }
+        colaborador:
+          type: object
+          properties:
+            id:   { type: integer }
+            nome: { type: string, nullable: true }
+        tipo:   { $ref: '#/components/schemas/LeaveType' }
+        estado: { type: string, enum: [aprovado, rejeitado] }
+        inicio: { $ref: '#/components/schemas/DateYMD' }
+        fim:    { $ref: '#/components/schemas/DateYMD' }
+        pedido_em: { type: string }
+        descricao:  { type: string, nullable: true }
+        decidido_por:
+          type: object
+          properties:
+            id:   { type: integer, nullable: true }
+            nome: { type: string, nullable: true }
+
+    AvalHistoryListResponse:
+      type: object
+      required: [ok, has_subs, items, total]
+      properties:
+        ok:        { type: boolean, example: true }
+        has_subs:  { type: boolean, example: true }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AvalHistoryItem' }
+        total:     { type: integer, example: 12 }
+
+    AvalHistorySummaryResponse:
+      type: object
+      required: [ok, has_subs, team_total, aprovados, rejeitados]
+      properties:
+        ok:         { type: boolean, example: true }
+        has_subs:   { type: boolean }
+        team_total: { type: integer, example: 7 }
+        aprovados:  { type: integer, example: 5 }
+        rejeitados: { type: integer, example: 2 }
+
+    AvalPendingItem:
+      type: object
+      properties:
+        pedido_id: { type: integer }
+        colaborador:
+          type: object
+          properties:
+            id:   { type: integer }
+            nome: { type: string, nullable: true }
+        tipo:   { $ref: '#/components/schemas/LeaveType' }
+        inicio: { $ref: '#/components/schemas/DateYMD' }
+        fim:    { $ref: '#/components/schemas/DateYMD' }
+        justificacao: { type: string, nullable: true }
+        comprovativo:
+          type: string
+          nullable: true
+          description: URL absoluto para o ficheiro (se existir)
+        pedido_em: { type: string }
+
+    AvalPendingListResponse:
+      type: object
+      required: [ok, has_subs, type, items]
+      properties:
+        ok:       { type: boolean, example: true }
+        has_subs: { type: boolean }
+        type:
+          type: string
+          enum: [all, ferias, baixas, licencas]
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AvalPendingItem' }
+
+    AvalSummaryResponse:
+      type: object
+      required: [ok, has_subs, pending]
+      properties:
+        ok:       { type: boolean, example: true }
+        has_subs: { type: boolean }
+        pending:  { type: integer, example: 3 }
+
+    # -------- Listagens (colaborador) --------
+    ColabRequestItem:
+      type: object
+      properties:
+        id:           { type: integer }
+        tipo:         { $ref: '#/components/schemas/LeaveType' }
+        inicio:       { $ref: '#/components/schemas/DateYMD' }
+        fim:          { $ref: '#/components/schemas/DateYMD' }
+        justificacao: { type: string, nullable: true }
+        responsavel_id: { type: integer, nullable: true }
+        comprovativo:
+          type: string
+          nullable: true
+          description: URL absoluto (se existir)
+        estado:       { type: string, enum: [pendente, aprovado, rejeitado] }
+        criado_em:    { type: string }
+        decidido_por: { type: integer, nullable: true }
+
+    ColabRequestsResponse:
+      type: object
+      required: [ok, total, items]
+      properties:
+        ok:    { type: boolean, example: true }
+        total: { type: integer, example: 5 }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ColabRequestItem' }
+
+    ColabSummaryResponse:
+      type: object
+      required: [ok, summary]
+      properties:
+        ok: { type: boolean, example: true }
+        summary:
+          type: object
+          properties:
+            total:      { type: integer }
+            pendentes:  { type: integer }
+            aprovados:  { type: integer }
+            rejeitados: { type: integer }
+
+    # -------- Ações --------
+    DecisionRequest:
+      type: object
+      required: [pedido_id, acao]
+      properties:
+        pedido_id: { type: integer, example: 123 }
+        acao:
+          type: string
+          description: Aprovar ou rejeitar o pedido.
+          enum: [aprovar, rejeitar]
+        comentario:
+          type: string
+          nullable: true
+          description: Obrigatório quando `acao = rejeitar`
+
+    DecisionResponse:
+      type: object
+      required: [ok, pedido_id, estado]
+      properties:
+        ok:        { type: boolean, example: true }
+        pedido_id: { type: integer }
+        estado:    { type: string, enum: [aprovado, rejeitado] }
+
+paths:
+
+  # ===== Responsável: histórico =====
+  /leaves/aval_history_list.php:
+    get:
+      tags: [leaves]
+      summary: Histórico (aprovados/rejeitados) dos meus subordinados diretos
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso (pode devolver `has_subs=false` e lista vazia)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalHistoryListResponse' }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '500':
+          description: Erro DB
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  /leaves/aval_history_summary.php:
+    get:
+      tags: [leaves]
+      summary: Totais do histórico (aprovados/rejeitados) dos meus subs diretos
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalHistorySummaryResponse' }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  # ===== Responsável: pendentes =====
+  /leaves/aval_requests.php:
+    get:
+      tags: [leaves]
+      summary: Lista de pedidos pendentes dos meus subs diretos
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: type
+          description: Filtro por grupo de tipos
+          schema:
+            type: string
+            enum: [all, ferias, baixas, licencas]
+            default: all
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalPendingListResponse' }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '500':
+          description: Erro DB
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  /leaves/aval_summary.php:
+    get:
+      tags: [leaves]
+      summary: Contagem de pedidos pendentes (responsável)
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvalSummaryResponse' }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  # ===== Colaborador: listagens & resumo =====
+  /leaves/colab_requests.php:
+    get:
+      tags: [leaves]
+      summary: Lista de pedidos do colaborador autenticado
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ColabRequestsResponse' }
+        '400':
+          description: NO_RESPONSAVEIS
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  /leaves/colab_summary.php:
+    get:
+      tags: [leaves]
+      summary: Resumo de estados dos pedidos do colaborador autenticado
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ColabSummaryResponse' }
+        '400':
+          description: NO_RESPONSAVEIS
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401':
+          description: Não autenticado
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  # ===== Ações =====
+  /leaves/decision.php:
+    post:
+      tags: [leaves]
+      summary: Aprovar/Rejeitar um pedido (responsável direto)
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DecisionRequest' }
+      responses:
+        '200':
+          description: Estado atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DecisionResponse' }
+        '400':
+          description: BAD_REQUEST / COMMENT_REQUIRED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401':
+          description: UNAUTHENTICATED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '403':
+          description: NOT_RESPONSAVEL
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '404':
+          description: REQUEST_NOT_FOUND
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '409':
+          description: ALREADY_DECIDED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '500':
+          description: DB_ERROR
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  /leaves/direct_leave.php:
+    post:
+      tags: [leaves]
+      summary: Marcação direta (RH) já aprovada, com upload obrigatório
+      description: |
+        Requer permissão **2**. Gera o pedido como `aprovado` e cria evento `LEAVE`.  
+        Upload obrigatório (`pdf`, `jpg`, `jpeg`, `png`, máx. 5MB).
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [user_id, tipo, data_inicio, data_fim, ficheiro]
+              properties:
+                user_id:       { type: integer }
+                tipo:          { $ref: '#/components/schemas/LeaveType' }
+                data_inicio:   { $ref: '#/components/schemas/DateYMD' }
+                data_fim:      { $ref: '#/components/schemas/DateYMD' }
+                justificacao:  { type: string }
+                ficheiro:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, pedido_id, ficheiro, evento]
+                properties:
+                  ok:        { type: boolean, example: true }
+                  pedido_id: { type: integer }
+                  ficheiro:  { type: string, example: "/uploads/leaves/2025/10/doc-abc.pdf" }
+                  evento:
+                    type: object
+                    description: Evento `LEAVE` criado
+        '400':
+          description: BAD_REQUEST / BAD_DATES / FILE_REQUIRED / FILE_UPLOAD_ERROR / FILE_TOO_LARGE / FILE_INVALID_TYPE / INVALID_TIPO
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401':
+          description: UNAUTHENTICATED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '403':
+          description: FORBIDDEN_PERMISSION
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '500':
+          description: STORAGE_ERROR / DB_ERROR
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+
+  /leaves/request.php:
+    post:
+      tags: [leaves]
+      summary: Submissão de pedido (colaborador)
+      description: |
+        Envia `multipart/form-data`. Para alguns `tipo` o comprovativo é obrigatório
+        (p.ex. `licenca_paternidade`, `baixa_medica`, etc.).  
+        O registo é criado com estado `pendente`.
+      security: [{ cookieAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [tipo, data_inicio, data_fim, justificacao]
+              properties:
+                tipo:         { $ref: '#/components/schemas/LeaveType' }
+                data_inicio:  { $ref: '#/components/schemas/DateYMD' }
+                data_fim:     { $ref: '#/components/schemas/DateYMD' }
+                justificacao: { type: string }
+                ficheiro:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Pedido criado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, request_id]
+                properties:
+                  ok:         { type: boolean, example: true }
+                  request_id: { type: integer }
+        '400':
+          description: MISSING_FIELDS / INVALID_DATE / RANGE_ERROR / NO_RESPONSAVEIS / DOC_REQUIRED / BAD_FILETYPE / FILE_TOO_LARGE / FILE_MOVE_ERROR
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '401':
+          description: UNAUTHENTICATED
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
+        '500':
+          description: DB_ERROR
+          content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }

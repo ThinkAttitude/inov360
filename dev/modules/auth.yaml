@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Auth Module
+  version: 1.0.0
+  description: Endpoints de autenticação (sessão PHP)
+
+paths:
+  /auth/login.php:
+    post:
+      tags: [auth]
+      summary: Login por sessão (cookie PHPSESSID)
+      description: >
+        Autentica um utilizador e popula a sessão (`$_SESSION["is_login"]=true` e `$_SESSION["user"]`).
+        **Nota (implementação atual):** erros também devolvem HTTP 200 com `{"success":false,...}`.
+        Em sucesso, o cookie **PHPSESSID** é devolvido via `Set-Cookie`.
+      security: []   # login é público
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+            examples:
+              form:
+                summary: Exemplo form
+                value: { email: "user@example.com", password: "Secr3t!" }
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+            examples:
+              json:
+                summary: Exemplo JSON
+                value: { email: "user@example.com", password: "Secr3t!" }
+      responses:
+        '200':
+          description: |
+            **Sucesso** (e também usado em erros na implementação atual).
+            Em sucesso, define a sessão e devolve o utilizador + arrays de permissões e responsáveis.
+          headers:
+            Set-Cookie:
+              description: Cookie de sessão `PHPSESSID` definido pelo PHP.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:            # <<<< oneOf tem de estar dentro de schema
+                oneOf:
+                  - $ref: '#/components/schemas/AuthLoginResponseSuccess'
+                  - $ref: '#/components/schemas/Problem'
+        '400':
+          description: Campos em falta (email/password).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '401':
+          description: Credenciais inválidas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '405':
+          description: Método não permitido (apenas POST).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/logout.php:
+    get:
+      tags: [auth]
+      summary: Terminar sessão (redirect para página de login)
+      description: >
+        Limpa a sessão com `session_destroy()` e faz redirect para `../page/page_login.php`.
+        Este endpoint **não** devolve JSON — responde com **302 Found** e cabeçalho `Location`.
+      security: []   # público (pode ser chamado sem sessão válida)
+      operationId: authLogout
+      responses:
+        '302':
+          description: Redireciona para a página de login.
+          headers:
+            Location:
+              description: URL de destino do redirect (por omissão `../page/page_login.php`).
+              schema: { type: string, format: uri }
+        '200':
+          description: Alguns clientes podem seguir o redirect e mostrar o HTML da página de login.
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  responses:
+    ServerError:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Problem:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Erro interno do servidor."
+        code:
+          type: string
+          example: "UNAUTHENTICATED"
+      required: [success]
+
+    AuthLoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required: [email, password]
+
+    AuthLoginResponseSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          enum: [true]     # para compatibilidade 3.0.x (em 3.1 poderia ser const: true)
+        message:
+          type: string
+          example: "Login realizado com sucesso."
+        user:
+          type: object
+          properties:
+            id: { type: integer, example: 123 }
+            name: { type: string, example: "João Silva" }
+            email: { type: string, format: email, example: "joao@example.com" }
+            permissions:
+              type: array
+              items: { type: integer, example: 6 }
+              description: Array de IDs de permissão.
+            responsaveis:
+              type: array
+              items: { type: integer, example: 45 }
+              description: IDs dos responsáveis ativos/válidos do colaborador.
+      required: [success, user]

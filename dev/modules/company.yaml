@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: INOV360 – Company
+  version: 1.0.0
+  description: Endpoints de empresas (listagem)
+
+tags:
+  - name: company
+    description: Operações relacionadas com empresas
+
+servers:
+  - url: /api
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: PHPSESSID
+
+  schemas:
+    Error:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Acesso negado.
+
+    CompanyItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        name:
+          type: string
+          example: Think Attitude
+        slug:
+          type: string
+          example: think-attitude
+        logo_path:
+          type: string
+          nullable: true
+          example: /uploads/company/think.png
+
+    CompanyListResponse:
+      type: object
+      required: [success, empresas]
+      properties:
+        success:
+          type: boolean
+          example: true
+        empresas:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyItem'
+
+paths:
+  /company/listar_empresas.php:
+    get:
+      tags: [company]
+      summary: Lista as empresas ativas
+      description: Retorna `success=true` e a lista de empresas ativas ordenadas por nome.
+      security: [{ cookieAuth: [] }]
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyListResponse'
+              examples:
+                exemplo:
+                  value:
+                    success: true
+                    empresas:
+                      - id: 1
+                        name: "Think Attitude"
+                        slug: "think-attitude"
+                        logo_path: "/uploads/company/think.png"
+                      - id: 2
+                        name: "Inov360"
+                        slug: "inov360"
+                        logo_path: null
+        '403':
+          description: Acesso negado (não autenticado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro ao obter lista de empresas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
