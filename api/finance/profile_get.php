@@ -4,20 +4,28 @@ declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+/* --------- auth --------- */
+if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']);
+    exit;
 }
-$role   = $_SESSION['user']['role'] ?? '';
-$selfId = (int)($_SESSION['user']['id'] ?? 0);
-
-function can_read(string $role, int $selfId, int $targetId): bool {
-    if (in_array($role, ['admin_rh','*'], true)) return true;
-    return $selfId === $targetId; // o próprio
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(7, $perms, true)) {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'Do not have permission']);
+    exit;
 }
 
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-if ($userId <= 0) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_USER"]); exit; }
-if (!can_read($role,$selfId,$userId)) { http_response_code(403); echo json_encode(["ok"=>false,"code"=>"FORBIDDEN"]); exit; }
+if ($userId <= 0) {
+    http_response_code(400);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'MISSING_USER']);
+    exit;
+}
 
 require_once __DIR__ . '/../includes/db.php';
 $pdo = db_connect();

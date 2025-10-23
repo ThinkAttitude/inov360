@@ -4,16 +4,27 @@ declare(strict_types=1);
 session_start();
 
 /* --------- auth --------- */
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) { http_response_code(401); echo "UNAUTHENTICATED"; exit; }
-$role   = $_SESSION['user']['role'] ?? '';
-$selfId = (int)($_SESSION['user']['id'] ?? 0);
-function can_read(string $role, int $selfId, int $targetId): bool {
-    if (in_array($role, ['admin_rh','*','finan'], true)) return true;  // ajusta os teus perfis
-    return $selfId === $targetId;
+if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']);
+    exit;
 }
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(7, $perms, true)) {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'Do not have permission']);
+    exit;
+}
+
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-if ($userId <= 0) { http_response_code(400); echo "MISSING_USER"; exit; }
-if (!can_read($role,$selfId,$userId)) { http_response_code(403); echo "FORBIDDEN"; exit; }
+if ($userId <= 0) {
+    http_response_code(400);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success'=>false,'error'=>'MISSING_USER']);
+    exit;
+}
 
 /* --------- deps & db --------- */
 require_once __DIR__ . '/../../vendor/autoload.php';
