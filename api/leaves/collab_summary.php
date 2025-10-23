@@ -1,5 +1,5 @@
 <?php
-// api/leaves/colab_summary.php
+// api/leaves/collab_summary.php
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
