@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: db
--- Tempo de geração: 20-Out-2025 às 11:16
+-- Tempo de geração: 23-Out-2025 às 10:15
 -- Versão do servidor: 5.7.44
 -- versão do PHP: 8.2.27
 
@@ -86,7 +86,12 @@ INSERT INTO `colaborador_dados` (`user_id`, `nome`, `email`, `telefone`, `morada
 (25, 'Miguel Estrela', 'estrela@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (39, 'João Operador', 'joao@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (40, 'Luís Financeiro', 'finan@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(41, 'Sandra Ferreira', 'sandraferreira@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(41, 'Sandra Ferreira', 'sandraferreira@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(52, NULL, 'carlos.silva@inov360.pt', '913445566', 'Rua das Flores 120, 3º Esq', '1000-001', 'Areeiro', 'Lisboa', 'Lisboa', 'Lisboa', 'Licenciatura em Engenharia Informática', 'João Silva', 'Maria Silva', 'Casado', '1990-03-15', 'Portugal', 'CC', '12345678', 'Lisboa', 'Arquivo Central', '2030-12-31', '123456789', '99988877766', 'IRS A', 'Lisboa 2', 'Lisboa', 'Casado 1 Titular', 'Nao Deficiente', NULL, 2, 0, 0, '2020-06-15', 'Sem Termo', 'Técnico de Sistemas', 'Engenheiro de Software', 'Tempo Inteiro', 40, 1800.00, 7.63, '000201231234567890154', 1450.50, 'Validação RH 2025-10-22'),
+(66, NULL, 'nuno@gmail.com', '963206692', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL, NULL),
+(67, NULL, 'miguel@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(68, NULL, 'henrique@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(69, NULL, 'luis@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -113,7 +118,9 @@ CREATE TABLE `colaborador_edicoes` (
 
 INSERT INTO `colaborador_edicoes` (`id`, `user_id`, `email`, `telefone`, `estado`, `avaliado_por`, `avaliado_em`, `criado_em`, `morada`, `nib`) VALUES
 (1, 21, 'oper@gmail.com', '963206692', 'aprovado', 12, '2025-09-10 19:00:51', '2025-09-10 18:50:28', 'Rua Do Moinho Casais De Sao Lourenco', '000201231234567890154'),
-(2, 21, 'oper@gmail.com', '963206692', 'aprovado', 12, '2025-09-11 11:20:06', '2025-09-11 11:18:48', 'Rua Do Moinho Casais De Sao Lourenco', '000201231234567890154');
+(2, 21, 'oper@gmail.com', '963206692', 'aprovado', 12, '2025-09-11 11:20:06', '2025-09-11 11:18:48', 'Rua Do Moinho Casais De Sao Lourenco', '000201231234567890154'),
+(4, 66, 'nuno@gmail.com', '963206692', 'aprovado', 68, '2025-10-22 09:02:55', '2025-10-21 10:38:04', 'Rua Do Moinho Casais De Sao Lourenco', '000201231234567890154'),
+(5, 68, 'nuno@gmail.com', '963206692', 'recusado', 68, '2025-10-22 09:07:40', '2025-10-22 09:05:32', 'Rua Do Moinho Casais De Sao Lourenco', '000201231234567890154');
 
 -- --------------------------------------------------------
 
@@ -137,9 +144,9 @@ CREATE TABLE `colaborador_responsaveis` (
 --
 
 INSERT INTO `colaborador_responsaveis` (`id`, `colaborador_id`, `responsavel_id`, `created_by`, `ativo`, `valido_desde`, `valido_ate`, `created_at`) VALUES
-(3, 62, 64, 12, 1, NULL, NULL, '2025-10-16 12:06:09'),
-(4, 63, 62, 12, 1, NULL, NULL, '2025-10-16 12:06:09'),
-(5, 63, 65, 12, 1, NULL, NULL, '2025-10-16 12:07:38');
+(1, 66, 68, 12, 1, NULL, NULL, '2025-10-23 09:31:31'),
+(2, 67, 66, 12, 1, NULL, NULL, '2025-10-23 09:31:31'),
+(3, 67, 69, 12, 1, NULL, NULL, '2025-10-23 09:31:54');
 
 -- --------------------------------------------------------
 
@@ -194,7 +201,12 @@ CREATE TABLE `contactos_emergencia` (
 INSERT INTO `contactos_emergencia` (`id`, `user_id`, `nome`, `parentesco`, `telefone`) VALUES
 (1, 40, '', '', ''),
 (3, 41, '', '', ''),
-(4, 21, 'Joao Lopes', 'Pai', '987773663');
+(4, 21, 'Joao Lopes', 'Pai', '987773663'),
+(5, 66, 'Luis Camões', 'Pai', '987773663'),
+(6, 67, '', '', ''),
+(7, 68, '', '', ''),
+(8, 69, '', '', ''),
+(9, 52, 'Ana Silva', 'Esposa', '917889900');
 
 -- --------------------------------------------------------
 
@@ -220,7 +232,9 @@ CREATE TABLE `contactos_emergencia_edicoes` (
 
 INSERT INTO `contactos_emergencia_edicoes` (`id`, `user_id`, `nome`, `parentesco`, `telefone`, `estado`, `criado_em`, `avaliado_por`, `avaliado_em`) VALUES
 (1, 21, 'Miguel Cordeiro', 'Pai', '987773663', 'aprovado', '2025-09-10 18:50:28', 12, '2025-09-10 19:00:51'),
-(2, 21, 'Joao Lopes', 'Pai', '987773663', 'aprovado', '2025-09-11 11:18:48', 12, '2025-09-11 11:20:06');
+(2, 21, 'Joao Lopes', 'Pai', '987773663', 'aprovado', '2025-09-11 11:18:48', 12, '2025-09-11 11:20:06'),
+(4, 66, 'Luis Camões', 'Pai', '987773663', 'aprovado', '2025-10-21 10:38:04', 68, '2025-10-22 09:02:55'),
+(5, 68, 'Luis Camões', 'Pai', '987773663', 'recusado', '2025-10-22 09:05:32', 68, '2025-10-22 09:07:40');
 
 -- --------------------------------------------------------
 
@@ -439,7 +453,7 @@ CREATE TABLE `finance_profiles` (
 --
 
 INSERT INTO `finance_profiles` (`id`, `user_id`, `created_at`, `updated_at`, `numero`, `nome_completo`, `vencimento_estimado`, `vencimento_base`, `valor_sub_alimentacao`, `dias_sub_alimentacao`, `kms_estimados`, `valor_por_km`, `valor_prevencoes`, `valor_passe_transporte`, `iht`, `ajuda_custo_estimado`, `subsidio_noturno`, `subsidio_turno`, `ajudas_custos_deduc`, `adiantamentos_deduzir`, `bonus_bonificacoes`, `duodecimos`, `prevencoes_sn`, `penhoras_sn`, `ferias_sn`, `faltas_nao_rem`, `faltas_nao_rem_just`, `faltas_rem_just`, `baixa_medica_start`, `baixa_medica_end`, `ferias_start`, `ferias_end`, `observacoes`, `ajustes_vencimento`) VALUES
-(1, 23, '2025-09-05 15:32:15', '2025-09-05 16:48:13', '1001', 'Miguel Intermedio', 1250.00, 1200.00, 120.50, 20, 150.00, 0.36, 80.00, 45.00, 150.00, 50.00, 100.00, 200.00, 30.00, 75.00, 250.00, 1, 0, 0, 1, 2, 1, 0, '2025-09-01', '2025-09-10', '2025-08-01', '2025-08-14', 'Contrato atualizado com prémio anual.', 'Ajuste retroativo +40€'),
+(1, 23, '2025-09-05 15:32:15', '2025-10-23 10:00:29', '1001', 'Miguel Intermedio', 1250.00, 2400.00, 120.50, 20, 150.00, 0.36, 80.00, 45.00, 150.00, 50.00, 100.00, 200.00, 30.00, 75.00, 250.00, 1, 0, 0, 1, 2, 1, 0, '2025-09-01', '2025-09-10', '2025-08-01', '2025-08-14', 'Contrato atualizado com prémio anual.', 'Ajuste retroativo +40€'),
 (12, 52, '2025-09-10 19:28:50', '2025-09-10 19:28:50', 'EMP052', 'João Silva', 1250.00, 1200.00, 6.00, 22, 50.00, 0.36, 35.00, 30.00, 0.00, 15.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 0, 1, 0, 0, 0, NULL, NULL, '2025-08-01', '2025-08-15', 'Ficha de teste para demonstração.', 'Sem ajustes.'),
 (13, 53, '2025-09-10 19:28:50', '2025-09-10 19:28:50', 'EMP053', 'Maria Fernandes', 1350.00, 1300.00, 6.00, 21, 40.00, 0.36, 25.00, 30.00, 0.00, 10.00, 0.00, 0.00, 0.00, 0.00, 50.00, 1, 1, 0, 1, 0, 0, 0, NULL, NULL, '2025-08-05', '2025-08-20', 'Ficha de teste para demonstração.', 'Sem ajustes.'),
 (14, 54, '2025-09-10 19:28:50', '2025-09-10 19:28:50', 'EMP054', 'Pedro Santos', 1300.00, 1250.00, 6.00, 22, 30.00, 0.36, 20.00, 20.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 0, 0, 1, 0, 0, 0, NULL, NULL, '2025-07-15', '2025-07-31', 'Ficha de teste para demonstração.', 'Sem ajustes.'),
@@ -455,7 +469,11 @@ INSERT INTO `finance_profiles` (`id`, `user_id`, `created_at`, `updated_at`, `nu
 (24, 24, '2025-09-10 19:32:11', '2025-09-10 19:32:11', 'EMP024', 'Miguel Admin', 1800.00, 1750.00, 6.00, 22, 40.00, 0.36, 30.00, 30.00, 0.00, 20.00, 0.00, 0.00, 0.00, 0.00, 100.00, 1, 1, 0, 1, 0, 0, 0, NULL, NULL, '2025-08-05', '2025-08-20', 'Administrador para testes.', 'Sem ajustes.'),
 (25, 25, '2025-09-10 19:32:11', '2025-09-10 19:32:11', 'EMP025', 'Miguel Estrela', 1600.00, 1550.00, 6.00, 22, 35.00, 0.36, 25.00, 25.00, 0.00, 15.00, 0.00, 0.00, 0.00, 0.00, 75.00, 1, 1, 0, 1, 0, 0, 0, NULL, NULL, '2025-09-01', '2025-09-14', 'Colaborador estrela (teste).', 'Sem ajustes.'),
 (26, 38, '2025-09-10 19:32:11', '2025-09-10 19:32:11', 'EMP038', 'Diretor RH', 2200.00, 2100.00, 6.00, 22, 80.00, 0.36, 60.00, 50.00, 0.00, 30.00, 0.00, 50.00, 0.00, 0.00, 250.00, 1, 1, 0, 1, 0, 0, 0, NULL, NULL, '2025-07-20', '2025-08-03', 'Diretor RH para testes.', 'Sem ajustes.'),
-(27, 39, '2025-09-10 19:32:11', '2025-09-10 19:32:11', 'EMP039', 'João Operador', 1150.00, 1100.00, 6.00, 21, 30.00, 0.36, 20.00, 25.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 0, 0, 1, 0, 0, 0, NULL, NULL, '2025-06-15', '2025-06-29', 'Operador de teste.', 'Sem ajustes.');
+(27, 39, '2025-09-10 19:32:11', '2025-09-10 19:32:11', 'EMP039', 'João Operador', 1150.00, 1100.00, 6.00, 21, 30.00, 0.36, 20.00, 25.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 0, 0, 1, 0, 0, 0, NULL, NULL, '2025-06-15', '2025-06-29', 'Operador de teste.', 'Sem ajustes.'),
+(28, 66, '2025-10-21 09:58:16', '2025-10-21 09:58:16', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(29, 67, '2025-10-21 09:58:16', '2025-10-21 09:58:16', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(30, 68, '2025-10-21 09:58:16', '2025-10-21 09:58:16', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(31, 69, '2025-10-21 09:58:16', '2025-10-21 09:58:16', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -474,14 +492,6 @@ CREATE TABLE `overtime` (
   `criado_por` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Extraindo dados da tabela `overtime`
---
-
-INSERT INTO `overtime` (`id`, `user_id`, `inicio`, `fim`, `request_id`, `origem`, `criado_por`, `created_at`) VALUES
-(1, 59, '2025-10-14 21:00:00', '2025-10-14 23:00:00', 2, 'approval', 65, '2025-10-20 11:14:12'),
-(2, 63, '2025-10-14 21:00:00', '2025-10-14 23:00:00', 1, 'approval', 65, '2025-10-20 11:14:19');
 
 -- --------------------------------------------------------
 
@@ -515,10 +525,7 @@ INSERT INTO `pedidos_ferias` (`id`, `user_id`, `tipo`, `data_inicio`, `data_fim`
 (14, 21, 'ferias', '2025-11-26', '2025-11-29', 'Teste', NULL, 'aprovado', '2025-09-12 09:32:21', 22, NULL, 39),
 (15, 39, 'ferias', '2025-12-01', '2025-12-20', 'Test', NULL, 'aprovado', '2025-09-12 09:41:13', 22, NULL, 21),
 (16, 21, 'ferias', '2025-08-01', '2025-08-10', 'livre', '/uploads/leaves/2025/09/Pedido-Contacto-Obras-1--20250912105028-024295.pdf', 'aprovado', '2025-09-12 10:50:28', 12, 'Marcação direta RH', NULL),
-(17, 21, 'ferias', '2025-11-15', '2025-11-15', 'Miocardite', NULL, 'pendente', '2025-09-15 18:59:20', NULL, NULL, 39),
-(18, 63, 'ferias', '2025-10-14', '2025-10-14', 'Ferias Miguel', NULL, 'aprovado', '2025-10-16 12:10:33', 62, NULL, NULL),
-(19, 63, 'ferias', '2025-08-01', '2025-08-10', 'livre', '/uploads/leaves/2025/10/Pagamentos-Simples-EasyPay-20251016125033-f591f0.pdf', 'aprovado', '2025-10-16 12:50:33', 62, 'Marcação direta RH', NULL),
-(20, 63, 'ferias', '2025-10-14', '2025-10-14', 'Ferias Miguel', NULL, 'aprovado', '2025-10-17 09:33:14', 62, NULL, NULL);
+(17, 21, 'ferias', '2025-11-15', '2025-11-15', 'Miocardite', NULL, 'pendente', '2025-09-15 18:59:20', NULL, NULL, 39);
 
 -- --------------------------------------------------------
 
@@ -541,7 +548,9 @@ INSERT INTO `permission` (`id`, `code`, `label`) VALUES
 (2, 'direct_leave', 'Adicionar falta direta a colab'),
 (3, 'periods_info', 'Ver e exportar todos os eventos de colabs'),
 (4, 'request_overtime', 'Pedir horas extra'),
-(5, 'approve_overtime', 'Aprovar horas extra');
+(5, 'approve_overtime', 'Aprovar horas extra'),
+(6, 'record_managment', 'Tem acesso a todas as Fichas de Colaborador e aprova edições.'),
+(7, 'finance_managment', 'Gerir Fichas Financeiras');
 
 -- --------------------------------------------------------
 
@@ -563,14 +572,6 @@ CREATE TABLE `request_overtime` (
   `decidido_em` datetime DEFAULT NULL,
   `comentario` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Extraindo dados da tabela `request_overtime`
---
-
-INSERT INTO `request_overtime` (`id`, `user_id`, `data_inicio`, `data_fim`, `justificacao`, `ficheiro`, `estado`, `criado_em`, `criado_por`, `decidido_por`, `decidido_em`, `comentario`) VALUES
-(1, 63, '2025-10-14 21:00:00', '2025-10-14 23:00:00', 'Entrega urgente após horário', NULL, 'approved', '2025-10-17 13:00:14', 65, 65, '2025-10-20 11:14:19', 'opcional'),
-(2, 59, '2025-10-14 21:00:00', '2025-10-14 23:00:00', 'Entrega urgente após horário', NULL, 'approved', '2025-10-20 11:13:14', 62, 65, '2025-10-20 11:14:12', 'opcional');
 
 -- --------------------------------------------------------
 
@@ -620,7 +621,6 @@ CREATE TABLE `user` (
   `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('admin_rh','inter','opera','admin','inter2','*','finan') NOT NULL,
   `company_id` int(10) UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -628,31 +628,31 @@ CREATE TABLE `user` (
 -- Extraindo dados da tabela `user`
 --
 
-INSERT INTO `user` (`id`, `name`, `email`, `password`, `role`, `company_id`) VALUES
-(12, 'Miguel Administrador RH', 'adminrh@gmail.com', '$2y$10$B.bMkH59Q50F9En8HDkGkuWb7gg7q/JJx0HJdyeTA4PeknAKRLRSC', 'admin_rh', 11),
-(21, 'Miguel Operador', 'oper@gmail.com', '$2y$10$EGMXoFEYCIe.ikxef1vBKeTbPKZHqYo4VlRwNDhrXsOHLxEdeQtam', 'opera', 11),
-(22, 'Miguel Intermedio2', 'inter2@gmail.com', '$2y$10$M/EJOTR/oBC8dc2smGblW.wR0zniGA0/i.WS31E.xKARJY71jvUz.', 'inter2', 11),
-(23, 'Miguel Intermedio', 'inter@gmail.com', '$2y$10$/P/JJfaYhiWHckhOxtS8y.XFXIOFs7lopmV9L3bWD8Ilea6B.MiIO', 'inter', 10),
-(24, 'Miguel Admin', 'admin@gmail.com', '$2y$10$T/4B9aKCQZWrW46bUVnm2egAlen9LGnZte1AuWtFjPfS5oqBR0yme', 'admin', 10),
-(25, 'Miguel Estrela', 'estrela@gmail.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', '*', 11),
-(38, 'Diretor RH', 'diretorrh@gmail.com', '$2y$10$BRxnnpNXBIYEi6rI570uIeDB/R3cDNnSXQt4xpAa9YcFfoE/wYmf2', '*', 11),
-(39, 'João Operador', 'joao@gmail.com', '$2y$10$ElvaN9UKBsDw6h4Y/gHF/OTBZubJKKmdbdf/NA1RdLcdp7lRbKbSq', 'opera', 3),
-(40, 'Luís Financeiro', 'finan@gmail.com', '$2y$10$2XFNLGIiAz2jlNZjYl6CG.5kF.2Op6eAKfEv0me1nvUPQML2slRGO', 'finan', 10),
-(41, 'Sandra Ferreira', 'sandraferreira@gmail.com', '$2y$10$Fp3b9rXYdGyYguIlhaNg5enche2AvMJD7UliMWxHqyRIDLMksqWrm', 'opera', 11),
-(52, 'João Silva', 'joao.silva@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 'opera', 11),
-(53, 'Maria Fernandes', 'maria.fernandes@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 'opera', 11),
-(54, 'Pedro Santos', 'pedro.santos@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 'inter', 11),
-(55, 'Ana Rodrigues', 'ana.rodrigues@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 'inter2', 11),
-(56, 'Miguel Costa', 'miguel.costa@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 'opera', 11),
-(57, 'Sofia Almeida', 'sofia.almeida@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 'admin', 11),
-(58, 'Ricardo Lopes', 'ricardo.lopes@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 'opera', 11),
-(59, 'Carla Martins', 'carla.martins@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 'opera', 11),
-(60, 'Tiago Ferreira', 'tiago.ferreira@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 'opera', 11),
-(61, 'Inês Carvalho', 'ines.carvalho@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 'finan', 11),
-(62, 'Nuno', 'nuno@gmail.com', '$2y$10$/Kx3sgc3z9vTzr/LLtZP1e0ovDfM3uM3wZbYz/S0NQq/C4qkO94YG', 'admin_rh', 1),
-(63, 'Miguel', 'miguel@gmail.com', '$2y$10$jZT.5dbmiwlxGU1r5sOoE.33uSb4gaCStERmWKHHIGyB5aBQdWhDu', 'admin_rh', 1),
-(64, 'Henrique', 'henrique@gmail.com', '$2y$10$K8VcxjW6Piid0.aZikxEXeROBThMFtd2K2T0FrHZKRJvQo/N0RYoi', 'admin_rh', 1),
-(65, 'Luis', 'luis@gmail.com', '$2y$10$juBeE2rt4zNgwvRNasBBIO9hdd/kzPiFl4qAfE4yq8srrYWFtkrjG', 'admin_rh', 1);
+INSERT INTO `user` (`id`, `name`, `email`, `password`, `company_id`) VALUES
+(12, 'Miguel Administrador RH', 'adminrh@gmail.com', '$2y$10$B.bMkH59Q50F9En8HDkGkuWb7gg7q/JJx0HJdyeTA4PeknAKRLRSC', 11),
+(21, 'Miguel Operador', 'oper@gmail.com', '$2y$10$EGMXoFEYCIe.ikxef1vBKeTbPKZHqYo4VlRwNDhrXsOHLxEdeQtam', 11),
+(22, 'Miguel Intermedio2', 'inter2@gmail.com', '$2y$10$M/EJOTR/oBC8dc2smGblW.wR0zniGA0/i.WS31E.xKARJY71jvUz.', 11),
+(23, 'Miguel Intermedio', 'inter@gmail.com', '$2y$10$/P/JJfaYhiWHckhOxtS8y.XFXIOFs7lopmV9L3bWD8Ilea6B.MiIO', 10),
+(24, 'Miguel Admin', 'admin@gmail.com', '$2y$10$T/4B9aKCQZWrW46bUVnm2egAlen9LGnZte1AuWtFjPfS5oqBR0yme', 10),
+(25, 'Miguel Estrela', 'estrela@gmail.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 11),
+(38, 'Diretor RH', 'diretorrh@gmail.com', '$2y$10$BRxnnpNXBIYEi6rI570uIeDB/R3cDNnSXQt4xpAa9YcFfoE/wYmf2', 11),
+(39, 'João Operador', 'joao@gmail.com', '$2y$10$ElvaN9UKBsDw6h4Y/gHF/OTBZubJKKmdbdf/NA1RdLcdp7lRbKbSq', 3),
+(40, 'Luís Financeiro', 'finan@gmail.com', '$2y$10$2XFNLGIiAz2jlNZjYl6CG.5kF.2Op6eAKfEv0me1nvUPQML2slRGO', 10),
+(41, 'Sandra Ferreira', 'sandraferreira@gmail.com', '$2y$10$Fp3b9rXYdGyYguIlhaNg5enche2AvMJD7UliMWxHqyRIDLMksqWrm', 11),
+(52, 'João Silva', 'carlos.silva@inov360.pt', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 11),
+(53, 'Maria Fernandes', 'maria.fernandes@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 11),
+(54, 'Pedro Santos', 'pedro.santos@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 11),
+(55, 'Ana Rodrigues', 'ana.rodrigues@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 11),
+(56, 'Miguel Costa', 'miguel.costa@teste.com', '$2y$10$ECmuiiWuw7cjFqcWTCUXJeXfApm4q.mus2KMOCuETwX0OfHBoA1EO', 11),
+(57, 'Sofia Almeida', 'sofia.almeida@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 11),
+(58, 'Ricardo Lopes', 'ricardo.lopes@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 11),
+(59, 'Carla Martins', 'carla.martins@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 11),
+(60, 'Tiago Ferreira', 'tiago.ferreira@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 11),
+(61, 'Inês Carvalho', 'ines.carvalho@teste.com', '$2y$10$123456789012345678901uYtKzX1gT3fQw98hJsd1234567890abc', 11),
+(66, 'Nuno', 'nuno@gmail.com', '$2y$10$S9tOlCOupenvsXSMl66XN.5n4qHejHC9jSscUDEUX9PoIzeG3aeGi', 1),
+(67, 'Miguel', 'miguel@gmail.com', '$2y$10$8TfMpTu64CYIvGjTVeov8OgiUv9qj9N46hsudLVxjb7W7miTROxQS', 1),
+(68, 'Henrique', 'henrique@gmail.com', '$2y$10$spApCilsx4/e8sKiYi1PNuAbEVuvwACBROrZCbFmqua.odkj9NS4C', 1),
+(69, 'Luis', 'luis@gmail.com', '$2y$10$uEcxIcAz0/RNpwhtbkAvWO0lA9XFHiO7hjBrWg2YPFXXvzXjLO/ti', 1);
 
 -- --------------------------------------------------------
 
@@ -672,12 +672,11 @@ CREATE TABLE `user_permission` (
 
 INSERT INTO `user_permission` (`user_id`, `permission_id`, `granted_at`) VALUES
 (12, 1, '2025-10-16 12:46:25'),
-(62, 2, '2025-10-20 10:41:36'),
-(62, 4, '2025-10-20 10:41:36'),
-(64, 5, '2025-10-17 12:56:03'),
-(65, 2, '2025-10-20 10:42:54'),
-(65, 3, '2025-10-20 10:42:54'),
-(65, 5, '2025-10-20 10:42:54');
+(68, 2, '2025-10-23 09:52:09'),
+(68, 3, '2025-10-23 09:52:09'),
+(68, 5, '2025-10-23 09:52:09'),
+(68, 6, '2025-10-23 09:52:09'),
+(68, 7, '2025-10-23 09:52:09');
 
 --
 -- Índices para tabelas despejadas
@@ -808,13 +807,13 @@ ALTER TABLE `user_permission`
 -- AUTO_INCREMENT de tabela `colaborador_edicoes`
 --
 ALTER TABLE `colaborador_edicoes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de tabela `colaborador_responsaveis`
 --
 ALTER TABLE `colaborador_responsaveis`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de tabela `company`
@@ -826,13 +825,13 @@ ALTER TABLE `company`
 -- AUTO_INCREMENT de tabela `contactos_emergencia`
 --
 ALTER TABLE `contactos_emergencia`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT de tabela `contactos_emergencia_edicoes`
 --
 ALTER TABLE `contactos_emergencia_edicoes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de tabela `eventos`
@@ -844,25 +843,25 @@ ALTER TABLE `eventos`
 -- AUTO_INCREMENT de tabela `finance_profiles`
 --
 ALTER TABLE `finance_profiles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT de tabela `overtime`
 --
 ALTER TABLE `overtime`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de tabela `pedidos_ferias`
 --
 ALTER TABLE `pedidos_ferias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT de tabela `request_overtime`
 --
 ALTER TABLE `request_overtime`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de tabela `timesheet_periods`
@@ -874,7 +873,7 @@ ALTER TABLE `timesheet_periods`
 -- AUTO_INCREMENT de tabela `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- Restrições para despejos de tabelas
