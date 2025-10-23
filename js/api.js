@@ -43,7 +43,7 @@ export async function getCollabsByUser(state = 'active', searchQuery = '') {
     if (state) params.append('state', state);
     if (searchQuery) params.append('q', searchQuery);
 
-    return apiFetch(`collab_management/get_collabs_of_user.php${params.toString()}`, {
+    return apiFetch(`collab_management/get_collabs_of_user.php?${params.toString()}`, {
         method: 'GET'
     });
 }
