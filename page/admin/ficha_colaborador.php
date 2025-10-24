@@ -655,4 +655,4 @@ function safe($value) {
     }
 </style>
 
-<script src="../../js/dashboard_opera.js"></script>
+<script src="../../js/legacy/dashboard_opera.js"></script>

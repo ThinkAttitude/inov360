@@ -303,7 +303,7 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
     </main>
 </div>
 
-<script src="../../js/dashboard_inter2.js?v=20250825"></script>
+<script src="../../js/legacy/dashboard_inter2.js?v=20250825"></script>
 <script src="../../js/theme.js?v=20250825"></script>
 </body>
 </html>

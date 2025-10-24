@@ -1,9 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "*") {
-    echo "<p>Acesso negado.</p>";
-    exit;
-}
+
 // Prevent caching of this dynamic HTML to avoid showing stale company/theme
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
@@ -142,7 +139,7 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
         </main>
     </div>
 
-    <script src="../../js/dashboard_estrela.js?v=20250825"></script>
+    <script src="../../js/legacy/dashboard_estrela.js?v=20250825"></script>
     <script src="../../js/theme.js?v=20250825"></script>
 </body>
 </html>

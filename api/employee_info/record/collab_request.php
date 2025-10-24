@@ -1,5 +1,5 @@
 <?php
-// api/employee_info/record/colab_request.php
+// api/employee_info/record/collab_request.php
 declare(strict_types=1);
 
 session_start();

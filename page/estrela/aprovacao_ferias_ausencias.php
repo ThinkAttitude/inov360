@@ -706,4 +706,4 @@ try {
         }
     }
 </style>
-<script src="../../js/leaves_approval.js"></script>
+<script src="../../js/legacy/leaves_approval.js"></script>

@@ -1074,4 +1074,4 @@ try {
     }
  </style>
 
-<script src="../../js/ferias_ausencias.js"></script>
+<script src="../../js/legacy/ferias_ausencias.js"></script>

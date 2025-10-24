@@ -1,5 +1,5 @@
 <?php
-// api/create_colabs.php
+// api/create_collabs.php
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');

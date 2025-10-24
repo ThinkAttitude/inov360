@@ -1059,6 +1059,6 @@ function confirmRejection() {
 }
 </script>
 
-<script src="../../js/horarios_init.js"></script>
-<script src="../../js/integracao_ferias_horarios.js"></script>
-<script src="../../js/dados_demonstracao.js"></script>
+<script src="../../js/legacy/horarios_init.js"></script>
+<script src="../../js/legacy/integracao_ferias_horarios.js"></script>
+<script src="../../js/legacy/dados_demonstracao.js"></script>
