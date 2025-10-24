@@ -25,7 +25,7 @@ async function apiFetch(endpoint, options = {}) {
 }
 
 export async function login(email, password) {
-    return apiFetch('login.php', {
+    return apiFetch('auth/login.php', {
         method: 'POST',
         body: JSON.stringify({ email, password })
     });
@@ -43,7 +43,7 @@ export async function getCollabsByUser(state = 'active', searchQuery = '') {
     if (state) params.append('state', state);
     if (searchQuery) params.append('q', searchQuery);
 
-    return apiFetch(`collab_management/get_collabs_of_user.php?${params.toString()}`, {
+    return apiFetch(`collab_management/return_sub.php?${params.toString()}`, {
         method: 'GET'
     });
 }

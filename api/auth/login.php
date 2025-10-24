@@ -9,8 +9,9 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 
 require_once "../includes/db.php";
 
-$email = $_POST["email"] ?? '';
-$password = $_POST["password"] ?? '';
+$input = json_decode(file_get_contents('php://input'), true);
+$email = $input["email"] ?? '';
+$password = $input["password"] ?? '';
 
 if ($email === '' || $password === '') {
     echo json_encode(['success' => false, 'message' => 'Email e palavra-passe são obrigatórios.']);
@@ -78,7 +79,7 @@ try {
     exit;
 
 } catch (Throwable $e) {
-    // opcional: error_log($e->getMessage());
+    error_log($e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Erro interno do servidor.']);
     exit;
 }
