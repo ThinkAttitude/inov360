@@ -1,6 +1,7 @@
 // dashboard.js
 
 import {getCollabsByUser} from "./api.js";
+import { Paths } from "./router.js";
 
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
@@ -143,31 +144,42 @@ const CARD_DEFS = {
 /* Helpers */
 function createWelcomeCard(key) {
     const def = CARD_DEFS[key];
+    if (!def) return null;
+
     const tpl = document.getElementById('tpl-welcome-card');
+    if (!tpl || !tpl.content) return null;
+
     const node = tpl.content.firstElementChild.cloneNode(true);
-    node.querySelector('.card-title').textContent = def.title;
-    node.querySelector('.card-desc').textContent = def.description;
-    node.querySelector('.card-link').dataset.content = key;
-    node.querySelector('.card-link').textContent = def.ctaText;
-    node.querySelector('.card-icon').innerHTML = svg(def.icon, 24);
+
+    const titleEl = node.querySelector('.card-title');
+    const descEl  = node.querySelector('.card-desc');
+    const linkEl  = node.querySelector('.card-link');
+    const iconEl  = node.querySelector('.card-icon');
+
+    if (titleEl) titleEl.textContent = def.title;
+    if (descEl)  descEl.textContent  = def.description;
+
+    if (linkEl) {
+        linkEl.dataset.content = key;
+        linkEl.textContent = def.ctaText;
+        linkEl.setAttribute('href', `#${key}`);
+    }
+
+    if (iconEl) iconEl.innerHTML = svg(def.icon, 24);
     return node;
 }
 
 function bindNav() {
     document.querySelectorAll('[data-content]').forEach(btn => {
-        btn.onclick = e => {
-            e.preventDefault();
+        btn.onclick = () => {
             const key = btn.dataset.content;
             if (!key) return;
             document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
             btn.closest('li')?.classList.add('active');
-            document.querySelectorAll('.content-section').forEach(sec => {
-                sec.hidden = sec.dataset.section !== key;
-                sec.classList.toggle('active', sec.dataset.section === key);
-            });
         };
     });
 }
+
 
 async function userHasCollabs() {
     const c = await getCollabsByUser()
@@ -209,7 +221,7 @@ export function addSidebarEntries(types = []) {
 
         const li = document.createElement('li');
         li.innerHTML = `
-            <a href="#" data-content="${t}">
+            <a href="#${t}" data-content="${t}">
                 <span class="menu-icon">${svg(def.icon, 20, 'menu-icon')}</span>${def.title}
             </a>`;
         frag.appendChild(li);
@@ -219,13 +231,12 @@ export function addSidebarEntries(types = []) {
     bindNav();
 }
 
-
-
 document.addEventListener('DOMContentLoaded', () => {
     const user = window.CURRENT_USER || {};
     const userPerms = new Set(user.permissions || []);
 
-    const permCards = Object.entries(CARD_DEFS)
+    const permCards = Object
+        .entries(CARD_DEFS)
         .filter(([_, def]) => userPerms.has(def.permission))
         .map(([key, _]) => key);
 
