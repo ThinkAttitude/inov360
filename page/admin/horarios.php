@@ -2,11 +2,6 @@
 session_start();
 require_once "../../api/includes/db.php";
 
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin") {
-    echo "<p>Acesso negado.</p>";
-    exit;
-}
-
 // Lógica específica do opera (se necessária)
 ?>
 

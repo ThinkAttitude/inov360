@@ -2,12 +2,6 @@
 session_start();
 require_once "../../api/includes/db.php";
 
-// Garantir que só inter2 acedem
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin") {
-    echo "<p>Acesso negado.</p>";
-    exit;
-}
-
 $user_id = $_SESSION["user"]["id"];
 
 try {
