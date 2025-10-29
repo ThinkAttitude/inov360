@@ -7,8 +7,8 @@ if (!isset($_SESSION['is_login'])) {
 }
 ?>
 
-<link rel="stylesheet" href="../../css/horarios_common.css">
-<link rel="stylesheet" href="../../css/aprovacao_horarios.css">
+<link rel="stylesheet" href="../../css/legacy/horarios_common.css">
+<link rel="stylesheet" href="../../css/legacy/aprovacao_horarios.css">
 
 <div class="aprovacao-page">
     <div class="page-header">

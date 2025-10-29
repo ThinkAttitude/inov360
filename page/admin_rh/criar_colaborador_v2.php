@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Criar Colaborador V2</title>
     <link rel="stylesheet" href="../../css/global.css">
-    <link rel="stylesheet" href="../../css/criar_colaborador_v2.css">
+    <link rel="stylesheet" href="../../css/legacy/criar_colaborador_v2.css">
 </head>
 <body>
 <div class="ccv2-wrapper">

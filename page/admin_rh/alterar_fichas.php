@@ -27,7 +27,7 @@ try {
 }
 ?>
 
-<link rel="stylesheet" href="../../css/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
 
 <div class="page-header">
     <h2>Alterar Fichas dos Colaboradores</h2>

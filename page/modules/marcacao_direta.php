@@ -6,7 +6,7 @@
     <title>Marcação Direta - RH360</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../css/global.css">
-    <link rel="stylesheet" href="../../css/marcacao_direta.css">
+    <link rel="stylesheet" href="../../css/legacy/marcacao_direta.css">
 </head>
 <body>
 <div class="container">

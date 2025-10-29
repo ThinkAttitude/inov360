@@ -28,13 +28,12 @@ $userName = $_SESSION['user']['name'] ?? '';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-<div class="dashboard-container">
+<div class="dashboard-layout">
 
-    <!-- Sidebar -->
+    <!-- Sidebar column -->
     <nav class="sidebar" aria-label="Navegação principal">
         <div class="sidebar-header">
             <div class="logo" id="companyLogo">
-                <!-- default inline SVG logo; JS can replace with company image if available -->
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
@@ -52,8 +51,8 @@ $userName = $_SESSION['user']['name'] ?? '';
         <ul class="sidebar-menu">
             <li class="active">
                 <a href="#" data-content="inicio">
-                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                         <polyline points="9,22 9,12 15,12 15,22"></polyline>
                     </svg>
@@ -62,8 +61,8 @@ $userName = $_SESSION['user']['name'] ?? '';
             </li>
             <li>
                 <a href="#horarios" data-content="horarios">
-                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12,6 12,12 16,14"></polyline>
                     </svg>
@@ -72,8 +71,8 @@ $userName = $_SESSION['user']['name'] ?? '';
             </li>
             <li>
                 <a href="#pedidos_ferias" data-content="pedidos_ferias">
-                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                         <line x1="16" y1="2" x2="16" y2="6"></line>
                         <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -84,8 +83,8 @@ $userName = $_SESSION['user']['name'] ?? '';
             </li>
             <li data-anchor="ficha_collab">
                 <a href="#ficha_collab" data-content="ficha_collab">
-                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14,2 14,8 20,8"></polyline>
                         <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -96,27 +95,37 @@ $userName = $_SESSION['user']['name'] ?? '';
                 </a>
             </li>
         </ul>
+
         <div class="sidebar-footer">
-            <a href="#" id="logoutBtn" class="logout-btn">Terminar Sessão</a>
+            <button id="logoutBtn" class="logout-btn">Terminar Sessão</button>
         </div>
     </nav>
 
-    <!-- template para welcome-card -->
-    <template id="tpl-welcome-card">
-        <article class="welcome-card" role="article" aria-live="polite">
-            <div class="card-icon" aria-hidden="true"></div>
-            <h3 class="card-title"></h3>
-            <p class="card-desc"></p>
-            <a href="#" class="card-link" data-content="">Ver</a>
-        </article>
-    </template>
+    <!-- Right column: main content + footer stacked vertically -->
+    <div class="content-column">
 
-    <!-- Main content -->
-    <main class="main-content" id="main-content">
-        <!-- Content will be loaded dynamically by router -->
+        <!-- template para welcome-card (stays available in DOM for dashboard.js to clone) -->
+        <template id="tpl-welcome-card">
+            <article class="welcome-card" role="article" aria-live="polite">
+                <div class="card-icon" aria-hidden="true"></div>
+                <h3 class="card-title"></h3>
+                <p class="card-desc"></p>
+                <a href="#" class="card-link" data-content="">Ver</a>
+            </article>
+        </template>
+
+        <main class="main-content" id="main-content">
+            <!-- router will inject the current view here -->
+        </main>
+
+        <footer class="dashboard-footer">
+            <small>&copy; <span id="yearSpan"></span> RH360</small>
+        </footer>
+    </div>
 </div>
 
 <script type="module" src="../js/dashboard.js"></script>
 <script type="module" src="../js/router.js"></script>
 </body>
 </html>
+

@@ -36,7 +36,7 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="../../css/global.css">
-    <link rel="stylesheet" href="../../css/dashboard_inter.css">
+    <link rel="stylesheet" href="../../css/legacy/dashboard_inter.css">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

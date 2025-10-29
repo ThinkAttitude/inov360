@@ -1,12 +1,9 @@
 <?php
 session_start();
 
-// Limpa todas as variáveis de sessão
 $_SESSION = [];
 
-// Destroi a sessão
 session_destroy();
 
-// Redireciona para a página de login
-header("Location: ../page/login.html"); // ou ajuste se o login estiver noutro local
+header("Location: ../../page/login.html"); 
 exit;

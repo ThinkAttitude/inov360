@@ -16,8 +16,10 @@ async function apiFetch(endpoint, options = {}) {
             ...options
         });
 
-        const data = await response.json();
-        return data;
+        const ct = response.headers.get('Content-Type') || '';
+        if (ct.includes('application/json')) return await response.json();
+
+        return response;
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
         throw error;
@@ -29,6 +31,10 @@ export async function login(email, password) {
         method: 'POST',
         body: JSON.stringify({ email, password })
     });
+}
+
+export function logout() {
+    window.location.href = '../api/auth/logout.php';
 }
 
 export async function register(userData) {

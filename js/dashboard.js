@@ -1,7 +1,4 @@
-// dashboard.js
-
-import {getCollabsByUser} from "./api.js";
-import { Paths } from "./router.js";
+import {getCollabsByUser, logout} from "./api.js";
 
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
@@ -183,13 +180,12 @@ function bindNav() {
 
 async function userHasCollabs() {
     const c = await getCollabsByUser()
-    if (!c) throw new Error('Failed to fetch collaborators');
-    return c.total > 0;
+    return c?.total > 0 ?? false;
 }
 
 
 /* Public functions */
-export function addCardsToWelcomeArea(requested = []) {
+export function addWelcomeCards(requested = []) {
     const wc = document.querySelector('.welcome-content');
     if (!wc) return;
 
@@ -231,7 +227,7 @@ export function addSidebarEntries(types = []) {
     bindNav();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function loadCards() {
     const user = window.CURRENT_USER || {};
     const userPerms = new Set(user.permissions || []);
 
@@ -254,14 +250,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 sideCards.add(CARD_TYPES.CONSULTA_PEDIDOS);
             }
 
-            if (welcomeCards.size > 0) addCardsToWelcomeArea([...welcomeCards]);
+            if (welcomeCards.size > 0) addWelcomeCards([...welcomeCards]);
             if (sideCards.size > 0) addSidebarEntries([...sideCards]);
         })
         .catch(err => {
             console.error('Failed to check collaborators:', err);
             // TODO: better error handling since here it should inform the user
         });
+}
+window.addEventListener('view:loaded', () => {
+    loadCards()
+    const userNameEl = document.getElementById('userName');
+    if (userNameEl) userNameEl.textContent = (window.CURRENT_USER && window.CURRENT_USER.name) || '';
+});
 
+document.addEventListener('DOMContentLoaded', () => {
     const yearSpan = document.getElementById('yearSpan');
     if (yearSpan) yearSpan.textContent = new Date().getFullYear().toString();
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            logout()
+        });
+    }
 });

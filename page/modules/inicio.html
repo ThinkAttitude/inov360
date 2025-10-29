@@ -67,12 +67,8 @@
     </div>
 </div>
 
-<footer>
-    <small>&copy; <span id="yearSpan"></span> RH360</small>
-</footer>
-
 <script>
-    // Populate user name from global variable
+    console.log(window.CURRENT_USER)
     document.getElementById('userName').textContent = window.CURRENT_USER?.name || '';
     document.getElementById('yearSpan').textContent = new Date().getFullYear();
 </script>

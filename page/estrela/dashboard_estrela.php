@@ -35,8 +35,8 @@ $logoUrlBusted = $logoUrl ? ($logoUrl . (strpos($logoUrl,'?')!==false ? '&' : '?
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RH360 - Painel Estrela</title>
     <link rel="stylesheet" href="../../css/global.css">
-    <link rel="stylesheet" href="../../css/dashboard_inter.css">
-    <link rel="stylesheet" href="../../css/dashboard_estrela.css">
+    <link rel="stylesheet" href="../../css/legacy/dashboard_inter.css">
+    <link rel="stylesheet" href="../../css/legacy/dashboard_estrela.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
