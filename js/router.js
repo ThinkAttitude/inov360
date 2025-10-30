@@ -1,5 +1,6 @@
 import {CARD_TYPES} from "./dashboard.js";
 import {mountCalendar} from "./modules/horarios.js";
+import {initForm} from "./modules/marcacao_direta.js";
 
 export const Paths = {
     ...CARD_TYPES,
@@ -52,8 +53,8 @@ export const Routes = {
         js: null
     },
     [Paths.MARCACAO_DIRETA]: {
-        html: '/page/modules/marcacao_direta.php',
-        js: null
+        html: '/page/modules/marcacao_direta.html',
+        js: initForm
     },
     [Paths.GESTAO_FICHAS]: {
         html: '/page/modules/gestao_fichas.html',

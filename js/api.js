@@ -10,7 +10,6 @@ async function apiFetch(endpoint, options = {}) {
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             headers: {
-                'Content-Type': 'application/json',
                 ...options.headers
             },
             ...options
@@ -44,7 +43,20 @@ export async function register(userData) {
     });
 }
 
-export async function getCollabsByUser(state = 'active', searchQuery = '') {
+export async function getCollaborators() {
+    return apiFetch('collab_management/collabs_list.php', {
+        method: 'GET',
+    });
+}
+
+export async function createDirectLeave(formData) {
+    return apiFetch('leaves/direct_leave.php', {
+        method: 'POST',
+        body: formData
+    });
+}
+
+export async function getSubsByUser(state = 'active', searchQuery = '') {
     const params = new URLSearchParams();
     if (state) params.append('state', state);
     if (searchQuery) params.append('q', searchQuery);

@@ -1,4 +1,4 @@
-import {getCollabsByUser, logout} from "./api.js";
+import {getSubsByUser, logout} from "./api.js";
 
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
@@ -179,7 +179,7 @@ function bindNav() {
 
 
 async function userHasCollabs() {
-    const c = await getCollabsByUser()
+    const c = await getSubsByUser()
     return c?.total > 0 ?? false;
 }
 
