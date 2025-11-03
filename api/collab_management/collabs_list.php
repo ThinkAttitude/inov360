@@ -21,7 +21,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // filtros opcionais
-    $q         = trim((string)($_GET['q'] ?? ''));               // busca por nome/email
+    $q         = trim((string)($_GET['q'] ?? '')); // busca por nome/email
     $companyId = isset($_GET['company_id']) && $_GET['company_id'] !== '' ? (int)$_GET['company_id'] : null;
     $limit     = max(1, min(500, (int)($_GET['limit'] ?? 200)));
     $page      = max(1, (int)($_GET['page'] ?? 1));
