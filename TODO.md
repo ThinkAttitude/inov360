@@ -13,6 +13,8 @@
 - [ ] Visualizar os dias de trabalho, ausência e férias
 - [ ] Marcar um horário com as horas trabalhadas e os quilómetros (km) da viatura
 - [ ] Marcar um horário em múltiplos dias, dado um período, com horas trabalhadas e quilómetros (km) da viatura
+- [ ] Limpar um horário com as horas trabalhadas e os quilómetros (km) da viatura
+- [ ] Limpar um horário em múltiplos dias, dado um período, com horas trabalhadas e quilómetros (km) da viatura
 
 ## Pedidos de férias / ausências
 - [x] Apresentar painel de pedidos e estatísticas relacionadas
@@ -26,8 +28,8 @@
 - [x] Apresentar painel de extração de horários aprovados
 - [ ] Pesquisar por nome do colaborador e mês e obter os horários resultantes da filtragem
 - [ ] Importar a lista a partir do browser
-- [ ] Converter os horários selecionados para PDFs
-- [ ] Exportar os PDFs resultantes para uma pasta ZIP
+- [ ] Converter os horários selecionados para Excell
+- [ ] Exportar os Excell resultantes para uma pasta ZIP (????)
 - [ ] Obter o número de registos aprovados e já extraídos
 
 ## Propor horas extra
