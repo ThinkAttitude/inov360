@@ -30,12 +30,24 @@
 - [ ] Exportar os PDFs resultantes para uma pasta ZIP
 - [ ] Obter o número de registos aprovados e já extraídos
 
+## Propor horas extra
+- [ ] Apresentar painel de horas extra
+- [ ] Obter e listar todos os colaboradores
+- [ ] Submeter e registar na base de dados o pedido
+
 ## Horas extra
-- [ ] (a definir)
+- [ ] Apresentar painel de listagem, aprovacao e rejeicao dos pedidos de horas extra
+- [ ] Obter e listar todos os pedidos
+- [ ] Permitir efetuar uma acao (aprovar ou recusar) em cada pedido
+- [ ] Apresentar painel de historico de pedidos
+- [ ] Obter e listar todos os pedidos anteriores (aprovados ou recusados)
+- [ ] Apresentar painel de visualizacao de cada pedido aprovado
+- [ ] Permitir selecao dos pedidos aprovados
+- [ ] Converter e exportar os pedidos selecionados para formato .xlsx (Excel)
 
 ## Férias / ausências diretas
 - [x] Apresentar formulário com os respetivos campos obrigatórios
-- [x] Apresentar a lista de todos os colaboradores
+- [x] Obter e listar todos os colaboradores
 - [x] Importar ficheiro de comprovativo apenas com os formatos aceites
 - [x] Submeter e registar na base de dados a marcação direta
 
@@ -47,21 +59,29 @@
 - [ ] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido
 
 ## Financeira
-- [ ] (a definir)
+- [ ] Apresentar painel de financas
+- [ ] Obter e listar todas as fichas financeiras dos colaboradores
+- [ ] Alterar qualquer campo das fichas
+- [ ] Exportar a ficha para formato .xlsx (Excel)
 
 ## Controlo de colaboradores
-- [ ] (a definir)
+- [ ] Apresentar painel de controlo de colaboradores
+- [ ] Criacao de colaboradores e apresentar o respetivo formulario
+- [ ] Alterar permissoes de um utilizador especifico com caixa de selecao
+- [ ] Alterar hierarquia de um utilizador especifico com caixa de selecao
+- [ ] Apresentar painel de diagrama hierarquico
+- [ ] Montar e registar na base de dados a arvore hierarquica atraves do painel do diagrama
 
 ## Aprovação de horários
-- [ ] (a definir)
+- [ ] Apresentar painel de aprovacao de ferias / ausencias
 
 ## Aprovação de férias / ausências
-- [ ] (a definir)
+- [ ] Apresentar painel de aprovacao de ferias / ausencias
 
 ## Consulta de pedidos
 - [x] Apresentar painel do histórico de pedidos
 - [ ] Listar detalhadamente todos os pedidos já processados (nome do colaborador, comprovativo, estado, data de início e fim, descrição, responsável que processou, data do pedido)
-- [ ] Abrir painel de visualização do comprovativo
+- [ ] Apresentar painel de visualização do comprovativo
 - [ ] Apresentar o número de pedidos processados
 
 ## A minha ficha
