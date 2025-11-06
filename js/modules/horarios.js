@@ -5,7 +5,7 @@ function loadLib() {
             return;
         }
 
-        // inject FullCalendar CSS if not already present
+        // FullCalendar CSS
         if (!document.querySelector('link[data-fullcalendar-css]')) {
             const css = document.createElement('link');
             css.rel = 'stylesheet';
@@ -14,12 +14,70 @@ function loadLib() {
             document.head.appendChild(css);
         }
 
-        // inject FullCalendar JS
+        // FullCalendar JS
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js';
         script.onload = () => resolve();
         script.onerror = reject;
         document.body.appendChild(script);
+    });
+}
+
+export function markDays(days) {
+    if (!Array.isArray(days)) return;
+
+    const byDate = new Map();
+    days.forEach(d => {
+        if (!d || !d.date) return;
+        byDate.set(d.date, d);
+    });
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    document.querySelectorAll('.day-cell[data-date]').forEach(cell => {
+        const date = cell.dataset.date;
+        const info = byDate.get(date);
+
+        cell.classList.remove('today', 'marked', 'ferias');
+        cell.onclick = null;
+        cell.style.cursor = '';
+
+        if (!info) return;
+
+        const hasLeave = Array.isArray(info.leaves) && info.leaves.length > 0;
+        const hasWork = !hasLeave && typeof info.workMin === 'number' && info.workMin > 0;
+
+        if (date === todayStr && !hasLeave && !hasWork) {
+            cell.classList.add('today');
+        }
+
+        if (hasLeave) {
+            cell.classList.add('ferias');
+            cell.style.cursor = 'default';
+
+            let details = cell.querySelector('.day-details');
+            if (!details) {
+                details = document.createElement('div');
+                details.className = 'day-details';
+                cell.appendChild(details);
+            }
+
+            let badge = details.querySelector('.ferias-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'ferias-badge';
+                details.appendChild(badge);
+            }
+            badge.textContent = 'FÉRIAS';
+        } else if (hasWork) {
+            cell.classList.add('marked');
+            cell.style.cursor = 'pointer';
+            cell.onclick = () => {
+                if (typeof window.openDayModal === 'function') {
+                    window.openDayModal(date);
+                }
+            };
+        }
     });
 }
 
@@ -44,12 +102,10 @@ export async function mountCalendar() {
         },
         height: 'auto',
 
-        // Ask backend for events for the current visible month
         events: function(fetchInfo, success, fail) {
-            // FullCalendar gives us fetchInfo.start (Date of start-of-range)
             const start = fetchInfo.start;
             const year = start.getFullYear();
-            const month = String(start.getMonth() + 1).padStart(2, '0');
+            const month = String(new Date().getMonth() + 1).padStart(2, '0');
             const monthKey = `${year}-${month}`;
 
             // TODO: adjust the API param to search by date range and not just month
@@ -86,7 +142,7 @@ export async function mountCalendar() {
                             });
                         });
                     });
-
+                    markDays(data.days);
                     success(events);
                 })
                 .catch(err => {

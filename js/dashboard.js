@@ -10,8 +10,8 @@ export const CARD_TYPES = Object.freeze({
     CONSULTA_PEDIDOS: 'consulta_pedidos',
     LISTA_INTERMEDIOS: 'lista_intermedios',
     CONTROLO_COLABS: 'controlo_colabs',
-    PEDIDOS_HORAS_EXTRAS: 'pedidos_horas_extras',
-    APROVACAO_HORAS_EXTRAS: 'aprov_horas_extras',
+    PEDIDOS_HORAS_EXTRA: 'pedidos_horas_extras',
+    APROVACAO_HORAS_EXTRA: 'aprov_horas_extras',
     MARCACAO_DIRETA: 'marcacao_direta',
     GESTAO_FICHAS: 'gestao_fichas',
     FINANCEIRA: 'financeira',
@@ -94,15 +94,15 @@ const CARD_DEFS = {
         permission: 1,
         ctaText: 'Gerir Colaboradores'
     },
-    [CARD_TYPES.PEDIDOS_HORAS_EXTRAS]: {
-        title: 'Propor Horas Extras',
+    [CARD_TYPES.PEDIDOS_HORAS_EXTRA]: {
+        title: 'Propor Horas Extra',
         description: 'Solicite pedidos de horas extras ou ajustes de horário como administrador',
         icon: SVG_ICONS.CALENDAR,
         permission: 4, // request_overtime
         ctaText: 'Gerir Pedidos'
     },
-    [CARD_TYPES.APROVACAO_HORAS_EXTRAS]: {
-        title: 'Horas Extras',
+    [CARD_TYPES.APROVACAO_HORAS_EXTRA]: {
+        title: 'Horas Extra',
         description: 'Aprove ou rejeite pedidos de horas extras ou ajustes de horário de todos os colaboradores',
         icon: SVG_ICONS.CIRCLE_CHECK,
         permission: 5, // approve_overtime

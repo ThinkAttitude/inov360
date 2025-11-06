@@ -44,11 +44,11 @@ export const Routes = {
         html: '/page/modules/controlo_colabs.php',
         js: null
     },
-    [Paths.PEDIDOS_HORAS_EXTRAS]: {
+    [Paths.PEDIDOS_HORAS_EXTRA]: {
         html: '/page/modules/pedidos_horas_extras.php',
         js: null
     },
-    [Paths.APROVACAO_HORAS_EXTRAS]: {
+    [Paths.APROVACAO_HORAS_EXTRA]: {
         html: '/page/modules/aprovacao_horas_extras.php',
         js: null
     },
