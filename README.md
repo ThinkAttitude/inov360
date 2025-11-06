@@ -1,4 +1,3 @@
-````markdown
 # RH360
 
 Painel web para gestão operacional de uma empresa, com backoffice em PHP/MySQL e um dashboard moderno em JavaScript.
@@ -140,6 +139,3 @@ As funções JS em `api.js` escondem os detalhes de `fetch` e devolvem objetos J
 * A área autenticada usa uma abordagem “SPA-like” apenas **dentro** do dashboard.
 * O resto do site continua a usar navegação clássica PHP (cada página é renderizada no servidor).
 * O código está organizado por módulos (`horarios`, `marcacao_direta`, etc.) para separar HTML, CSS e JS específicos de cada página.
-
-```
-```
