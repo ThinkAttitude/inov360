@@ -11,10 +11,11 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     exit;
 }
 $user = $_SESSION['user'];
-if (($user['role'] ?? '') !== 'colab') {
+
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"FORBIDDEN","message"=>"Apenas 'colab' pode listar subempreiteiros."]);
-    exit;
+    echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
 /* ===== DB ===== */
@@ -47,7 +48,7 @@ try {
                 de.src_comp, de.src_n_apolice, de.src_validade,
                 de.dec_ss, de.dec_finan
             FROM subempreiteiro s
-            LEFT JOIN doc_empresas de ON de.user_id = s.user_id
+            LEFT JOIN sub_doc_empresas de ON de.user_id = s.user_id
             WHERE s.nome_empresa   LIKE :q
                OR s.nif            LIKE :q
                OR s.email_contacto LIKE :q
@@ -65,7 +66,7 @@ try {
                 de.src_comp, de.src_n_apolice, de.src_validade,
                 de.dec_ss, de.dec_finan
             FROM subempreiteiro s
-            LEFT JOIN doc_empresas de ON de.user_id = s.user_id
+            LEFT JOIN sub_doc_empresas de ON de.user_id = s.user_id
             ORDER BY s.nome_empresa ASC";
         $st = $pdo->query($sql);
     }
@@ -84,7 +85,7 @@ try {
         $in = implode(',', array_fill(0, count($userIds), '?'));
         $c = $pdo->prepare("
             SELECT sub_user_id, SUM(estado = 'incompleto') AS incompletos
-              FROM doc_colaboradores
+              FROM sub_doc_colaboradores
              WHERE sub_user_id IN ($in)
              GROUP BY sub_user_id
         ");

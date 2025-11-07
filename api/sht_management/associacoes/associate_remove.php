@@ -9,9 +9,11 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
 }
-if (($_SESSION['user']['role'] ?? '') !== 'colab') {
+
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"FORBIDDEN","message"=>"Apenas 'colab' pode remover associações."]); exit;
+    echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
 /* ===== DB ===== */

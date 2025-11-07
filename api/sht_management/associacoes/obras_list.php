@@ -9,10 +9,11 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
 }
-if (($_SESSION['user']['role'] ?? '') !== 'colab') {
+
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"FORBIDDEN","message"=>"Apenas 'colab' pode listar obras."]);
-    exit;
+    echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
 /* ===== DB ===== */
@@ -86,7 +87,7 @@ try {
               de.dec_ss, de.dec_finan
             FROM subs_obra so
             JOIN subempreiteiro s     ON s.user_id = so.sub_user_id
-            LEFT JOIN doc_empresas de ON de.user_id = s.user_id
+            LEFT JOIN sub_doc_empresas de ON de.user_id = s.user_id
             WHERE (so.obra_pk IN ($inPk) OR so.obra_id IN ($inNum))
             ORDER BY COALESCE(so.obra_pk, so.obra_id), s.nome_empresa
         ";
@@ -108,7 +109,7 @@ try {
         $inSubs = implode(',', array_fill(0, count($subIds), '?'));
         $c = $pdo->prepare("
             SELECT sub_user_id, SUM(estado = 'incompleto') AS incompletos
-              FROM doc_colaboradores
+              FROM sub_doc_colaboradores
              WHERE sub_user_id IN ($inSubs)
              GROUP BY sub_user_id
         ");

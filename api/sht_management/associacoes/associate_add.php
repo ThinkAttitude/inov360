@@ -11,14 +11,10 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     exit;
 }
 
-if (($_SESSION['user']['role'] ?? '') !== 'colab') {
+$perms = $_SESSION['user']['permissions'] ?? [];
+if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
-    echo json_encode([
-        "ok" => false,
-        "code" => "FORBIDDEN",
-        "message" => "Apenas 'colab' pode associar subempreiteiros a obras."
-    ]);
-    exit;
+    echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
 }
 
 /* ===== DB ===== */
@@ -125,7 +121,7 @@ try {
     $docStmt = $pdo->prepare('
         SELECT sat_comp, sat_n_apolice, sat_validade, sat_mod_seguro,
                src_comp, src_n_apolice, src_validade, dec_ss, dec_finan
-        FROM doc_empresas WHERE user_id = :id LIMIT 1
+        FROM sub_doc_empresas WHERE user_id = :id LIMIT 1
     ');
     $docStmt->execute([':id' => $fields['sub_user_id']]);
     $docs = $docStmt->fetch(PDO::FETCH_ASSOC) ?: [];
