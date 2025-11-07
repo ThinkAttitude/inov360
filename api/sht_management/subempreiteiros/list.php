@@ -12,7 +12,7 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
 $user = $_SESSION['user'];
 
 $perms = $_SESSION['user']['permissions'] ?? [];
-if (!is_array($perms) || !in_array(8, $perms, true)) { // record_managment
+if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
     echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
 }
