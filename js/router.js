@@ -41,7 +41,7 @@ export const Routes = {
         js: null
     },
     [Paths.CONTROLO_COLABS]: {
-        html: '/page/modules/controlo_colabs.php',
+        html: '/page/modules/controlo_colabs.html',
         js: null
     },
     [Paths.PEDIDOS_HORAS_EXTRA]: {
