@@ -43,7 +43,7 @@ export async function register(userData) {
     });
 }
 
-export async function getCollaborators() {
+export async function getAllCollaborators() {
     return apiFetch('collab_management/collabs_list.php', {
         method: 'GET',
     });

@@ -1,6 +1,7 @@
 import {CARD_TYPES} from "./dashboard.js";
 import {mountCalendar} from "./modules/horarios.js";
 import {initForm} from "./modules/marcacao_direta.js";
+import {mountClbMngmt} from "./modules/controlo_colabs.js";
 
 export const Paths = {
     ...CARD_TYPES,
@@ -42,7 +43,7 @@ export const Routes = {
     },
     [Paths.CONTROLO_COLABS]: {
         html: '/page/modules/controlo_colabs.html',
-        js: null
+        js: mountClbMngmt
     },
     [Paths.PEDIDOS_HORAS_EXTRA]: {
         html: '/page/modules/pedidos_horas_extras.php',

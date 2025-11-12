@@ -1,4 +1,4 @@
-import { createDirectLeave, getCollaborators } from '../api.js';
+import { createDirectLeave, getAllCollaborators } from '../api.js';
 
 function setMinDates() {
     const today = new Date().toISOString().split('T')[0];
@@ -97,8 +97,8 @@ async function fillCollaborators() {
     if (!select) return;
 
     try {
-        const res = await getCollaborators(); // { ok, total, items: [...] }
-        if (!res || res.ok !== true || !Array.isArray(res.items)) {
+        const res = await getAllCollaborators();
+        if (!res || res.ok !== true) {
             throw new Error('Resposta inesperada da API');
         }
 

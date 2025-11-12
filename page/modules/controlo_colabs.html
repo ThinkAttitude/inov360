@@ -16,7 +16,7 @@
             <div class="header-text">
                 <h2 class="controlo-title">Controlo de Colaboradores</h2>
                 <p class="controlo-desc">
-                    Monitore e gerencie a presença e atividades dos colaboradores em tempo real.
+                    Monitore e gerencie a presença e responsabilidades de cada colaborador.
                 </p>
             </div>
         </div>
@@ -39,6 +39,258 @@
     </header>
 
     <section class="controlo-content">
-        <!-- Conteúdo específico deste módulo vai aqui -->
+        <!-- Escolher colaborador -->
+        <div class="controlo-card">
+            <div class="controlo-card-header">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <h3>Escolher colaborador</h3>
+                    <p>Selecione a pessoa para ver os poderes e a hierarquia no sistema.</p>
+                </div>
+            </div>
+            <div class="controlo-card-body">
+                <label class="field-label" for="controlo-user-select">Colaborador</label>
+                <select id="controlo-user-select" class="field-select">
+                    <option value="">-- Selecione um colaborador --</option>
+                </select>
+                <p class="helper-text">
+                    Após escolher, abaixo aparecem as permissões e quem responde a quem.
+                </p>
+            </div>
+        </div>
+
+        <div class="controlo-grid">
+            <!-- Permissões -->
+            <div class="controlo-card">
+                <div class="controlo-card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Permissões no sistema</h3>
+                        <p>O que esta pessoa pode fazer dentro do RH360.</p>
+                    </div>
+                </div>
+                <div class="controlo-card-body">
+                    <p class="empty-state" id="perm-empty">
+                        Selecione um colaborador para ver as permissões.
+                    </p>
+
+                    <ul class="perm-list" id="perm-list">
+                        <li class="perm-item" data-perm="1">
+                            <div class="perm-text">
+                                <div class="perm-name">Controlo de Colaboradores</div>
+                                <div class="perm-desc">
+                                    Pode ver e gerir colaboradores da organização.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="2">
+                            <div class="perm-text">
+                                <div class="perm-name">Marcação Direta de Férias/Ausências</div>
+                                <div class="perm-desc">
+                                    Pode registar férias e ausências diretamente para outros colaboradores.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="3">
+                            <div class="perm-text">
+                                <div class="perm-name">Mapas de Horários</div>
+                                <div class="perm-desc">
+                                    Pode consultar mapas de horas e períodos de trabalho.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="4">
+                            <div class="perm-text">
+                                <div class="perm-name">Pedidos de Horas Extra</div>
+                                <div class="perm-desc">
+                                    Pode propor e registar pedidos de horas extra.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="5">
+                            <div class="perm-text">
+                                <div class="perm-name">Aprovação de Horas Extra</div>
+                                <div class="perm-desc">
+                                    Pode aprovar ou recusar pedidos de horas extra.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="6">
+                            <div class="perm-text">
+                                <div class="perm-name">Gestão de Fichas</div>
+                                <div class="perm-desc">
+                                    Pode gerir fichas pessoais e dados dos colaboradores.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="7">
+                            <div class="perm-text">
+                                <div class="perm-name">Financeira</div>
+                                <div class="perm-desc">
+                                    Pode aceder e gerir informações financeiras dos colaboradores.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hierarquia -->
+            <div class="controlo-card">
+                <div class="controlo-card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v4"></path>
+                            <path d="M6 7v4"></path>
+                            <path d="M18 7v4"></path>
+                            <rect x="9" y="7" width="6" height="4" rx="1"></rect>
+                            <rect x="3" y="11" width="6" height="4" rx="1"></rect>
+                            <rect x="15" y="11" width="6" height="4" rx="1"></rect>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Hierarquia</h3>
+                        <p>Quem é responsável por quem.</p>
+                    </div>
+                </div>
+                <div class="controlo-card-body">
+                    <p class="empty-state" id="hier-empty">
+                        Nenhum colaborador selecionado.
+                    </p>
+
+                    <div class="hierarchy-columns" aria-hidden="true">
+                        <div class="hierarchy-column">
+                            <div class="hierarchy-title">Responde a</div>
+                            <p class="hierarchy-helper">
+                                Aqui aparece o responsável direto deste colaborador.
+                            </p>
+                            <div class="hierarchy-item">
+                                <div class="avatar-small">DR</div>
+                                <div class="hierarchy-text">
+                                    <div class="h-name">Diretor de Equipa</div>
+                                    <div class="h-sub">Responsável direto</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hierarchy-column">
+                            <div class="hierarchy-title">Tem sob a sua responsabilidade</div>
+                            <p class="hierarchy-helper">
+                                Aqui aparecem as pessoas que esta pessoa coordena.
+                            </p>
+                            <div class="hierarchy-item">
+                                <div class="avatar-small">MC</div>
+                                <div class="hierarchy-text">
+                                    <div class="h-name">Miguel Costa</div>
+                                    <div class="h-sub">Colaborador</div>
+                                </div>
+                            </div>
+                            <div class="hierarchy-item">
+                                <div class="avatar-small">AF</div>
+                                <div class="hierarchy-text">
+                                    <div class="h-name">Ana Ferreira</div>
+                                    <div class="h-sub">Colaboradora</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 </div>

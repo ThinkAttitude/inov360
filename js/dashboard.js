@@ -18,6 +18,16 @@ export const CARD_TYPES = Object.freeze({
     FICHA_COLLAB: 'ficha_collab',
 });
 
+export const PERMISSIONS = Object.freeze({
+    CONTROLO_COLABS: 1,
+    MARCACAO_DIRETA: 2,
+    MAPAS_HORARIOS: 3,
+    PEDIDOS_HORAS_EXTRA: 4,
+    APROVACAO_HORAS_EXTRA: 5,
+    GESTAO_FICHAS: 6,
+    FINANCEIRA: 7,
+});
+
 const SVG_ICONS = {
     HOME: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline>`,
     CLOCK: `<circle cx="12" cy="12" r="10"></circle><polyline points="12,6 12,12 16,14"></polyline>`,
@@ -60,7 +70,7 @@ const CARD_DEFS = {
         title: 'Mapas de Horas',
         description: 'Gere e visualize mapas de horários para todos os colaboradores',
         icon: SVG_ICONS.CLOCK,
-        permission: 3, // periods_info
+        permission: PERMISSIONS.MAPAS_HORARIOS,
         ctaText: 'Ver Mapas'
     },
     [CARD_TYPES.PEDIDOS_FERIAS]: {
@@ -91,42 +101,42 @@ const CARD_DEFS = {
         title: 'Controlo de Colaboradores',
         description: 'Monitore e gerencie a presença e atividades dos colaboradores em tempo real',
         icon: SVG_ICONS.PEOPLE,
-        permission: 1,
+        permission: PERMISSIONS.CONTROLO_COLABS,
         ctaText: 'Gerir Colaboradores'
     },
     [CARD_TYPES.PEDIDOS_HORAS_EXTRA]: {
         title: 'Propor Horas Extra',
         description: 'Solicite pedidos de horas extras ou ajustes de horário como administrador',
         icon: SVG_ICONS.CALENDAR,
-        permission: 4, // request_overtime
+        permission: PERMISSIONS.PEDIDOS_HORAS_EXTRA,
         ctaText: 'Gerir Pedidos'
     },
     [CARD_TYPES.APROVACAO_HORAS_EXTRA]: {
         title: 'Horas Extra',
         description: 'Aprove ou rejeite pedidos de horas extras ou ajustes de horário de todos os colaboradores',
         icon: SVG_ICONS.CIRCLE_CHECK,
-        permission: 5, // approve_overtime
+        permission: PERMISSIONS.APROVACAO_HORAS_EXTRA,
         ctaText: 'Gerir Aprovações'
     },
     [CARD_TYPES.MARCACAO_DIRETA]: {
         title: 'Férias/Ausências Direta',
         description: 'Realize marcações diretas de ferias ou ausencias para colaboradores específicos',
         icon: SVG_ICONS.CALENDAR_ARROW,
-        permission: 2, // direct_leave
+        permission: PERMISSIONS.MARCACAO_DIRETA,
         ctaText: 'Fazer Marcação'
     },
     [CARD_TYPES.GESTAO_FICHAS]: {
         title: 'Gestão de Fichas',
         description: 'Gira as fichas pessoais de todos os colaboradores na organização',
         icon: SVG_ICONS.CLIPBOARD,
-        permission: 6, // record_management
+        permission: PERMISSIONS.GESTAO_FICHAS,
         ctaText: 'Gerir Fichas'
     },
     [CARD_TYPES.FINANCEIRA]: {
         title: 'Financeira',
         description: 'Acesse e gerencie informações financeiras relacionadas aos colaboradores',
         icon: SVG_ICONS.COIN,
-        permission: 7, // finance_management
+        permission: PERMISSIONS.FINANCEIRA,
         ctaText: 'Ver Área'
     },
     [CARD_TYPES.FICHA_COLLAB]: {
