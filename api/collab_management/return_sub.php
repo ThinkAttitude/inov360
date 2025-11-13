@@ -1,5 +1,4 @@
 <?php
-// api/users/my_subordinates.php
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
@@ -7,14 +6,23 @@ header('Content-Type: application/json; charset=utf-8');
 /* --- Auth --- */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
+    echo json_encode(["ok" => false, "code" => "UNAUTHENTICATED"]);
     exit;
 }
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 if ($selfId <= 0) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
+    echo json_encode(["ok" => false, "code" => "UNAUTHENTICATED"]);
     exit;
+}
+
+/* --- Optional user_id override --- */
+$targetId = isset($_GET['user_id']) && $_GET['user_id'] !== ''
+    ? (int)$_GET['user_id']
+    : $selfId;
+
+if ($targetId <= 0) {
+    $targetId = $selfId;
 }
 
 /* --- DB --- */
@@ -24,18 +32,23 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* Nome do colaborador: 'nome' ou 'name' */
 $nameCol = 'nome';
-try { $pdo->query("SELECT $nameCol FROM user LIMIT 1"); }
-catch(Throwable $e){ $nameCol = 'name'; }
+try {
+    $pdo->query("SELECT $nameCol FROM user LIMIT 1");
+} catch (Throwable $e) {
+    $nameCol = 'name';
+}
 
 /* --- Filtros opcionais --- */
 /* state=active|all|inactive (default: active) */
 $state = $_GET['state'] ?? 'active';
-$validStates = ['active','all','inactive'];
-if (!in_array($state, $validStates, true)) $state = 'active';
+$validStates = ['active', 'all', 'inactive'];
+if (!in_array($state, $validStates, true)) {
+    $state = 'active';
+}
 
 /* --- WHERE dinâmico para a relação --- */
-$where = ["cr.responsavel_id = :me"];
-$params = [":me" => $selfId];
+$where   = ["cr.responsavel_id = :uid"];
+$params  = [":uid" => $targetId];
 
 if ($state === 'active') {
     $where[] = "cr.ativo = 1";
@@ -50,11 +63,11 @@ if ($state === 'active') {
 
 /* Pesquisa opcional por nome/email: q=... */
 if (!empty($_GET['q'])) {
-    $where[] = "(u.$nameCol LIKE :q OR u.email LIKE :q)";
-    $params[':q'] = "%".trim((string)$_GET['q'])."%";
+    $where[]         = "(u.$nameCol LIKE :q OR u.email LIKE :q)";
+    $params[':q']    = "%" . trim((string)$_GET['q']) . "%";
 }
 
-$whereSql = 'WHERE '.implode(' AND ', $where);
+$whereSql = 'WHERE ' . implode(' AND ', $where);
 
 /* --- Query --- */
 $sql = "
@@ -82,15 +95,15 @@ echo json_encode([
     "ok"    => true,
     "state" => $state,
     "total" => count($rows),
-    "items" => array_map(function($r){
+    "items" => array_map(function ($r) {
         return [
-            "rel_id"         => (int)$r['rel_id'],
-            "colaborador"    => [
+            "rel_id"      => (int)$r['rel_id'],
+            "colaborador" => [
                 "id"    => (int)$r['colaborador_id'],
                 "nome"  => $r['nome'],
                 "email" => $r['email'] ?? null,
             ],
-            "relacao"        => [
+            "relacao"     => [
                 "ativo"        => (int)$r['ativo'] === 1,
                 "valido_desde" => $r['valido_desde'],
                 "valido_ate"   => $r['valido_ate'],

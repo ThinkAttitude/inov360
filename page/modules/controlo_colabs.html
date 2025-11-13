@@ -265,31 +265,110 @@
                                     <div class="h-name">Diretor de Equipa</div>
                                     <div class="h-sub">Responsável direto</div>
                                 </div>
+
                             </div>
                         </div>
 
                         <div class="hierarchy-column">
                             <div class="hierarchy-title">Tem sob a sua responsabilidade</div>
                             <p class="hierarchy-helper">
-                                Aqui aparecem as pessoas que esta pessoa coordena.
+                                Aqui aparecem as pessoas que você coordena.
                             </p>
-                            <div class="hierarchy-item">
-                                <div class="avatar-small">MC</div>
-                                <div class="hierarchy-text">
-                                    <div class="h-name">Miguel Costa</div>
-                                    <div class="h-sub">Colaborador</div>
-                                </div>
-                            </div>
-                            <div class="hierarchy-item">
-                                <div class="avatar-small">AF</div>
-                                <div class="hierarchy-text">
-                                    <div class="h-name">Ana Ferreira</div>
-                                    <div class="h-sub">Colaboradora</div>
-                                </div>
-                            </div>
+
+                            <div class="hierarchy-list" id="hier-subs-list"></div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal Criar Colaborador -->
+        <div id="controlo-create-modal" class="controlo-modal-overlay" style="display:none;">
+            <div class="controlo-modal" role="dialog" aria-modal="true" aria-labelledby="controlo-create-title">
+                <div class="controlo-modal-header">
+                    <h3 id="controlo-create-title">Criar colaborador</h3>
+                    <button type="button" class="modal-close-btn" id="controlo-create-close" aria-label="Fechar">
+                        ×
+                    </button>
+                </div>
+
+                <form id="controlo-create-form" method="post">
+                    <div class="controlo-modal-body">
+                        <div class="controlo-modal-grid">
+                            <!-- Nome Completo -->
+                            <label class="field-label">
+                                Nome completo
+                                <input
+                                        type="text"
+                                        class="field-input"
+                                        id="create-nome"
+                                        name="nome"
+                                        placeholder="Digite o nome completo"
+                                        required
+                                />
+                            </label>
+
+                            <!-- Email -->
+                            <label class="field-label">
+                                E-mail
+                                <input
+                                        type="email"
+                                        class="field-input"
+                                        id="create-email"
+                                        name="email"
+                                        placeholder="exemplo@empresa.com"
+                                        required
+                                />
+                            </label>
+
+                            <!-- Empresa -->
+                            <label class="field-label">
+                                Empresa
+                                <select
+                                        id="create-company"
+                                        name="company_id"
+                                        class="field-select"
+                                        required
+                                >
+                                    <option value="">Selecione uma empresa</option>
+                                    <option value="7">Almalusa</option>
+                                    <option value="4">AutoBuild</option>
+                                    <option value="8">Drawline I</option>
+                                    <option value="9">Drawline II</option>
+                                    <option value="2">Ferrobuild</option>
+                                    <option value="5">FitOut</option>
+                                    <option value="11">GrupoInov</option>
+                                    <option value="1">Inovbuild</option>
+                                    <option value="6">StratGate</option>
+                                    <option value="10">Think Attitude</option>
+                                    <option value="3">WoodBuild</option>
+                                </select>
+                            </label>
+
+                            <!-- Palavra-passe -->
+                            <label class="field-label">
+                                Palavra-passe
+                                <input
+                                        type="password"
+                                        class="field-input"
+                                        id="create-password"
+                                        name="password"
+                                        placeholder="Digite a senha"
+                                        required
+                                />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="controlo-modal-footer">
+                        <button type="button" class="btn-secondary" id="controlo-create-cancel">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn-primary" id="controlo-create-submit">
+                            Criar colaborador
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </section>

@@ -87,7 +87,6 @@
     border-radius: 20px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
 }
 
 .controlo-card-header {
@@ -111,7 +110,8 @@
     flex-shrink: 0;
 }
 
-.controlo-card-header h3 {
+.controlo-card-header h3,
+.controlo-modal-header h3 { /* reused for modal header */
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--navy-blue);
@@ -144,7 +144,8 @@
     margin-bottom: 0.5rem;
 }
 
-.field-select {
+.field-select,
+.field-input { /* shared base for selects + modal inputs */
     width: 100%;
     padding: 0.6rem 0.75rem;
     border-radius: 10px;
@@ -203,8 +204,7 @@
     color: var(--muted-color);
 }
 
-
-/* Chip */
+/* Chip (permission toggle) */
 .chip {
     display: inline-flex;
     align-items: center;
@@ -298,18 +298,104 @@
     margin-top: 0.4rem;
 }
 
-.avatar-small {
+.hierarchy-item:hover {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.06); /* vermelho transparente */
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Ícone de remoção (hidden por default) */
+.hier-remove-icon {
+    position: absolute;
+    inset: 0;                     /* fill the avatar wrapper */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.0);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+            opacity 0.15s ease,
+            transform 0.15s ease,
+            background 0.15s ease;
+}
+
+.hier-remove-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: #b91c1c; /* vermelho escuro */
+}
+
+.hierarchy-item:hover .hier-remove-icon {
+    opacity: 1;
+    background: rgba(248, 250, 252, 0.9);
+    transform: scale(1.02);
+}
+
+/* Tooltip */
+.hier-tooltip {
+    position: absolute;
+    top: 50%;
+    right: 0;               /* anchor inside the card */
+    left: auto;
+    margin-left: 0;
+    transform: translateY(-50%);
+    background: #111827;
+    color: #f9fafb;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: normal;    /* allow wrapping */
+    max-width: calc(100% - 2.5rem);
+    text-align: right;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+}
+
+.hier-tooltip::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    left: auto;
+    transform: translateY(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent #111827 transparent transparent;
+}
+
+.hierarchy-item:hover .hier-tooltip {
+    opacity: 1;
+}
+
+.avatar-wrapper {
+    position: relative;
     width: 32px;
     height: 32px;
+    flex-shrink: 0;
+}
+
+/* Avatar circle */
+.avatar-small {
+    width: 100%;
+    height: 100%;
     border-radius: 999px;
+    overflow: hidden;
     background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ffffff;
-    font-size: 0.8rem;
-    font-weight: 700;
-    flex-shrink: 0;
+}
+
+.avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .hierarchy-text .h-name {
@@ -321,6 +407,108 @@
 .hierarchy-text .h-sub {
     font-size: 0.8rem;
     color: var(--text-light);
+}
+
+
+/* Modal */
+.controlo-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4000;
+}
+
+.controlo-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.controlo-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.modal-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: none;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    line-height: 1;
+    color: #111827;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.modal-close-btn:hover {
+    background: #d1d5db;
+    transform: translateY(-1px);
+}
+
+/* Modal body */
+.controlo-modal-body {
+    padding: 1.5rem 1.75rem 1.25rem;
+    overflow-y: auto;
+}
+
+/* Modal grid for fields */
+.controlo-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem 1.25rem;
+}
+
+/* Modal footer */
+.controlo-modal-footer {
+    padding: 1rem 1.75rem 1.25rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* Secondary button – reuses palette & radius style of existing UI */
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.3rem;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: var(--text-dark);
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition:
+            background 0.15s ease,
+            border-color 0.15s ease,
+            transform 0.15s ease;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
 }
 
 /* Responsive */
@@ -352,5 +540,16 @@
 
     .hierarchy-columns {
         grid-template-columns: 1fr;
+    }
+
+    .controlo-modal {
+        max-width: 100%;
+        margin: 0 0.75rem;
+    }
+
+    .controlo-modal-header,
+    .controlo-modal-body,
+    .controlo-modal-footer {
+        padding-inline: 1.25rem;
     }
 }

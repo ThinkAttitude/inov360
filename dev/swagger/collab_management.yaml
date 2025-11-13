@@ -267,7 +267,7 @@ components:
 
 paths:
 
-  /collab_management/colab_list.php:
+  /collab_management/collabs_list.php:
     get:
       tags: [collab_management]
       summary: Lista de colaboradores (paginada)

@@ -17,13 +17,16 @@ if (!is_array($myPerms) || !in_array(1, $myPerms, true)) {
 require_once __DIR__ . '/../includes/db.php';
 
 function read_input(): array {
-    $ct = $_SERVER['CONTENT_TYPE'] ?? '';
-    if (stripos($ct, 'application/json') !== false) {
-        $d = json_decode(file_get_contents('php://input'), true);
-        return is_array($d) ? $d : [];
+    $raw = file_get_contents('php://input');
+    if ($raw !== '' && $raw !== false) {
+        $d = json_decode($raw, true);
+        if (is_array($d)) {
+            return $d;
+        }
     }
     return $_POST;
 }
+
 function to_int_array($v): array {
     if ($v === null) return [];
     if (!is_array($v)) $v = [$v];
@@ -69,11 +72,11 @@ try {
     // overwrite total das permissões do utilizador
     $pdo->beginTransaction();
 
-    $pdo->prepare("DELETE FROM `inov360`.`user_permission` WHERE user_id=?")->execute([$userId]);
+    $pdo->prepare("DELETE FROM `user_permission` WHERE user_id=?")->execute([$userId]);
 
     if (!empty($permissionIds)) {
         $ins = $pdo->prepare("
-            INSERT INTO `inov360`.`user_permission` (user_id, permission_id)
+            INSERT INTO `user_permission` (user_id, permission_id)
             VALUES (?, ?)
         ");
         foreach ($permissionIds as $pid) {
