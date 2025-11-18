@@ -16,7 +16,7 @@ if ($selfId <= 0) {
     exit;
 }
 
-/* --- Optional user_id override --- */
+/* --- Parametro user_id opcional que faz ignorar o utilizador autenticado --- */
 $targetId = isset($_GET['user_id']) && $_GET['user_id'] !== ''
     ? (int)$_GET['user_id']
     : $selfId;
