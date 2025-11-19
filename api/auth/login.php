@@ -54,6 +54,19 @@ try {
     $stmtResp->execute([$user["id"]]);
     $responsaveis = array_map('intval', $stmtResp->fetchAll(PDO::FETCH_COLUMN));
 
+    // 3b) Subordinados (array de IDs)  // >> ADICIONADO <<
+    $stmtSub = $conn->prepare("
+        SELECT cr.colaborador_id
+        FROM colaborador_responsaveis cr
+        WHERE cr.responsavel_id = ?
+          AND cr.ativo = 1
+          AND (cr.valido_desde IS NULL OR cr.valido_desde <= NOW())
+          AND (cr.valido_ate   IS NULL OR cr.valido_ate   >= NOW())
+    ");
+    $stmtSub->execute([$user["id"]]);
+    $subordinados = array_map('intval', $stmtSub->fetchAll(PDO::FETCH_COLUMN));
+    // << FIM ADIÇÃO >>
+
     // 4) Guardar sessão (sem role, sem redirect)
     $_SESSION["is_login"] = true;
     $_SESSION["user"] = [
@@ -62,6 +75,7 @@ try {
         "email"        => $user["email"],
         "permissions"  => $permissions,
         "responsaveis" => $responsaveis,
+        "subordinados" => $subordinados,   // >> ADICIONADO <<
     ];
 
     // 5) Resposta para o frontend decidir o fluxo
@@ -74,6 +88,7 @@ try {
             'email'        => $user['email'],
             'permissions'  => $permissions,
             'responsaveis' => $responsaveis,
+            'subordinados' => $subordinados,  // >> ADICIONADO <<
         ]
     ]);
     exit;
