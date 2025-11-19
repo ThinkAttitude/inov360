@@ -221,7 +221,6 @@ function renderHierarchyPreview() {
     const select = document.getElementById('controlo-user-select');
     const hasUser = !!(select && select.value);
 
-    // Sem colaborador selecionado → preview desativado e limpo
     if (!hasUser) {
         previewBtn.disabled = true;
         previewRoot.innerHTML = '';
@@ -236,15 +235,16 @@ function renderHierarchyPreview() {
 
     previewBtn.disabled = false;
 
-    // Fonte: diagrama "real" no modal
-    const topRow    = document.querySelector('.hier-diagram-row--top');
-    const centerRow = document.querySelector('.hier-diagram-row--center');
-    const bottomRow = document.querySelector('.hier-diagram-row--bottom');
+    // modal diagram as source of truth
+    const diagramInner = document.getElementById('hier-diagram-inner');
+    if (!diagramInner) return;
 
-    // Pode ainda não existir tudo (ex.: sem responsáveis)
+    const topRow    = diagramInner.querySelector('.hier-diagram-row--top');
+    const centerRow = diagramInner.querySelector('.hier-diagram-row--center');
+    const bottomRow = diagramInner.querySelector('.hier-diagram-row--bottom');
+
     if (!centerRow) return;
 
-    // Contar responsáveis e subs a partir do DOM real
     const superList = document.getElementById('hier-super-list');
     const subsList  = document.getElementById('hier-subs-list');
     const superCount = superList ? superList.children.length : 0;
@@ -257,7 +257,7 @@ function renderHierarchyPreview() {
         previewMeta.textContent = 'Arraste para navegar pelo mapa. Clique para ver em detalhe.';
     }
 
-    // Construir pré-visualização num fragmento (melhor performance)
+    // build in fragment to minimize reflows
     const frag  = document.createDocumentFragment();
     const inner = document.createElement('div');
     inner.className = 'hier-preview-diagram-inner';
@@ -267,24 +267,21 @@ function renderHierarchyPreview() {
     rows.forEach((row) => {
         if (!row) return;
 
-        // clone superficial de cada linha de diagrama
+        // clone entire row because it contains all needed structure/styles
         const clone = row.cloneNode(true);
 
-        // remover IDs na cópia para evitar conflitos
         clone.removeAttribute('id');
         clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
 
-        // limitar nós por linha (evitar centenas de nós no mini-mapa)
+        // limit of MAX_NODES per row in preview
         const nodesContainer = clone.querySelector('.hier-diagram-row-nodes');
         if (nodesContainer) {
             const children = Array.from(nodesContainer.children);
             const MAX_NODES = 10;
 
             if (children.length > MAX_NODES) {
-                // remover excedente
                 children.slice(MAX_NODES).forEach(el => nodesContainer.removeChild(el));
 
-                // card "+N" reaproveitando estilos existentes
                 const extra = document.createElement('div');
                 extra.className = 'hierarchy-item hierarchy-item--more';
                 extra.innerHTML = `
@@ -302,11 +299,11 @@ function renderHierarchyPreview() {
 
     frag.appendChild(inner);
 
-    // Aplicar atomically → menos layout thrash
+    // applying atomically to improve rendering performance
     previewRoot.innerHTML = '';
     previewRoot.appendChild(frag);
 
-    // Reset à posição do drag no preview
+    // drag position reset
     previewRoot.style.transform = 'translate(0px, 0px)';
 }
 
