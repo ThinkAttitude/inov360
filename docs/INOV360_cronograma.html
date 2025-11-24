@@ -1,0 +1,117 @@
+<!doctype html><html lang="pt"><head><meta charset='utf-8'/>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      * { box-sizing: border-box; }
+      body {
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial;
+        background: #FFFFFF;
+        color: #0B2D5C;
+        margin: 12px;
+      }
+      .wrapper { max-width: 1200px; margin: 0 auto; }
+      h1 { font-size: 20px; margin: 0 0 4px 0; }
+      .subtitle { font-size: 11px; opacity: 0.85; margin-bottom: 8px; }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+        font-size: 9px;
+      }
+      col.module-col { width: 18%; }
+      col.week-col { }
+      thead th {
+        text-align: center;
+        padding: 3px 2px;
+        font-weight: 600;
+        border: 1px solid #dde3f0;
+      }
+      thead .month-header {
+        background: #0E4DA4;
+        color: #FFFFFF;
+        font-size: 10px;
+      }
+      thead .week-header {
+        background: #E8F1FF;
+        color: #0B2D5C;
+      }
+      tbody th.module-cell {
+        text-align: left;
+        padding: 3px 4px;
+        font-weight: 600;
+        border: 1px solid #dde3f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      tbody td {
+        border: 1px solid #dde3f0;
+        text-align: center;
+        padding: 2px;
+        vertical-align: middle;
+      }
+      tbody tr:nth-child(odd) th.module-cell { background: #f7f9ff; }
+      tbody tr:nth-child(even) th.module-cell { background: #eef2fb; }
+      .priority-label {
+        color: #FFCC00;
+        font-weight: 700;
+        font-size: 8px;
+        margin-left: 4px;
+      }
+      .cell-empty { background: #FFFFFF; }
+      .cell-low { background: #f2f7ff; }
+      .cell-mid { background: #d6e4ff; }
+      .cell-high { background: #adc4ff; }
+      .cell-peak { background: #FFCC00; color: #0B2D5C; font-weight: 700; }
+      .legend {
+        margin-top: 6px;
+        font-size: 9px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .legend-swatch {
+        width: 12px;
+        height: 9px;
+        border-radius: 2px;
+        border: 1px solid #c5cee2;
+      }
+      .legend .cell-empty { border-style: dashed; }
+      .foot {
+        margin-top: 6px;
+        font-size: 8px;
+        opacity: 0.75;
+      }
+    </style>
+    </head><body>
+      <div class="wrapper">
+        <h1>INOV360 — Cronograma</h1>
+        <div class="subtitle">
+          Colunas: semanas agrupadas por mês · Linhas: módulos do projeto · Células: horas previstas por semana em cada módulo (prioridades no topo).
+        </div>
+    <table><colgroup><col class="module-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /><col class="week-col" /></colgroup>
+      <thead>
+        <tr><th class="month-header" rowspan="2">Módulo</th><th class="month-header" colspan="4">Novembro 2025</th><th class="month-header" colspan="5">Dezembro 2025</th><th class="month-header" colspan="4">Janeiro 2026</th><th class="month-header" colspan="3">Fevereiro 2026</th></tr>
+        <tr><th class="week-header">03–09</th><th class="week-header">10–16</th><th class="week-header">17–23</th><th class="week-header">24–30</th><th class="week-header">01–07</th><th class="week-header">08–14</th><th class="week-header">15–21</th><th class="week-header">22–28</th><th class="week-header">29–04</th><th class="week-header">05–11</th><th class="week-header">12–18</th><th class="week-header">19–25</th><th class="week-header">26–01</th><th class="week-header">02–08</th><th class="week-header">09–15</th><th class="week-header">16–22</th></tr>
+      </thead>
+    <tbody><tr><th class="module-cell" title="Controlo de colaboradores">Controlo de colaboradores<span class="priority-label">PRIO</span></th><td class="cell-mid">8h</td><td class="cell-peak">20h</td><td class="cell-peak">20h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Gestão de fichas">Gestão de fichas<span class="priority-label">PRIO</span></th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-peak">20h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Financeira">Financeira</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-peak">20h</td><td class="cell-mid">8h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Aprovação de horários">Aprovação de horários</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-high">12h</td><td class="cell-high">16h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Aprovação de férias / ausências">Aprovação de férias / ausências</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-low">4h</td><td class="cell-peak">20h</td><td class="cell-low">4h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="A minha ficha">A minha ficha</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-high">16h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Consulta de horários">Consulta de horários</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-peak">20h</td><td class="cell-low">2h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Pedidos de férias / ausências">Pedidos de férias / ausências</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-high">18h</td><td class="cell-high">10h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Mapas de horas">Mapas de horas</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-mid">10h</td><td class="cell-mid">7h</td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Propor horas extra">Propor horas extra</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-high">13h</td><td class="cell-mid">7h</td><td class="cell-empty"></td><td class="cell-empty"></td></tr><tr><th class="module-cell" title="Horas extra">Horas extra</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-high">13h</td><td class="cell-peak">20h</td><td class="cell-mid">6h</td></tr><tr><th class="module-cell" title="Consulta de pedidos">Consulta de pedidos</th><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-empty"></td><td class="cell-high">14h</td></tr></tbody></table>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch cell-empty"></div> Sem trabalho planeado</div>
+        <div class="legend-item"><div class="legend-swatch cell-low"></div> Carga baixa</div>
+        <div class="legend-item"><div class="legend-swatch cell-mid"></div> Carga moderada</div>
+        <div class="legend-item"><div class="legend-swatch cell-high"></div> Carga alta</div>
+        <div class="legend-item"><div class="legend-swatch cell-peak"></div> Pico de alocação (por célula)</div>
+        <div class="legend-item"><span class="priority-label">PRIO</span> Módulo prioritário</div>
+      </div>
+    
+      <div class="foot">
+        Janela temporal: 1.ª semana de novembro de 2025 (a partir de 03/11) até 3.ª semana de fevereiro de 2026 (a partir de 16/02).<br/>
+        Plano para ~308h com horário de 20h/semana; conclusão prevista por volta de 20/02/2026. <br/>
+          <br/>
+        Nota: As estimativas usam o limite inferior (melhor caso) quando é apresentado um intervalo (ex.: 1–2 dias → 2 dias). O plano pode ser ajustado conforme progresso real.
+      </div>
+    </div></body></html>

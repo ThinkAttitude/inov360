@@ -28,7 +28,7 @@ try {
 ?>
 
 <link rel="stylesheet" href="../../css/global.css">
-<link rel="stylesheet" href="../../css/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
 
 <div class="ficha-page">
     <div class="ficha-header">

@@ -6,7 +6,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
 }
 ?>
 
-<link rel="stylesheet" href="../../css/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
 
 <div class="page-header">
     <h2>Gestão de Fichas de Colaboradores</h2>

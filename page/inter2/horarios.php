@@ -10,7 +10,7 @@ if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "inter2") {
 // Lógica específica do opera (se necessária)
 ?>
 
-<link rel="stylesheet" href="../../css/horarios_common.css">
+<link rel="stylesheet" href="../../css/legacy/horarios_common.css">
 
 <div class="horarios-page calendar-only">
     <!-- Modern Header -->

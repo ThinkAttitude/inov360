@@ -1,6 +1,4 @@
-// dashboard.js
-
-import {getCollabsByUser} from "./api.js";
+import {getSubsByUser, logout} from "./api.js";
 
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
@@ -12,12 +10,22 @@ export const CARD_TYPES = Object.freeze({
     CONSULTA_PEDIDOS: 'consulta_pedidos',
     LISTA_INTERMEDIOS: 'lista_intermedios',
     CONTROLO_COLABS: 'controlo_colabs',
-    PEDIDOS_HORAS_EXTRAS: 'pedidos_horas_extras',
-    APROVACAO_HORAS_EXTRAS: 'aprov_horas_extras',
+    PEDIDOS_HORAS_EXTRA: 'pedidos_horas_extras',
+    APROVACAO_HORAS_EXTRA: 'aprov_horas_extras',
     MARCACAO_DIRETA: 'marcacao_direta',
     GESTAO_FICHAS: 'gestao_fichas',
     FINANCEIRA: 'financeira',
     FICHA_COLLAB: 'ficha_collab',
+});
+
+export const PERMISSIONS = Object.freeze({
+    CONTROLO_COLABS: 1,
+    MARCACAO_DIRETA: 2,
+    MAPAS_HORARIOS: 3,
+    PEDIDOS_HORAS_EXTRA: 4,
+    APROVACAO_HORAS_EXTRA: 5,
+    GESTAO_FICHAS: 6,
+    FINANCEIRA: 7,
 });
 
 const SVG_ICONS = {
@@ -62,7 +70,7 @@ const CARD_DEFS = {
         title: 'Mapas de Horas',
         description: 'Gere e visualize mapas de horários para todos os colaboradores',
         icon: SVG_ICONS.CLOCK,
-        permission: 3, // periods_info
+        permission: PERMISSIONS.MAPAS_HORARIOS,
         ctaText: 'Ver Mapas'
     },
     [CARD_TYPES.PEDIDOS_FERIAS]: {
@@ -93,42 +101,42 @@ const CARD_DEFS = {
         title: 'Controlo de Colaboradores',
         description: 'Monitore e gerencie a presença e atividades dos colaboradores em tempo real',
         icon: SVG_ICONS.PEOPLE,
-        permission: 1,
+        permission: PERMISSIONS.CONTROLO_COLABS,
         ctaText: 'Gerir Colaboradores'
     },
-    [CARD_TYPES.PEDIDOS_HORAS_EXTRAS]: {
-        title: 'Propor Horas Extras',
+    [CARD_TYPES.PEDIDOS_HORAS_EXTRA]: {
+        title: 'Propor Horas Extra',
         description: 'Solicite pedidos de horas extras ou ajustes de horário como administrador',
         icon: SVG_ICONS.CALENDAR,
-        permission: 4, // request_overtime
+        permission: PERMISSIONS.PEDIDOS_HORAS_EXTRA,
         ctaText: 'Gerir Pedidos'
     },
-    [CARD_TYPES.APROVACAO_HORAS_EXTRAS]: {
-        title: 'Horas Extras',
+    [CARD_TYPES.APROVACAO_HORAS_EXTRA]: {
+        title: 'Horas Extra',
         description: 'Aprove ou rejeite pedidos de horas extras ou ajustes de horário de todos os colaboradores',
         icon: SVG_ICONS.CIRCLE_CHECK,
-        permission: 5, // approve_overtime
+        permission: PERMISSIONS.APROVACAO_HORAS_EXTRA,
         ctaText: 'Gerir Aprovações'
     },
     [CARD_TYPES.MARCACAO_DIRETA]: {
         title: 'Férias/Ausências Direta',
         description: 'Realize marcações diretas de ferias ou ausencias para colaboradores específicos',
         icon: SVG_ICONS.CALENDAR_ARROW,
-        permission: 2, // direct_leave
+        permission: PERMISSIONS.MARCACAO_DIRETA,
         ctaText: 'Fazer Marcação'
     },
     [CARD_TYPES.GESTAO_FICHAS]: {
         title: 'Gestão de Fichas',
         description: 'Gira as fichas pessoais de todos os colaboradores na organização',
         icon: SVG_ICONS.CLIPBOARD,
-        permission: 6, // record_management
+        permission: PERMISSIONS.GESTAO_FICHAS,
         ctaText: 'Gerir Fichas'
     },
     [CARD_TYPES.FINANCEIRA]: {
         title: 'Financeira',
         description: 'Acesse e gerencie informações financeiras relacionadas aos colaboradores',
         icon: SVG_ICONS.COIN,
-        permission: 7, // finance_management
+        permission: PERMISSIONS.FINANCEIRA,
         ctaText: 'Ver Área'
     },
     [CARD_TYPES.FICHA_COLLAB]: {
@@ -143,41 +151,51 @@ const CARD_DEFS = {
 /* Helpers */
 function createWelcomeCard(key) {
     const def = CARD_DEFS[key];
+    if (!def) return null;
+
     const tpl = document.getElementById('tpl-welcome-card');
+    if (!tpl || !tpl.content) return null;
+
     const node = tpl.content.firstElementChild.cloneNode(true);
-    node.querySelector('.card-title').textContent = def.title;
-    node.querySelector('.card-desc').textContent = def.description;
-    node.querySelector('.card-link').dataset.content = key;
-    node.querySelector('.card-link').textContent = def.ctaText;
-    node.querySelector('.card-icon').innerHTML = svg(def.icon, 24);
+
+    const titleEl = node.querySelector('.card-title');
+    const descEl  = node.querySelector('.card-desc');
+    const linkEl  = node.querySelector('.card-link');
+    const iconEl  = node.querySelector('.card-icon');
+
+    if (titleEl) titleEl.textContent = def.title;
+    if (descEl)  descEl.textContent  = def.description;
+
+    if (linkEl) {
+        linkEl.dataset.content = key;
+        linkEl.textContent = def.ctaText;
+        linkEl.setAttribute('href', `#${key}`);
+    }
+
+    if (iconEl) iconEl.innerHTML = svg(def.icon, 24);
     return node;
 }
 
 function bindNav() {
     document.querySelectorAll('[data-content]').forEach(btn => {
-        btn.onclick = e => {
-            e.preventDefault();
+        btn.onclick = () => {
             const key = btn.dataset.content;
             if (!key) return;
             document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
             btn.closest('li')?.classList.add('active');
-            document.querySelectorAll('.content-section').forEach(sec => {
-                sec.hidden = sec.dataset.section !== key;
-                sec.classList.toggle('active', sec.dataset.section === key);
-            });
         };
     });
 }
 
+
 async function userHasCollabs() {
-    const c = await getCollabsByUser()
-    if (!c) throw new Error('Failed to fetch collaborators');
-    return c.total > 0;
+    const c = await getSubsByUser()
+    return c?.total > 0 ?? false;
 }
 
 
 /* Public functions */
-export function addCardsToWelcomeArea(requested = []) {
+export function addWelcomeCards(requested = []) {
     const wc = document.querySelector('.welcome-content');
     if (!wc) return;
 
@@ -209,7 +227,7 @@ export function addSidebarEntries(types = []) {
 
         const li = document.createElement('li');
         li.innerHTML = `
-            <a href="#" data-content="${t}">
+            <a href="#${t}" data-content="${t}">
                 <span class="menu-icon">${svg(def.icon, 20, 'menu-icon')}</span>${def.title}
             </a>`;
         frag.appendChild(li);
@@ -219,13 +237,12 @@ export function addSidebarEntries(types = []) {
     bindNav();
 }
 
-
-
-document.addEventListener('DOMContentLoaded', () => {
+function loadCards() {
     const user = window.CURRENT_USER || {};
     const userPerms = new Set(user.permissions || []);
 
-    const permCards = Object.entries(CARD_DEFS)
+    const permCards = Object
+        .entries(CARD_DEFS)
         .filter(([_, def]) => userPerms.has(def.permission))
         .map(([key, _]) => key);
 
@@ -243,14 +260,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 sideCards.add(CARD_TYPES.CONSULTA_PEDIDOS);
             }
 
-            if (welcomeCards.size > 0) addCardsToWelcomeArea([...welcomeCards]);
+            if (welcomeCards.size > 0) addWelcomeCards([...welcomeCards]);
             if (sideCards.size > 0) addSidebarEntries([...sideCards]);
         })
         .catch(err => {
             console.error('Failed to check collaborators:', err);
             // TODO: better error handling since here it should inform the user
         });
+}
+window.addEventListener('view:loaded', () => {
+    loadCards()
+    const userNameEl = document.getElementById('userName');
+    if (userNameEl) userNameEl.textContent = (window.CURRENT_USER && window.CURRENT_USER.name) || '';
+});
 
+document.addEventListener('DOMContentLoaded', () => {
     const yearSpan = document.getElementById('yearSpan');
     if (yearSpan) yearSpan.textContent = new Date().getFullYear().toString();
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            logout()
+        });
+    }
 });

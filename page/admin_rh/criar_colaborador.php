@@ -6,7 +6,7 @@
     <title>Criar Colaborador - RH360</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../css/global.css">
-    <link rel="stylesheet" href="../../css/criar_colaborador.css">
+    <link rel="stylesheet" href="../../css/legacy/criar_colaborador.css">
 </head>
 <body>
     <div class="container">

@@ -1,31 +1,4 @@
-<?php
-session_start();
-require_once "../../api/includes/db.php";
-
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
-    echo "<p>Acesso negado.</p>";
-    exit;
-}
-
-try {
-    $conn = db_connect();
-
-    $stmt = $conn->prepare("
-        SELECT u.id AS user_id, u.name, u.email, u.role, d.profissao, d.categoria
-        FROM user u
-        LEFT JOIN colaborador_dados d ON u.id = d.user_id
-        WHERE u.role IN ('opera', 'inter2', 'inter', 'admin')
-        ORDER BY u.role, u.name
-    ");
-    $stmt->execute();
-    $lista = $stmt->fetchAll();
-} catch (Exception $e) {
-    echo "<p>Erro: " . $e->getMessage() . "</p>";
-    exit;
-}
-?>
-
-<link rel="stylesheet" href="../../css/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
 
 <div class="page-header">
     <h2>Fichas de Colaboradores</h2>

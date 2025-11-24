@@ -8,11 +8,11 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
 }
-$myPerms = $_SESSION['user']['permissions'] ?? [];
+/*$myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(1, $myPerms, true)) { // exige permissão 1
     http_response_code(403);
     echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
-}
+}*/
 
 require_once __DIR__ . '/../includes/db.php';
 

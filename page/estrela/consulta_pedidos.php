@@ -29,7 +29,7 @@ try {
 }
 ?>
 
-<link rel="stylesheet" href="../../css/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
 
 <div class="estrela-consulta">
     <div class="estrela-header">
