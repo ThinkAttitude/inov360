@@ -15,6 +15,7 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
  * Se vier no query ‘string’, usamos esse.
  * Se não vier (ou vier vazio), usamos o utilizador autenticado da sessão.
  */
+$sessionUserId = 0;
 if (!empty($_SESSION['user']) && is_array($_SESSION['user']) && !empty($_SESSION['user']['id'])) {
     $sessionUserId = (int)$_SESSION['user']['id'];
 }
