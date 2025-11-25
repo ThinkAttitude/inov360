@@ -132,84 +132,114 @@ function renderPerms(ids = [], hasUser = false) {
     togglePermChips(ids, hasUser);
 }
 
-async function renderSubs(userId = null) {
-    const listEl = document.getElementById('hier-subs-list');
-    const emptyEl = document.getElementById('hier-empty');
-    if (!emptyEl) return;
+async function renderDiagram(userId = null) {
+    const superList = document.getElementById('hier-super-list');
+    const subsList  = document.getElementById('hier-subs-list');
+    const emptyEl     = document.getElementById('hier-empty');
+    if (!superList || !subsList || !emptyEl) return;
 
-    // no user: show empty state and clear chart
+    superList.innerHTML = '';
+    subsList.innerHTML  = '';
+
     if (!userId) {
         emptyEl.style.display = '';
         renderHierarchyPreview();
         return;
     }
 
-    try {
-        const res = await getHierarchyByUser(userId);
-        if (!res || res.ok !== true) {
-            emptyEl.style.display = '';
-            renderHierarchyPreview();
-            return;
-        }
-
-        emptyEl.style.display = 'none';
-
-        res.subordinados.forEach(sub => {
-            const c = sub.user;
-            if (!c) return;
-
-            const avatarUrl =
-                'https://ui-avatars.com/api/?' +
-                `name=${encodeURIComponent(c.nome || 'Colaborador')}` +
-                '&background=0F172A&color=FFFFFF&size=64&bold=true';
-
-            const card = document.createElement('div');
-            card.className = 'hierarchy-item';
-            card.innerHTML = `
-                    <div class="avatar-wrapper">
-                        <div class="avatar-small">
-                            <img src="${avatarUrl}" alt="${c.nome}">
-                        </div>
-                        <div class="hier-remove-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2"
-                                 stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="6"></circle>
-                                <line x1="9" y1="12" x2="15" y2="12"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="hierarchy-text">
-                        <div class="h-name">${c.nome}</div>
-                        <div class="h-sub">${c.email || 'Colaborador'}</div>
-                    </div>
-                    <div class="hier-tooltip">Remover</div>
-                `;
-
-            card.addEventListener('click', (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-
-                if (!confirm('Remover este colaborador desta hierarquia?')) return;
-
-                updateHierarchy({
-                    user_id: c.id,
-                    responsaveis: []
-                })
-                    .then(() => renderSubs(userId))
-                    .catch(err => {
-                        console.error('Erro ao remover colaborador da hierarquia:', err);
-                    });
-            });
-            listEl.appendChild(card);
-        });
-
-        renderHierarchyPreview();
-    } catch (e) {
-        console.error('Erro ao carregar subs:', e);
+    const res = await getHierarchyByUser(userId).catch(err => {
+        console.error('Erro ao carregar hierarquia:', err);
         emptyEl.style.display = '';
         renderHierarchyPreview();
+        return null;
+    });
+
+    if (!res || res.ok !== true) {
+        emptyEl.style.display = '';
+        renderHierarchyPreview();
+        return;
     }
+
+    const responsaveis = Array.isArray(res.responsaveis) ? res.responsaveis : [];
+    const subordinados = Array.isArray(res.subordinados) ? res.subordinados : [];
+    const hasAny = responsaveis.length > 0 || subordinados.length > 0;
+    emptyEl.style.display = hasAny ? 'none' : '';
+
+    const buildCard = (u) => {
+        const card = document.createElement('div');
+        card.className = 'hierarchy-item';
+        const avatarUrl =
+            'https://ui-avatars.com/api/?' +
+            `name=${encodeURIComponent(u.nome || 'Colaborador')}` +
+            '&background=0F172A&color=FFFFFF&size=64&bold=true';
+
+        card.innerHTML = `
+            <div class="avatar-wrapper">
+                <div class="avatar-small">
+                    <img src="${avatarUrl}" alt="${u.nome}">
+                </div>
+                <div class="hier-remove-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <line x1="9" y1="12" x2="15" y2="12"></line>
+                    </svg>
+                </div>
+            </div>
+            <div class="hierarchy-text">
+                <div class="h-name">${u.nome}</div>
+                <div class="h-sub">${u.email || 'Colaborador'}</div>
+            </div>
+            <div class="hier-tooltip">Remover</div>
+        `;
+
+        card.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            if (!confirm('Remover este colaborador desta hierarquia?')) return;
+
+            updateHierarchy({
+                user_id: u.id,
+                responsaveis: []
+            })
+                .then(() => renderDiagram(userId))
+                .catch(err => {
+                    console.error('Erro ao remover colaborador da hierarquia:', err);
+                });
+        });
+
+        return card;
+    };
+
+    superList.dataset.count = responsaveis.length;
+    subsList.dataset.count = subordinados.length;
+
+    // helper to append cards with connectors between them
+    const appendRowWithConnectors = (container, users) => {
+        const frag = document.createDocumentFragment();
+
+        users.forEach((obj, index) => {
+            const u = obj.user;
+            if (!u) return;
+
+            if (index > 0) {
+                const connector = document.createElement('div');
+                connector.className = 'hier-connector';
+                frag.appendChild(connector);
+            }
+
+            frag.appendChild(buildCard(u));
+        });
+
+        container.appendChild(frag);
+    };
+
+    appendRowWithConnectors(superList, responsaveis);
+    appendRowWithConnectors(subsList, subordinados);
+
+    renderHierarchyPreview();
 }
 
 /**
@@ -218,10 +248,10 @@ async function renderSubs(userId = null) {
  * No listeners are cloned; preview is read-only.
  */
 function renderHierarchyPreview() {
-    const previewBtn    = document.getElementById('hier-preview');
-    const previewMeta   = document.getElementById('hier-preview-meta');
+    const previewBtn = document.getElementById('hier-preview');
+    const previewMeta = document.getElementById('hier-preview-meta');
     const previewCounts = document.getElementById('hier-preview-counts');
-    const previewRoot   = document.getElementById('hier-preview-diagram');
+    const previewRoot = document.getElementById('hier-preview-diagram');
     if (!previewRoot || !previewBtn) return;
 
     const select = document.getElementById('controlo-user-select');
@@ -245,16 +275,16 @@ function renderHierarchyPreview() {
     const diagramInner = document.getElementById('hier-diagram-inner');
     if (!diagramInner) return;
 
-    const topRow    = diagramInner.querySelector('.hier-diagram-row--top');
+    const topRow = diagramInner.querySelector('.hier-diagram-row--top');
     const centerRow = diagramInner.querySelector('.hier-diagram-row--center');
     const bottomRow = diagramInner.querySelector('.hier-diagram-row--bottom');
 
     if (!centerRow) return;
 
     const superList = document.getElementById('hier-super-list');
-    const subsList  = document.getElementById('hier-subs-list');
-    const superCount = superList ? superList.children.length : 0;
-    const subsCount  = subsList ? subsList.children.length : 0;
+    const subsList = document.getElementById('hier-subs-list');
+    const superCount = superList ? superList.dataset.count : 0;
+    const subsCount = subsList ? subsList.dataset.count : 0;
 
     if (previewCounts) {
         previewCounts.textContent = `${superCount} responsáveis · ${subsCount} subordinados`;
@@ -264,7 +294,7 @@ function renderHierarchyPreview() {
     }
 
     // build in fragment to minimize reflows
-    const frag  = document.createDocumentFragment();
+    const frag = document.createDocumentFragment();
     const inner = document.createElement('div');
     inner.className = 'hier-preview-diagram-inner';
 
@@ -275,7 +305,6 @@ function renderHierarchyPreview() {
 
         // clone entire row because it contains all needed structure/styles
         const clone = row.cloneNode(true);
-
         clone.removeAttribute('id');
         clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
 
@@ -328,7 +357,7 @@ function bindSelect() {
 
         if (!val) {
             renderPerms([]);
-            renderSubs(null);
+            renderDiagram(null);
             renderHierarchyPreview();
 
             if (previewBtn) {
@@ -353,7 +382,7 @@ function bindSelect() {
         const c = collabs.find(u => u.id === id);
 
         renderPerms(c?.permissoes || [], true);
-        renderSubs(id);
+        renderDiagram(id);
 
         if (previewBtn) {
             previewBtn.disabled = false;
@@ -375,11 +404,11 @@ function bindSelect() {
 
 
 function renderCreateModal() {
-    const btnOpen   = document.getElementById('controlo-add');
-    const overlay   = document.getElementById('controlo-create-modal');
-    const btnClose  = document.getElementById('controlo-create-close');
+    const btnOpen = document.getElementById('controlo-add');
+    const overlay = document.getElementById('controlo-create-modal');
+    const btnClose = document.getElementById('controlo-create-close');
     const btnCancel = document.getElementById('controlo-create-cancel');
-    const form      = document.getElementById('controlo-create-form');
+    const form = document.getElementById('controlo-create-form');
 
     if (!btnOpen || !overlay) return;
 
@@ -509,9 +538,9 @@ function enableDiagramDrag() {
     }
 
     // preview draggable
-    const previewCanvas  = document.querySelector('.hier-preview-canvas');
+    const previewCanvas = document.querySelector('.hier-preview-canvas');
     const previewDiagram = document.getElementById('hier-preview-diagram');
-    const previewBtn     = document.getElementById('hier-preview');
+    const previewBtn = document.getElementById('hier-preview');
 
     if (previewCanvas && previewDiagram) {
         let isDown = false;
@@ -579,7 +608,7 @@ function enableDiagramDrag() {
 export async function mountClbMngmt() {
     await fillCollaborators();
     renderPerms([], false);
-    renderSubs();
+    renderDiagram();
     bindSelect();
     renderCreateModal();
     renderHierarchyModal();
