@@ -15,6 +15,19 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+.hier-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    margin-right: auto;
+}
+
+.hier-controls-group {
+    min-width: 220px;
+}
+
+
 .header-left {
     display: flex;
     align-items: center;

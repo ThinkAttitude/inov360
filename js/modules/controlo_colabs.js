@@ -13,6 +13,15 @@ export const PERM_LABELS = {
 
 let collabs = [];
 
+let currentUserId = null;
+let currentResponsaveis = [];
+let currentSubs = [];
+let rebuildHierarchySelects = () => {};
+
+function findCollab(id) {
+    return collabs.find(c => c.id === id);
+}
+
 async function fillCollaborators() {
     const select = document.getElementById('controlo-user-select');
     if (!select) return;
@@ -130,81 +139,156 @@ async function renderSubs(userId = null) {
     const emptyEl = document.getElementById('hier-empty');
     if (!listEl || !emptyEl) return;
 
+    currentUserId = userId;
+
     listEl.innerHTML = '';
 
+    // Sem colaborador selecionado
     if (!userId) {
+        currentResponsaveis = [];
+        currentSubs = [];
         emptyEl.style.display = '';
+        emptyEl.textContent = 'Nenhum colaborador selecionado.';
         renderHierarchyPreview();
         return;
     }
 
+    // Temos colaborador selecionado
+    emptyEl.style.display = 'none';
+
     try {
         const res = await getSubsByUser(userId);
-        if (!res || res.ok !== true || res.items.length === 0) {
-            emptyEl.style.display = '';
-            renderHierarchyPreview();
-            return;
+        if (!res || res.ok !== true || !Array.isArray(res.items)) {
+            currentSubs = [];
+        } else {
+            currentSubs = res.items
+                .map(item => item?.colaborador?.id)
+                .filter(id => typeof id === 'number');
         }
-
-        emptyEl.style.display = 'none';
-
-        res.items.forEach(item => {
-            const c = item.colaborador;
-            if (!c) return;
-
-            const avatarUrl =
-                'https://ui-avatars.com/api/?' +
-                `name=${encodeURIComponent(c.nome || 'Colaborador')}` +
-                '&background=0F172A&color=FFFFFF&size=64&bold=true';
-
-            const card = document.createElement('div');
-            card.className = 'hierarchy-item';
-            card.innerHTML = `
-                    <div class="avatar-wrapper">
-                        <div class="avatar-small">
-                            <img src="${avatarUrl}" alt="${c.nome}">
-                        </div>
-                        <div class="hier-remove-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2"
-                                 stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="6"></circle>
-                                <line x1="9" y1="12" x2="15" y2="12"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="hierarchy-text">
-                        <div class="h-name">${c.nome}</div>
-                        <div class="h-sub">${c.email || 'Colaborador'}</div>
-                    </div>
-                    <div class="hier-tooltip">Remover</div>
-                `;
-
-            card.addEventListener('click', (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-
-                if (!confirm('Remover este colaborador desta hierarquia?')) return;
-
-                updateHierarchy({
-                    user_id: c.id,
-                    responsaveis: []
-                })
-                    .then(() => renderSubs(userId))
-                    .catch(err => {
-                        console.error('Erro ao remover colaborador da hierarquia:', err);
-                    });
-            });
-            listEl.appendChild(card);
-        });
-
-        renderHierarchyPreview();
     } catch (e) {
         console.error('Erro ao carregar subs:', e);
-        emptyEl.style.display = '';
+        currentSubs = [];
+    }
+
+    // Por agora não carregamos responsáveis do backend,
+    // mas deixamos o array pronto para no futuro:
+    currentResponsaveis = currentResponsaveis || [];
+
+    paintHierarchyDiagram();
+}
+
+function paintHierarchyDiagram() {
+    const superList = document.getElementById('hier-super-list');
+    const subsList  = document.getElementById('hier-subs-list');
+    const emptyEl   = document.getElementById('hier-empty');
+
+    if (!superList || !subsList) return;
+
+    superList.innerHTML = '';
+    subsList.innerHTML  = '';
+
+    if (!currentUserId) {
+        if (emptyEl) {
+            emptyEl.style.display = '';
+            emptyEl.textContent = 'Nenhum colaborador selecionado.';
+        }
         renderHierarchyPreview();
+        return;
+    }
+
+    if (emptyEl) {
+        emptyEl.style.display = 'none';
+    }
+
+    const makeAvatarHtml = (c) => {
+        const avatarUrl =
+            'https://ui-avatars.com/api/?' +
+            `name=${encodeURIComponent(c.nome || 'Colaborador')}` +
+            '&background=0F172A&color=FFFFFF&size=64&bold=true';
+
+        return `
+            <div class="avatar-wrapper">
+                <div class="avatar-small">
+                    <img src="${avatarUrl}" alt="${c.nome}">
+                </div>
+                <div class="hier-remove-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <line x1="9" y1="12" x2="15" y2="12"></line>
+                    </svg>
+                </div>
+            </div>
+        `;
+    };
+
+    // Responsáveis (linha de cima)
+    currentResponsaveis.forEach(id => {
+        const c = findCollab(id);
+        if (!c) return;
+
+        const card = document.createElement('div');
+        card.className = 'hierarchy-item';
+        card.innerHTML = `
+            ${makeAvatarHtml(c)}
+            <div class="hierarchy-text">
+                <div class="h-name">${c.nome}</div>
+                <div class="h-sub">${c.email || 'Colaborador'}</div>
+            </div>
+            <div class="hier-tooltip">Remover responsável</div>
+        `;
+
+        card.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!confirm('Remover este responsável desta hierarquia?')) return;
+
+            currentResponsaveis = currentResponsaveis.filter(rid => rid !== id);
+            paintHierarchyDiagram();
+        });
+
+        superList.appendChild(card);
+    });
+
+    // Subordinados (linha de baixo)
+    currentSubs.forEach(id => {
+        const c = findCollab(id);
+        if (!c) return;
+
+        const card = document.createElement('div');
+        card.className = 'hierarchy-item';
+        card.innerHTML = `
+            ${makeAvatarHtml(c)}
+            <div class="hierarchy-text">
+                <div class="h-name">${c.nome}</div>
+                <div class="h-sub">${c.email || 'Colaborador'}</div>
+            </div>
+            <div class="hier-tooltip">Remover subordinado</div>
+        `;
+
+        card.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!confirm('Remover este subordinado desta hierarquia?')) return;
+
+            currentSubs = currentSubs.filter(sid => sid !== id);
+            paintHierarchyDiagram();
+        });
+
+        subsList.appendChild(card);
+    });
+
+    // Atualiza o preview miniatura
+    renderHierarchyPreview();
+
+    // Atualiza os selects de adicionar responsável/sub
+    if (typeof rebuildHierarchySelects === 'function') {
+        rebuildHierarchySelects();
     }
 }
+
+
 
 /**
  * Mirror the main hierarchy diagram into the preview viewport.
@@ -366,6 +450,110 @@ function bindSelect() {
         }
     });
 }
+
+function setupHierarchyEditors() {
+    const selResp = document.getElementById('hier-add-resp');
+    const selSub  = document.getElementById('hier-add-sub');
+    const saveBtn = document.getElementById('hier-save');
+
+    if (!selResp || !selSub || !saveBtn) return;
+
+    rebuildHierarchySelects = () => {
+        const makeOptions = (select, excludeIds) => {
+            const current = select.value;
+            select.innerHTML = '<option value="">-- Selecionar colaborador --</option>';
+
+            collabs.forEach(c => {
+                if (!c || c.id == null) return;
+                if (excludeIds.includes(c.id)) return;
+                if (c.id === currentUserId) return;
+
+                const opt = document.createElement('option');
+                opt.value = String(c.id);
+                opt.textContent = c.email
+                    ? `${c.nome} (${c.email})`
+                    : c.nome;
+                select.appendChild(opt);
+            });
+
+            // Se o valor anterior ainda existir, mantém
+            if (current && select.querySelector(`option[value="${current}"]`)) {
+                select.value = current;
+            } else {
+                select.value = '';
+            }
+        };
+
+        makeOptions(selResp, currentResponsaveis.concat(currentSubs));
+        makeOptions(selSub, currentSubs.concat(currentResponsaveis));
+    };
+
+    selResp.addEventListener('change', () => {
+        const id = parseInt(selResp.value, 10);
+        if (!id || !currentUserId) {
+            selResp.value = '';
+            return;
+        }
+
+        if (!currentResponsaveis.includes(id) && id !== currentUserId) {
+            currentResponsaveis.push(id);
+            paintHierarchyDiagram();
+        }
+
+        selResp.value = '';
+    });
+
+    selSub.addEventListener('change', () => {
+        const id = parseInt(selSub.value, 10);
+        if (!id || !currentUserId) {
+            selSub.value = '';
+            return;
+        }
+
+        if (!currentSubs.includes(id) && id !== currentUserId) {
+            currentSubs.push(id);
+            paintHierarchyDiagram();
+        }
+
+        selSub.value = '';
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        if (!currentUserId) return;
+
+        saveBtn.disabled = true;
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'A guardar...';
+
+        try {
+            const payload = {
+                user_id: currentUserId,
+                responsaveis: currentResponsaveis,
+                subs: currentSubs,
+            };
+
+            const res = await updateHierarchy(payload);
+
+            if (!res || res.ok !== true) {
+                console.error('Resposta inválida ao atualizar hierarquia:', res);
+                alert('Ocorreu um erro ao atualizar a hierarquia.');
+                return;
+            }
+
+            alert('Hierarquia atualizada com sucesso!');
+        } catch (err) {
+            console.error('Falha ao atualizar hierarquia:', err);
+            alert('Erro ao comunicar com o servidor ao atualizar a hierarquia.');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = originalText;
+        }
+    });
+
+    // Inicializa as opções na primeira vez
+    rebuildHierarchySelects();
+}
+
 
 
 function renderCreateModal() {
@@ -577,6 +765,8 @@ export async function mountClbMngmt() {
     bindSelect();
     renderCreateModal();
     renderHierarchyModal();
+    setupHierarchyEditors();
 }
+
 
 // TODO: Remover colaboradores (clicar no cartao e remover)
