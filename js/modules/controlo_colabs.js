@@ -1,4 +1,10 @@
-import {createCollaborator, getAllCollaborators, getSubsByUser, updateHierarchy, updatePermissions} from '../api.js';
+import {
+    createCollaborator,
+    getAllCollaborators,
+    getHierarchyByUser,
+    updateHierarchy,
+    updatePermissions
+} from '../api.js';
 import {PERMISSIONS} from "../dashboard.js";
 
 export const PERM_LABELS = {
@@ -139,8 +145,8 @@ async function renderSubs(userId = null) {
     }
 
     try {
-        const res = await getSubsByUser(userId);
-        if (!res || res.ok !== true || res.items.length === 0) {
+        const res = await getHierarchyByUser(userId);
+        if (!res || res.ok !== true) {
             emptyEl.style.display = '';
             renderHierarchyPreview();
             return;
@@ -148,8 +154,8 @@ async function renderSubs(userId = null) {
 
         emptyEl.style.display = 'none';
 
-        res.items.forEach(item => {
-            const c = item.colaborador;
+        res.subordinados.forEach(sub => {
+            const c = sub.user;
             if (!c) return;
 
             const avatarUrl =
