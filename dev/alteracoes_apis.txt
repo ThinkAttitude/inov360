@@ -1,3 +1,0 @@
-Modulos para alterar o Sistema Hierarquico para o novo:
-
-- Finance

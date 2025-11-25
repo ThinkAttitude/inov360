@@ -34,7 +34,7 @@ if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { http_response_code(400);
 if (!in_array($state, ['approved','rejected','both'], true)) $state = 'both';
 
 /* WHERE */
-$where = ["DATE_FORMAT(ro.dia,'%Y-%m') = :m"];
+$where = ["DATE_FORMAT(ro.data_inicio,'%Y-%m') = :m"];
 $params = [':m'=>$month];
 
 if ($state !== 'both') { $where[] = "ro.estado = :st"; $params[':st'] = $state; }
@@ -59,7 +59,7 @@ SELECT
   u.$nameCol                 AS user_name,
   u.email                    AS user_email,
   c.name                     AS company_name,
-  ro.dia,
+  DATE(ro.data_inicio)        AS dia,
   ro.data_inicio,
   ro.data_fim,
   TIMESTAMPDIFF(MINUTE, ro.data_inicio, ro.data_fim) AS req_minutos,
