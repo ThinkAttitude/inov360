@@ -87,6 +87,9 @@ components:
         password:
           type: string
           minLength: 6
+          description: >
+            Palavra-passe temporária que será enviada por email ao colaborador.
+            Mínimo de 6 caracteres.
           example: 'secret123'
         company_id:
           type: integer
@@ -265,6 +268,125 @@ components:
           items:
             $ref: '#/components/schemas/SubRelacaoItem'
 
+    # ---------- NOVOS SCHEMAS PARA ORGANOGRAMA / HIERARQUIA ----------
+
+    OrgTreeNodeNested:
+      type: object
+      description: Nó da árvore organizacional (formato nested).
+      properties:
+        id:
+          type: integer
+          example: 12
+        manager_id:
+          type: integer
+          nullable: true
+          example: 3
+        nome:
+          type: string
+          example: "Ana Silva"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "ana@example.com"
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrgTreeNodeNested'
+      required: [id, nome]
+
+    OrgTreeResponseNested:
+      type: object
+      required: [ok, data]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: array
+          description: Lista de nós raiz (utilizadores sem manager ou manager inexistente).
+          items:
+            $ref: '#/components/schemas/OrgTreeNodeNested'
+
+    OrgTreeNodeFlat:
+      type: object
+      description: Nó da árvore organizacional em formato plano.
+      properties:
+        id:
+          type: integer
+          example: 12
+        manager_id:
+          type: integer
+          nullable: true
+          example: 3
+        nome:
+          type: string
+          example: "Ana Silva"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "ana@example.com"
+      required: [id, nome]
+
+    OrgTreeResponseFlat:
+      type: object
+      required: [ok, data]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        data:
+          type: array
+          description: Lista plana de utilizadores com o respetivo manager_id.
+          items:
+            $ref: '#/components/schemas/OrgTreeNodeFlat'
+
+    GetHierarchyRelUser:
+      type: object
+      description: Relação simples (cr.id) + dados do outro utilizador.
+      properties:
+        rel_id:
+          type: integer
+          example: 45
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 99
+            nome:
+              type: string
+              example: "Carlos Rocha"
+            email:
+              type: string
+              format: email
+              nullable: true
+              example: "carlos@example.com"
+          required: [id, nome]
+      required: [rel_id, user]
+
+    GetHierarchyResponse:
+      type: object
+      required: [ok, user_id, responsaveis, subordinados]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        user_id:
+          type: integer
+          example: 77
+        responsaveis:
+          type: array
+          description: Relações onde o user_id é subordinado (lista de responsáveis).
+          items:
+            $ref: '#/components/schemas/GetHierarchyRelUser'
+        subordinados:
+          type: array
+          description: Relações onde o user_id é responsável (lista de subordinados).
+          items:
+            $ref: '#/components/schemas/GetHierarchyRelUser'
+
 paths:
 
   /collab_management/collabs_list.php:
@@ -319,10 +441,16 @@ paths:
   /collab_management/create_colabs.php:
     post:
       tags: [collab_management]
-      summary: Criação de colaboradores (um ou vários)
+      summary: Criação de colaboradores, envio de email com credenciais
       description: >
         Aceita JSON com um objeto único **ou** um array de objetos.
         Em `multipart/form-data`, aceita um único registo com os mesmos campos.
+
+        Para cada colaborador criado é enviado um email de boas-vindas
+        com as credenciais de acesso (email e palavra-passe temporária).
+        O envio de email é "best effort": se o envio falhar, o pedido
+        continua a ser considerado bem sucedido e a falha é apenas
+        registada em log.
       security: [{ cookieAuth: [] }]
       requestBody:
         required: true
@@ -346,7 +474,9 @@ paths:
               $ref: '#/components/schemas/CreateColabItem'
       responses:
         '200':
-          description: Resultado da criação (sucessos e erros por item)
+          description: >
+            Resultado da criação (sucessos e erros por item).
+            Para cada item criado, é tentado o envio de email com as credenciais.
           content:
             application/json:
               schema:
@@ -364,7 +494,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: Sem permissão
+          description: Sem permissão (exige permissão 1)
           content:
             application/json:
               schema:
@@ -495,6 +625,98 @@ paths:
                 $ref: '#/components/schemas/ReturnSubsResponse'
         '401':
           description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ---------- NOVO: ORGANOGRAMA COMPLETO ----------
+
+  /collab_management/collab_org_tree.php:
+    get:
+      tags: [collab_management]
+      summary: Organograma de colaboradores (árvore organizacional)
+      description: >
+        Devolve a árvore de relações `colaborador_responsaveis` para todos os
+        utilizadores. Pode ser devolvida em formato aninhado (**nested**) ou
+        plano (**flat**).
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: format
+          description: Formato de saída.
+          schema:
+            type: string
+            enum: [nested, flat]
+            default: nested
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OrgTreeResponseNested'
+                  - $ref: '#/components/schemas/OrgTreeResponseFlat'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Sem permissão (exige permissão 1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ---------- NOVO: HIERARQUIA DE UM ÚNICO UTILIZADOR ----------
+
+  /users/get_hierarchy.php:
+    get:
+      tags: [collab_management]
+      summary: Responsáveis e subordinados de um colaborador
+      description: >
+        Devolve, para o `user_id` indicado, as relações ativas na tabela
+        `colaborador_responsaveis`: responsáveis (onde o utilizador é colaborador)
+        e subordinados (onde o utilizador é responsável).
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - in: query
+          name: user_id
+          required: true
+          description: ID do utilizador alvo.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetHierarchyResponse'
+        '400':
+          description: Falta ou é inválido o parâmetro user_id (MISSING_USER_ID).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro servidor
           content:
             application/json:
               schema:
