@@ -239,7 +239,7 @@ components:
 
 paths:
 
-  /lovertime/request_overtime.php:
+  /overtime/request_overtime.php:
     post:
       tags: [overtime]
       summary: Criar pedido de horas extra (granularidade 15 min; máx. 12h)
@@ -273,7 +273,7 @@ paths:
         '409': { description: OVERTIME_CLOSED | DUPLICATE_REQUEST_OVERLAP | ALREADY_HAS_APPROVED_OVERTIME, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
         '500': { description: DB_ERROR, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
 
-  /lovertime/approve_overtime.php:
+  /overtime/approve_overtime.php:
     post:
       tags: [overtime]
       summary: Aprovar ou rejeitar um pedido de horas extra
@@ -298,7 +298,7 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
         '500': { description: DB_ERROR, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
 
-  /lovertime/request_list.php:
+  /overtime/request_list.php:
     get:
       tags: [overtime]
       summary: Listar pedidos de horas extra (paginado, filtros, escopos por permissão)
@@ -336,7 +336,7 @@ paths:
           description: FORBIDDEN_PERMISSION | FORBIDDEN_SCOPE
           content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } }
 
-  /lovertime/sheets_review.php:
+  /overtime/sheets_review.php:
     get:
       tags: [overtime]
       summary: Revisão de pedidos decididos (approved/rejected) com ligação ao overtime
@@ -371,7 +371,7 @@ paths:
         '401': { description: UNAUTHENTICATED, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
         '403': { description: FORBIDDEN_PERMISSION, content: { application/json: { schema: { $ref: '#/components/schemas/OkError' } } } }
 
-  /lovertime/sheets_export.php:
+  /overtime/sheets_export.php:
     get:
       tags: [overtime]
       summary: Exporta Excel (resumo + detalhe) das horas extra do mês

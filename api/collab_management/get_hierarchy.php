@@ -1,5 +1,5 @@
 <?php
-// api/users/user_relations.php
+// api/users/get_hierarchy.php
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');

@@ -36,14 +36,15 @@ paths:
         '200':
           description: |
             **Sucesso** (e também usado em erros na implementação atual).
-            Em sucesso, define a sessão e devolve o utilizador + arrays de permissões e responsáveis.
+            Em sucesso, define a sessão e devolve o utilizador + arrays de
+            permissões, responsáveis e subordinados.
           headers:
             Set-Cookie:
               description: Cookie de sessão `PHPSESSID` definido pelo PHP.
               schema: { type: string }
           content:
             application/json:
-              schema:            # <<<< oneOf tem de estar dentro de schema
+              schema:
                 oneOf:
                   - $ref: '#/components/schemas/AuthLoginResponseSuccess'
                   - $ref: '#/components/schemas/Problem'
@@ -126,22 +127,39 @@ components:
       properties:
         success:
           type: boolean
-          enum: [true]     # para compatibilidade 3.0.x (em 3.1 poderia ser const: true)
+          enum: [true]
         message:
           type: string
           example: "Login realizado com sucesso."
         user:
           type: object
           properties:
-            id: { type: integer, example: 123 }
-            name: { type: string, example: "João Silva" }
-            email: { type: string, format: email, example: "joao@example.com" }
+            id:
+              type: integer
+              example: 123
+            name:
+              type: string
+              example: "João Silva"
+            email:
+              type: string
+              format: email
+              example: "joao@example.com"
             permissions:
               type: array
-              items: { type: integer, example: 6 }
+              items:
+                type: integer
+                example: 6
               description: Array de IDs de permissão.
             responsaveis:
               type: array
-              items: { type: integer, example: 45 }
+              items:
+                type: integer
+                example: 45
               description: IDs dos responsáveis ativos/válidos do colaborador.
+            subordinados:          # <-- NOVO CAMPO
+              type: array
+              items:
+                type: integer
+                example: 67
+              description: IDs dos subordinados ativos/válidos do colaborador.
       required: [success, user]
