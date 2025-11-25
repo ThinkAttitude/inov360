@@ -10,8 +10,21 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
 }
 
-/* --- Parâmetro obrigatório: user_id --- */
-$userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+/*
+ * --- user_id ---
+ * Se vier no query ‘string’, usamos esse.
+ * Se não vier (ou vier vazio), usamos o utilizador autenticado da sessão.
+ */
+if (!empty($_SESSION['user']) && is_array($_SESSION['user']) && !empty($_SESSION['user']['id'])) {
+    $sessionUserId = (int)$_SESSION['user']['id'];
+}
+
+if (isset($_GET['user_id']) && $_GET['user_id'] !== '') {
+    $userId = (int)$_GET['user_id'];
+} else {
+    $userId = $sessionUserId;
+}
+
 if ($userId <= 0) {
     http_response_code(400);
     echo json_encode(['ok'=>false,'code'=>'MISSING_USER_ID']); exit;

@@ -1,9 +1,5 @@
 <?php
 session_start();
-if (!isset($_SESSION["is_login"]) || $_SESSION["user"]["role"] !== "admin_rh") {
-    echo "<p>Acesso negado.</p>";
-    exit;
-}
 // Evitar cache do HTML para refletir empresa/tema logo no primeiro load
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');

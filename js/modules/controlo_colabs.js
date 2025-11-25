@@ -39,7 +39,8 @@ function togglePermChips(ids = [], enabled = true) {
     const list = document.getElementById('perm-list');
     if (!list) return;
 
-    let active = new Set(ids);
+    const active = new Set(ids);
+
     list.querySelectorAll('.perm-item').forEach(li => {
         const permId = parseInt(li.dataset.perm, 10);
         const chip = li.querySelector('.chip-status');
@@ -128,10 +129,9 @@ function renderPerms(ids = [], hasUser = false) {
 async function renderSubs(userId = null) {
     const listEl = document.getElementById('hier-subs-list');
     const emptyEl = document.getElementById('hier-empty');
-    if (!listEl || !emptyEl) return;
+    if (!emptyEl) return;
 
-    listEl.innerHTML = '';
-
+    // no user: show empty state and clear chart
     if (!userId) {
         emptyEl.style.display = '';
         renderHierarchyPreview();

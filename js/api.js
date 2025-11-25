@@ -85,13 +85,11 @@ export async function createDirectLeave(formData) {
     });
 }
 
-export async function getSubsByUser(userId = null, state = 'active', searchQuery = '') {
+export async function getHierarchyByUser(userId = null) {
     const params = new URLSearchParams();
-    if (state) params.append('state', state);
-    if (searchQuery) params.append('q', searchQuery);
     if (userId) params.append('user_id', String(userId));
 
-    return apiFetch(`collab_management/return_sub.php?${params.toString()}`, {
+    return apiFetch(`collab_management/get_hierarchy.php?${params.toString()}`, {
         method: 'GET'
     });
 }

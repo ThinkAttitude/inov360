@@ -317,6 +317,11 @@ body {
     transform: translateY(-1px);
 }
 
+.leader-line {
+    z-index: 5000;   /* > 4000 (your .controlo-modal-overlay) */
+    pointer-events: none; /* keep them non-interactive */
+}
+
 /* Estilos para toasts */
 .toast {
     position: fixed;
