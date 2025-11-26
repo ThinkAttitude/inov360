@@ -482,13 +482,10 @@
     gap: 0.75rem;
 }
 
-.controlo-card-body--hierarchy .hier-preview {
-    flex: 1;
-}
-
 /* Preview */
 .hier-preview {
-    width: 100%;
+    width: 464px;
+    max-width: 100%;
     margin-top: 0.25rem;
     border-radius: 14px;
     border: 1px dashed #cbd5f5;
@@ -558,11 +555,10 @@
     min-height: 80px;
     flex: 1;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     overflow: hidden;            /* everything inside is cut by the borders */
     cursor: grab;
-
 }
 
 .hier-preview-canvas::before {
@@ -633,6 +629,7 @@
     font-size: 0.7rem;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
+    z-index: 2;
 }
 
 /* --------- Modal do diagrama de hierarquia --------- */
