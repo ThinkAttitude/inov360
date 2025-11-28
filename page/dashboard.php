@@ -104,7 +104,7 @@ $userName = $_SESSION['user']['name'] ?? '';
     <!-- Right column: main content + footer stacked vertically -->
     <div class="content-column">
 
-        <!-- template para welcome-card (stays available in DOM for dashboard.js to clone) -->
+        <!-- template welcome-card  -->
         <template id="tpl-welcome-card">
             <article class="welcome-card" role="article" aria-live="polite">
                 <div class="card-icon" aria-hidden="true"></div>

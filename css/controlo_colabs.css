@@ -280,9 +280,18 @@
 
 .hierarchy-item:hover {
     border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.06); /* vermelho transparente */
+    background: rgba(239, 68, 68, 0.06); /* transparent red */
     box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.4);
     transform: translateY(-1px);
+}
+
+.hierarchy-item--current:hover {
+    border-color: var(--gradient-1);
+    background: #ffffff;
+    box-shadow:
+            0 0 0 1px rgba(59, 130, 246, 0.25),
+            0 10px 20px rgba(15, 23, 42, 0.12);
+    transform: none;
 }
 
 /* Ícone de remoção (hidden por default) */
@@ -473,13 +482,11 @@
     gap: 0.75rem;
 }
 
-.controlo-card-body--hierarchy .hier-preview {
-    flex: 1;
-}
-
 /* Preview */
 .hier-preview {
-    width: 100%;
+    width: 464px;
+    max-width: 100%;
+    flex: 1 1 auto;
     margin-top: 0.25rem;
     border-radius: 14px;
     border: 1px dashed #cbd5f5;
@@ -549,11 +556,10 @@
     min-height: 80px;
     flex: 1;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     overflow: hidden;            /* everything inside is cut by the borders */
     cursor: grab;
-
 }
 
 .hier-preview-canvas::before {
@@ -624,6 +630,7 @@
     font-size: 0.7rem;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
+    z-index: 2;
 }
 
 /* --------- Modal do diagrama de hierarquia --------- */
@@ -703,14 +710,70 @@
 
 /* Connects the top block to the center row */
 .hier-diagram-row--center::before {
-    top: -3.5rem;        /* same as margin-top of the lines */
-    height: 3.5rem;
+    top: calc(-1 * var(--hier-line-length));
+    height: var(--hier-line-length);
 }
 
 /* Connects the bottom block to the center */
 .hier-diagram-row--center::after {
-    bottom: -2.5rem;
-    height: 2.5rem;
+    bottom: calc(-1 * var(--hier-line-length));
+    height: var(--hier-line-length);
+}
+
+.hier-diagram-area {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.25rem 0.9rem;
+    border-radius: 14px;
+    border: 2px solid #cbd5f5;
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.hier-diagram-area .hier-diagram-row-label {
+    margin: 0;
+}
+
+.hier-diagram-area .hier-diagram-row-nodes {
+    margin-top: 0.4rem;
+}
+
+/* Select for adding new hierarchy item panel */
+.hier-add-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 4100;
+}
+
+.hier-add-panel {
+    position: absolute;
+    min-width: 260px;
+    max-width: 360px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 0.75rem 0.9rem 0.9rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+    border: 1px solid #e5e7eb;
+}
+
+.hier-add-panel .field-label {
+    margin-bottom: 0.35rem;
+}
+
+.hier-add-panel .hier-add-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.hier-add-panel .hier-add-actions .btn-secondary {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+.hier-add-select {
+    width: 100%;
 }
 
 .hier-diagram-row-label {
@@ -722,7 +785,17 @@
 }
 
 .hier-diagram-row-nodes {
-    margin-top: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hier-connector {
+    flex: 0 0 18px;
+    height: 2px;
+    background: #cbd5f5;
+    border-radius: 999px;
+    margin: 0;
 }
 
 .hier-diagram-inner .hierarchy-item {
@@ -730,7 +803,12 @@
     background: #ffffff;
     border-radius: 12px;
     padding: 0.5rem 0.45rem;
+    min-height: var(--hier-card-height);
     min-width: 220px;
+}
+
+.hier-preview-diagram-inner .hierarchy-item {
+    margin-top: 0;
 }
 
 /* Responsive */

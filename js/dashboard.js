@@ -1,4 +1,4 @@
-import {getSubsByUser, logout} from "./api.js";
+import {getHierarchyByUser, logout} from "./api.js";
 
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
@@ -188,9 +188,9 @@ function bindNav() {
 }
 
 
-async function userHasCollabs() {
-    const c = await getSubsByUser()
-    return c?.total > 0 ?? false;
+async function userHasSubs() {
+    const c = await getHierarchyByUser()
+    return c.subordinados.length > 0 ?? false;
 }
 
 
@@ -249,9 +249,9 @@ function loadCards() {
     const sideCards = new Set(permCards);
     const welcomeCards = new Set(permCards);
 
-    userHasCollabs()
-        .then(hasCollabs => {
-            if (hasCollabs) {
+    userHasSubs()
+        .then(hasSubs => {
+            if (hasSubs) {
                 welcomeCards.add(CARD_TYPES.APROVACAO_HORARIOS);
                 welcomeCards.add(CARD_TYPES.APROVACAO_FERIAS);
                 welcomeCards.add(CARD_TYPES.CONSULTA_PEDIDOS);

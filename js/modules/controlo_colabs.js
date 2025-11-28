@@ -1,5 +1,11 @@
-import {createCollaborator, getAllCollaborators, getSubsByUser, updateHierarchy, updatePermissions} from '../api.js';
-import {PERMISSIONS} from "../dashboard.js";
+import {
+    createCollaborator,
+    getAllCollaborators,
+    getHierarchyByUser,
+    updateHierarchy,
+    updatePermissions
+} from '../api.js';
+import {PERMISSIONS} from '../dashboard.js';
 
 export const PERM_LABELS = {
     [PERMISSIONS.CONTROLO_COLABS]: 'Controlo de Colaboradores',
@@ -12,6 +18,33 @@ export const PERM_LABELS = {
 };
 
 let collabs = [];
+const hierarchyState = {
+    userId: null,
+    responsaveis: [],
+    subs: [],
+    baseRespCount: 0,
+    baseSubCount: 0,
+};
+
+const setHierarchyState = (patch) => Object.assign(hierarchyState, patch);
+
+// Check if hierarchy has unsaved changes
+const isHierarchyDirty = () => {
+    const {responsaveis, subs, baseRespCount, baseSubCount} = hierarchyState;
+    return (
+        responsaveis.length !== baseRespCount ||
+        subs.length !== baseSubCount
+    );
+};
+
+function updateHierarchyControls() {
+    const saveBtn = document.getElementById('hierarchy-modal-save');
+    const closeFooter = document.getElementById('hierarchy-modal-close-footer');
+    const dirty = isHierarchyDirty();
+
+    if (saveBtn) saveBtn.disabled = !dirty;
+    if (closeFooter) closeFooter.textContent = dirty ? 'Cancelar' : 'Fechar';
+}
 
 async function fillCollaborators() {
     const select = document.getElementById('controlo-user-select');
@@ -39,7 +72,8 @@ function togglePermChips(ids = [], enabled = true) {
     const list = document.getElementById('perm-list');
     if (!list) return;
 
-    let active = new Set(ids);
+    const active = new Set(ids);
+
     list.querySelectorAll('.perm-item').forEach(li => {
         const permId = parseInt(li.dataset.perm, 10);
         const chip = li.querySelector('.chip-status');
@@ -105,11 +139,6 @@ function togglePermChips(ids = [], enabled = true) {
     });
 }
 
-/**
- * Responsible for rendering the permissions UI based on selected collaborator
- * @param {number[]} ids - Array of permission IDs that the selected collaborator has
- * @param {boolean} hasUser - Whether a collaborator is currently selected
- */
 function renderPerms(ids = [], hasUser = false) {
     const permEmpty = document.getElementById('perm-empty');
 
@@ -125,97 +154,283 @@ function renderPerms(ids = [], hasUser = false) {
     togglePermChips(ids, hasUser);
 }
 
-async function renderSubs(userId = null) {
-    const listEl = document.getElementById('hier-subs-list');
+async function renderDiagram(userId = null) {
+    const superList = document.getElementById('hier-super-list');
+    const subsList = document.getElementById('hier-subs-list');
     const emptyEl = document.getElementById('hier-empty');
-    if (!listEl || !emptyEl) return;
-
-    listEl.innerHTML = '';
+    if (!superList || !subsList || !emptyEl) return;
 
     if (!userId) {
+        setHierarchyState({
+            userId: null,
+            responsaveis: [],
+            subs: [],
+            baseRespCount: 0,
+            baseSubCount: 0,
+        });
         emptyEl.style.display = '';
+        updateHierarchyControls();
+        rebuildRows();
         renderHierarchyPreview();
         return;
     }
 
-    try {
-        const res = await getSubsByUser(userId);
-        if (!res || res.ok !== true || res.items.length === 0) {
-            emptyEl.style.display = '';
-            renderHierarchyPreview();
-            return;
-        }
+    setHierarchyState({ userId });
 
-        emptyEl.style.display = 'none';
-
-        res.items.forEach(item => {
-            const c = item.colaborador;
-            if (!c) return;
-
-            const avatarUrl =
-                'https://ui-avatars.com/api/?' +
-                `name=${encodeURIComponent(c.nome || 'Colaborador')}` +
-                '&background=0F172A&color=FFFFFF&size=64&bold=true';
-
-            const card = document.createElement('div');
-            card.className = 'hierarchy-item';
-            card.innerHTML = `
-                    <div class="avatar-wrapper">
-                        <div class="avatar-small">
-                            <img src="${avatarUrl}" alt="${c.nome}">
-                        </div>
-                        <div class="hier-remove-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none"
-                                 stroke="currentColor" stroke-width="2"
-                                 stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="6"></circle>
-                                <line x1="9" y1="12" x2="15" y2="12"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="hierarchy-text">
-                        <div class="h-name">${c.nome}</div>
-                        <div class="h-sub">${c.email || 'Colaborador'}</div>
-                    </div>
-                    <div class="hier-tooltip">Remover</div>
-                `;
-
-            card.addEventListener('click', (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-
-                if (!confirm('Remover este colaborador desta hierarquia?')) return;
-
-                updateHierarchy({
-                    user_id: c.id,
-                    responsaveis: []
-                })
-                    .then(() => renderSubs(userId))
-                    .catch(err => {
-                        console.error('Erro ao remover colaborador da hierarquia:', err);
-                    });
-            });
-            listEl.appendChild(card);
+    const res = await getHierarchyByUser(userId).catch(err => {
+        console.error('Erro ao carregar hierarquia:', err);
+        setHierarchyState({
+            responsaveis: [],
+            subs: [],
+            baseRespCount: 0,
+            baseSubCount: 0,
         });
-
-        renderHierarchyPreview();
-    } catch (e) {
-        console.error('Erro ao carregar subs:', e);
         emptyEl.style.display = '';
+        updateHierarchyControls();
+        rebuildRows();
         renderHierarchyPreview();
+        return null;
+    });
+
+    if (!res || res.ok !== true) {
+        setHierarchyState({
+            responsaveis: [],
+            subs: [],
+            baseRespCount: 0,
+            baseSubCount: 0,
+        });
+        emptyEl.style.display = '';
+        updateHierarchyControls();
+        rebuildRows();
+        renderHierarchyPreview();
+        return;
     }
+
+    const responsaveis = Array.isArray(res.responsaveis) ? res.responsaveis : [];
+    const subs = Array.isArray(res.subordinados) ? res.subordinados : [];
+
+    setHierarchyState({
+        responsaveis,
+        subs,
+        baseRespCount: responsaveis.length,
+        baseSubCount: subs.length,
+    });
+
+    const hasAny = responsaveis.length > 0 || subs.length > 0;
+    emptyEl.style.display = hasAny ? 'none' : '';
+
+    rebuildRows();
+    updateHierarchyControls();
+    renderHierarchyPreview();
 }
 
-/**
- * Mirror the main hierarchy diagram into the preview viewport.
- * Clones existing rows from the modal DOM and scales them down.
- * No listeners are cloned; preview is read-only.
- */
+function buildCard(u, type) {
+    const card = document.createElement('div');
+    card.className = 'hierarchy-item';
+
+    const avatarUrl =
+        'https://ui-avatars.com/api/?' +
+        `name=${encodeURIComponent(u.nome || 'Colaborador')}` +
+        '&background=0F172A&color=FFFFFF&size=64&bold=true';
+
+    card.innerHTML = `
+        <div class="avatar-wrapper">
+            <div class="avatar-small">
+                <img src="${avatarUrl}" alt="${u.nome}">
+            </div>
+            <div class="hier-remove-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <line x1="9" y1="12" x2="15" y2="12"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="hierarchy-text">
+            <div class="h-name">${u.nome}</div>
+            <div class="h-sub">${u.email || 'Colaborador'}</div>
+        </div>
+        <div class="hier-tooltip">Remover</div>
+    `;
+
+    card.addEventListener('click', ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        if (!hierarchyState.userId) return;
+        if (!confirm('Remover este colaborador desta hierarquia?')) return;
+
+        if (type === 'super') {
+            setHierarchyState({
+                responsaveis: hierarchyState.responsaveis.filter(
+                    item => item.user && item.user.id !== u.id
+                ),
+            });
+        } else {
+            setHierarchyState({
+                subs: hierarchyState.subs.filter(
+                    item => item.user && item.user.id !== u.id
+                ),
+            });
+        }
+
+        rebuildRows();
+        updateHierarchyControls();
+        renderHierarchyPreview();
+    });
+
+    return card;
+}
+
+function appendRowWithConnectors(container, users, type) {
+    const frag = document.createDocumentFragment();
+
+    users.forEach((obj, index) => {
+        const user = obj.user;
+        if (!user) return;
+
+        if (index > 0) {
+            const connector = document.createElement('div');
+            connector.className = 'hier-connector';
+            frag.appendChild(connector);
+        }
+
+        frag.appendChild(buildCard(user, type));
+    });
+
+    container.appendChild(frag);
+}
+
+function rebuildRows() {
+    const superList = document.getElementById('hier-super-list');
+    const subsList = document.getElementById('hier-subs-list');
+
+    superList.innerHTML = '';
+    subsList.innerHTML = '';
+    appendRowWithConnectors(superList, hierarchyState.responsaveis, 'super');
+    appendRowWithConnectors(subsList, hierarchyState.subs, 'sub');
+}
+
+function openHierarchyAddSelect(type, areaEl) {
+    if (!hierarchyState.userId || !areaEl) return;
+
+    const modal = document.getElementById('hierarchy-modal');
+    const dialog = modal.querySelector('.controlo-modal');
+    if (!modal || !dialog) return;
+
+    const existing = modal.querySelector('.hier-add-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'hier-add-overlay';
+
+    const panel = document.createElement('div');
+    panel.className = 'hier-add-panel';
+
+    const label = document.createElement('div');
+    label.className = 'field-label';
+    label.textContent = type === 'super'
+        ? 'Adicionar responsável'
+        : 'Adicionar subordinado';
+
+    const select = document.createElement('select');
+    select.className = 'field-select hier-add-select';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Selecione um colaborador';
+    select.appendChild(placeholder);
+
+    const usedIds = new Set();
+    usedIds.add(hierarchyState.userId);
+    hierarchyState.responsaveis.forEach(r => {
+        if (r.user.id) usedIds.add(r.user.id);
+    });
+    hierarchyState.subs.forEach(s => {
+        if (s.user.id) usedIds.add(s.user.id);
+    });
+
+    collabs.forEach(c => {
+        if (!c.id || usedIds.has(c.id)) return;
+        const opt = document.createElement('option');
+        opt.value = String(c.id);
+        opt.textContent = c.email ? `${c.nome} (${c.email})` : c.nome;
+        select.appendChild(opt);
+    });
+
+    if (select.options.length === 1) return;
+
+    const actions = document.createElement('div');
+    actions.className = 'hier-add-actions';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-secondary';
+    cancelBtn.textContent = 'Cancelar';
+
+    actions.appendChild(cancelBtn);
+
+    panel.appendChild(label);
+    panel.appendChild(select);
+    panel.appendChild(actions);
+    overlay.appendChild(panel);
+    modal.appendChild(overlay);
+
+    const dialogRect = dialog.getBoundingClientRect();
+    const areaRect = areaEl.getBoundingClientRect();
+    const top = areaRect.top - dialogRect.top - 8;
+    const left = areaRect.left - dialogRect.left + areaRect.width / 2;
+
+    panel.style.top = `${Math.max(8, top)}px`;
+    panel.style.left = `${left}px`;
+    panel.style.transform = 'translate(-50%, -100%)';
+
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.remove();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        overlay.remove();
+    });
+
+    panel.addEventListener('click', e => {
+        e.stopPropagation();
+    });
+
+    select.addEventListener('change', () => {
+        const id = parseInt(select.value, 10);
+        if (!id) return;
+
+        const chosen = collabs.find(c => c.id === id);
+        if (!chosen) return;
+
+        const entry = { user: chosen };
+
+        if (type === 'super') {
+            setHierarchyState({
+                responsaveis: [...hierarchyState.responsaveis, entry],
+            });
+        } else {
+            setHierarchyState({
+                subs: [...hierarchyState.subs, entry],
+            });
+        }
+
+        rebuildRows();
+        updateHierarchyControls();
+        renderHierarchyPreview();
+        overlay.remove();
+    });
+
+    select.focus();
+}
+
 function renderHierarchyPreview() {
-    const previewBtn    = document.getElementById('hier-preview');
-    const previewMeta   = document.getElementById('hier-preview-meta');
+    const previewBtn = document.getElementById('hier-preview');
+    const previewMeta = document.getElementById('hier-preview-meta');
     const previewCounts = document.getElementById('hier-preview-counts');
-    const previewRoot   = document.getElementById('hier-preview-diagram');
+    const previewRoot = document.getElementById('hier-preview-diagram');
     if (!previewRoot || !previewBtn) return;
 
     const select = document.getElementById('controlo-user-select');
@@ -235,20 +450,17 @@ function renderHierarchyPreview() {
 
     previewBtn.disabled = false;
 
-    // modal diagram as source of truth
     const diagramInner = document.getElementById('hier-diagram-inner');
     if (!diagramInner) return;
 
-    const topRow    = diagramInner.querySelector('.hier-diagram-row--top');
+    const topRow = diagramInner.querySelector('.hier-diagram-row--top');
     const centerRow = diagramInner.querySelector('.hier-diagram-row--center');
     const bottomRow = diagramInner.querySelector('.hier-diagram-row--bottom');
 
     if (!centerRow) return;
 
-    const superList = document.getElementById('hier-super-list');
-    const subsList  = document.getElementById('hier-subs-list');
-    const superCount = superList ? superList.children.length : 0;
-    const subsCount  = subsList ? subsList.children.length : 0;
+    const superCount = hierarchyState.responsaveis.length;
+    const subsCount = hierarchyState.subs.length;
 
     if (previewCounts) {
         previewCounts.textContent = `${superCount} responsáveis · ${subsCount} subordinados`;
@@ -257,23 +469,19 @@ function renderHierarchyPreview() {
         previewMeta.textContent = 'Arraste para navegar pelo mapa. Clique para ver em detalhe.';
     }
 
-    // build in fragment to minimize reflows
-    const frag  = document.createDocumentFragment();
+    const frag = document.createDocumentFragment();
     const inner = document.createElement('div');
     inner.className = 'hier-preview-diagram-inner';
 
     const rows = [topRow, centerRow, bottomRow];
 
-    rows.forEach((row) => {
+    rows.forEach(row => {
         if (!row) return;
 
-        // clone entire row because it contains all needed structure/styles
         const clone = row.cloneNode(true);
-
         clone.removeAttribute('id');
         clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
 
-        // limit of MAX_NODES per row in preview
         const nodesContainer = clone.querySelector('.hier-diagram-row-nodes');
         if (nodesContainer) {
             const children = Array.from(nodesContainer.children);
@@ -299,12 +507,10 @@ function renderHierarchyPreview() {
 
     frag.appendChild(inner);
 
-    // applying atomically to improve rendering performance
     previewRoot.innerHTML = '';
     previewRoot.appendChild(frag);
 
-    // drag position reset
-    previewRoot.style.transform = 'translate(0px, 0px)';
+    previewRoot.style.transform = 'translate(0px, 0px)';    // reset position
 }
 
 function bindSelect() {
@@ -322,7 +528,7 @@ function bindSelect() {
 
         if (!val) {
             renderPerms([]);
-            renderSubs(null);
+            renderDiagram(null);
             renderHierarchyPreview();
 
             if (previewBtn) {
@@ -347,7 +553,7 @@ function bindSelect() {
         const c = collabs.find(u => u.id === id);
 
         renderPerms(c?.permissoes || [], true);
-        renderSubs(id);
+        renderDiagram(id);
 
         if (previewBtn) {
             previewBtn.disabled = false;
@@ -367,13 +573,12 @@ function bindSelect() {
     });
 }
 
-
 function renderCreateModal() {
-    const btnOpen   = document.getElementById('controlo-add');
-    const overlay   = document.getElementById('controlo-create-modal');
-    const btnClose  = document.getElementById('controlo-create-close');
+    const btnOpen = document.getElementById('controlo-add');
+    const overlay = document.getElementById('controlo-create-modal');
+    const btnClose = document.getElementById('controlo-create-close');
     const btnCancel = document.getElementById('controlo-create-cancel');
-    const form      = document.getElementById('controlo-create-form');
+    const form = document.getElementById('controlo-create-form');
 
     if (!btnOpen || !overlay) return;
 
@@ -403,19 +608,19 @@ function renderCreateModal() {
         });
     }
 
-    overlay.addEventListener('click', (e) => {
+    overlay.addEventListener('click', e => {
         if (e.target === overlay) {
             closeModal();
         }
     });
 
     if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', e => {
             e.preventDefault();
             const fd = new FormData(form);
 
             createCollaborator(fd)
-                .then(async (res) => {
+                .then(async res => {
                     if (res && res.ok === true) {
                         closeModal();
                         await fillCollaborators();
@@ -423,7 +628,7 @@ function renderCreateModal() {
                         console.error('Failed to create collaborator:', res?.error);
                     }
                 })
-                .catch((err) => {
+                .catch(err => {
                     console.error('Failed to create collaborator:', err);
                 });
         });
@@ -435,6 +640,7 @@ function renderHierarchyModal() {
     const modal = document.getElementById('hierarchy-modal');
     const closeBtn = document.getElementById('hierarchy-modal-close');
     const closeFooter = document.getElementById('hierarchy-modal-close-footer');
+    const saveBtn = document.getElementById('hierarchy-modal-save');
 
     if (!previewBtn || !modal) return;
 
@@ -442,6 +648,12 @@ function renderHierarchyModal() {
         if (previewBtn.disabled) return;
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+    };
+
+    const doCancel = () => {
+        if (hierarchyState.userId && isHierarchyDirty()) {
+            renderDiagram(hierarchyState.userId);
+        }
     };
 
     const closeModal = () => {
@@ -452,23 +664,77 @@ function renderHierarchyModal() {
     previewBtn.addEventListener('click', openModal);
 
     if (closeBtn) {
-        closeBtn.addEventListener('click', closeModal);
+        closeBtn.addEventListener('click', () => {
+            doCancel();
+            closeModal();
+        });
     }
     if (closeFooter) {
-        closeFooter.addEventListener('click', closeModal);
+        closeFooter.addEventListener('click', () => {
+            doCancel();
+            closeModal();
+        });
     }
 
-    modal.addEventListener('click', (e) => {
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (!hierarchyState.userId || !isHierarchyDirty()) return;
+
+            const respIds = hierarchyState.responsaveis
+                .map(r => (r.user ? r.user.id : null))
+                .filter(id => id != null);
+
+            const subsIds = hierarchyState.subs
+                .map(s => (s.user ? s.user.id : null))
+                .filter(id => id != null);
+
+            updateHierarchy(hierarchyState.userId, respIds, subsIds)
+                .then(res => {
+                    if (!res || res.ok !== true) {
+                        throw new Error('Resposta inválida do servidor');
+                    }
+                    setHierarchyState({
+                        baseRespCount: hierarchyState.responsaveis.length,
+                        baseSubCount: hierarchyState.subs.length,
+                    });
+                    updateHierarchyControls();
+                })
+                .catch(err => {
+                    console.error('Falha ao guardar hierarquia:', err);
+                });
+        });
+    }
+
+    modal.addEventListener('click', e => {
         if (e.target === modal) {
+            doCancel();
             closeModal();
         }
     });
+
+    const topRowArea = modal.querySelector('.hier-diagram-row--top');
+    const bottomRowArea = modal.querySelector('.hier-diagram-row--bottom');
+
+    if (topRowArea) {
+        topRowArea.addEventListener('click', e => {
+            if (e.target.closest('.hierarchy-item')) return;
+            if (e.target.closest('.hier-add-select')) return;
+            openHierarchyAddSelect('super', topRowArea);
+        });
+    }
+
+    if (bottomRowArea) {
+        bottomRowArea.addEventListener('click', e => {
+            if (e.target.closest('.hierarchy-item')) return;
+            if (e.target.closest('.hier-add-select')) return;
+            openHierarchyAddSelect('sub', bottomRowArea);
+        });
+    }
 
     enableDiagramDrag();
 }
 
 function enableDiagramDrag() {
-    // modal draggable
     const modalContainer = document.querySelector('.hier-diagram-container');
     const modalInner = document.getElementById('hier-diagram-inner');
 
@@ -479,8 +745,8 @@ function enableDiagramDrag() {
         let scrollLeft = 0;
         let scrollTop = 0;
 
-        modalInner.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return; // only left button
+        modalInner.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
             isDown = true;
             startX = e.clientX;
             startY = e.clientY;
@@ -489,7 +755,7 @@ function enableDiagramDrag() {
             e.preventDefault();
         });
 
-        window.addEventListener('mousemove', (e) => {
+        window.addEventListener('mousemove', e => {
             if (!isDown) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
@@ -502,10 +768,9 @@ function enableDiagramDrag() {
         });
     }
 
-    // preview draggable
-    const previewCanvas  = document.querySelector('.hier-preview-canvas');
+    const previewCanvas = document.querySelector('.hier-preview-canvas');
     const previewDiagram = document.getElementById('hier-preview-diagram');
-    const previewBtn     = document.getElementById('hier-preview');
+    const previewBtn = document.getElementById('hier-preview');
 
     if (previewCanvas && previewDiagram) {
         let isDown = false;
@@ -519,9 +784,9 @@ function enableDiagramDrag() {
             previewDiagram.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
         };
 
-        previewCanvas.addEventListener('mousedown', (e) => {
+        previewCanvas.addEventListener('mousedown', e => {
             if (previewBtn && previewBtn.disabled) return;
-            if (e.button !== 0) return; // só botão esquerdo
+            if (e.button !== 0) return;
 
             isDown = true;
             hasDragged = false;
@@ -529,18 +794,16 @@ function enableDiagramDrag() {
             startY = e.clientY;
             previewCanvas.classList.add('is-dragging');
 
-            // não queremos que mousedown dentro da canvas suba para outros handlers
             e.preventDefault();
             e.stopPropagation();
         });
 
-        window.addEventListener('mousemove', (e) => {
+        window.addEventListener('mousemove', e => {
             if (!isDown) return;
 
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
-            // small threshold to distinguish drag from jitter
             if (!hasDragged && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
                 hasDragged = true;
             }
@@ -559,7 +822,7 @@ function enableDiagramDrag() {
             previewCanvas.classList.remove('is-dragging');
         });
 
-        previewCanvas.addEventListener('click', (e) => {
+        previewCanvas.addEventListener('click', e => {
             if (hasDragged) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -569,14 +832,11 @@ function enableDiagramDrag() {
     }
 }
 
-
 export async function mountClbMngmt() {
     await fillCollaborators();
     renderPerms([], false);
-    renderSubs();
+    renderDiagram();
     bindSelect();
     renderCreateModal();
     renderHierarchyModal();
 }
-
-// TODO: Remover colaboradores (clicar no cartao e remover)

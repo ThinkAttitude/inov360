@@ -42,26 +42,36 @@ try {
     $responsaveis = to_int_array($in['responsaveis'] ?? ($in['responsaveis[]'] ?? null));
     $subs         = to_int_array($in['subs'] ?? ($in['subs[]'] ?? ($in['sub'] ?? ($in['sub[]'] ?? null))));
 
-    if ($userId <= 0) { http_response_code(400); echo json_encode(['ok'=>false,'code'=>'USER_ID_REQUIRED']); exit; }
+    if ($userId <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok'=>false,'code'=>'USER_ID_REQUIRED']);
+        exit;
+    }
     if (in_array($userId, $responsaveis, true) || in_array($userId, $subs, true)) {
-        http_response_code(400); echo json_encode(['ok'=>false,'code'=>'SELF_REFERENCE']); exit;
+        http_response_code(400);
+        echo json_encode(['ok'=>false,'code'=>'SELF_REFERENCE']);
+        exit;
     }
     if (array_intersect($responsaveis, $subs)) {
-        http_response_code(400); echo json_encode(['ok'=>false,'code'=>'RESP_SUB_CONFLICT']); exit;
+        http_response_code(400);
+        echo json_encode(['ok'=>false,'code'=>'RESP_SUB_CONFLICT']);
+        exit;
     }
 
-    // validar existência dos IDs envolvidos
     $idsToCheck = array_values(array_unique(array_merge([$userId], $responsaveis, $subs)));
     $ph = implode(',', array_fill(0, count($idsToCheck), '?'));
     $q = $pdo->prepare("SELECT id FROM `user` WHERE id IN ($ph)");
     $q->execute($idsToCheck);
     $found = array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
     $missing = array_values(array_diff($idsToCheck, $found));
-    if ($missing) { http_response_code(400); echo json_encode(['ok'=>false,'code'=>'USER_NOT_FOUND','missing'=>$missing]); exit; }
+    if ($missing) {
+        http_response_code(400);
+        echo json_encode(['ok'=>false,'code'=>'USER_NOT_FOUND','missing'=>$missing]);
+        exit;
+    }
 
     $pdo->beginTransaction();
 
-    // 1) Atualizar responsáveis do userId (substituir pelos fornecidos)
     $pdo->prepare("DELETE FROM `colaborador_responsaveis` WHERE colaborador_id = ?")
         ->execute([$userId]);
 
@@ -77,22 +87,10 @@ try {
         }
     }
 
-    // 2) Rewire dos subs
-    if ($subs) {
-        // remover ligações (sub -> cada responsavel antigo agora acima do userId)
-        if ($responsaveis) {
-            $phr = implode(',', array_fill(0, count($responsaveis), '?'));
-            $del = $pdo->prepare("
-                DELETE FROM `colaborador_responsaveis`
-                WHERE colaborador_id = ?
-                  AND responsavel_id IN ($phr)
-            ");
-            foreach ($subs as $sid) {
-                $del->execute(array_merge([$sid], $responsaveis));
-            }
-        }
+    $pdo->prepare("DELETE FROM `colaborador_responsaveis` WHERE responsavel_id = ?")
+        ->execute([$userId]);
 
-        // adicionar ligações (sub -> userId)
+    if ($subs) {
         $insSub = $pdo->prepare("
             INSERT IGNORE INTO `colaborador_responsaveis` (colaborador_id, responsavel_id, created_by)
             VALUES (?, ?, ?)

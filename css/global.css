@@ -11,6 +11,10 @@
     /* Gradiente padrão (substituir em temas) */
     --gradient-1: var(--light-blue);
     --gradient-2: #5a9ff7;
+
+    --hier-card-height: 64px;
+    --hier-row-gap: 3.5rem;
+    --hier-line-length: var(--hier-row-gap);
 }
 
 /* Company Theme Overrides (class-based – optional, JS sets variables)
@@ -316,6 +320,8 @@ body {
     border-color: #d1d5db;
     transform: translateY(-1px);
 }
+
+
 
 /* Estilos para toasts */
 .toast {

@@ -7,12 +7,20 @@ const API_BASE_URL = '/api/';
  * @returns {Promise<any>} The response Promise
  */
 async function apiFetch(endpoint, options = {}) {
+    const { body, headers, ...rest } = options;
+    const h = new Headers(headers || {});
+    const isPlainObject = (v) => { return v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype; };
+
+    if (isPlainObject(body)) {
+        h.set('Content-Type', 'application/json');
+        options.body = JSON.stringify(body);
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            headers: {
-                ...options.headers
-            },
-            ...options
+            ...rest,
+            headers: h,
+            body: options.body,
         });
 
         const ct = response.headers.get('Content-Type') || '';
@@ -28,7 +36,7 @@ async function apiFetch(endpoint, options = {}) {
 export async function login(email, password) {
     return apiFetch('auth/login.php', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: { email, password }
     });
 }
 
@@ -39,7 +47,7 @@ export function logout() {
 export async function register(userData) {
     return apiFetch('register.php', {
         method: 'POST',
-        body: JSON.stringify(userData)
+        body: userData
     });
 }
 
@@ -60,21 +68,21 @@ export async function createCollaborator(formData) {
 export async function updatePermissions(userId, permissions = []) {
     return apiFetch('collab_management/permissions_update.php', {
         method: 'POST',
-        body: JSON.stringify({
+        body: {
             user_id: userId,
             permissions
-        })
+        }
     });
 }
 
 export async function updateHierarchy(userId, responsaveis = [], subs = []) {
     return apiFetch('collab_management/hierarchy_update.php', {
         method: 'POST',
-        body: JSON.stringify({
+        body: {
             user_id: userId,
             responsaveis,
             subs,
-        }),
+        }
     });
 }
 
@@ -85,13 +93,11 @@ export async function createDirectLeave(formData) {
     });
 }
 
-export async function getSubsByUser(userId = null, state = 'active', searchQuery = '') {
+export async function getHierarchyByUser(userId = null) {
     const params = new URLSearchParams();
-    if (state) params.append('state', state);
-    if (searchQuery) params.append('q', searchQuery);
     if (userId) params.append('user_id', String(userId));
 
-    return apiFetch(`collab_management/return_sub.php?${params.toString()}`, {
+    return apiFetch(`collab_management/get_hierarchy.php?${params.toString()}`, {
         method: 'GET'
     });
 }
