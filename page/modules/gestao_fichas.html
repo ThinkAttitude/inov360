@@ -1,29 +1,79 @@
-<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/gestao_fichas.css">
 
-<div class="page-header">
-    <h2>Gestão de Fichas de Colaboradores</h2>
-    <p>Selecione a ação que pretende realizar para gerir as fichas dos colaboradores.</p>
-</div>
+<div class="controlo-page gestao-page">
+    <header class="gestao-header">
+        <div class="gestao-header-inner">
+            <h2 class="gestao-title">Gestão de Fichas de Colaboradores</h2>
+            <p class="gestao-desc">
+                Selecione a ação que pretende realizar para gerir as fichas dos colaboradores.
+            </p>
 
-<div class="action-buttons">
-    <button id="ver_aprovacoes" type="button" class="gestao-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9,11 12,14 22,4"></polyline>
-            <path d="M21,12v7a2,2 0,0 1,-2,2H5a2,2 0,0 1,-2,-2V5a2,2 0,0 1,2,-2h11"></path>
-        </svg>
-        Aprovar Alterações de Colaboradores
-    </button>
-    <button id="visualizar_fichas" type="button" class="gestao-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14,2 14,8 20,8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10,9 9,9 8,9"></polyline>
-        </svg>
-        Lista de Colaboradores
-    </button>
-</div>
+            <div class="gestao-actions">
+                <button id="gestao-aprovacoes" type="button" class="gestao-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9,11 12,14 22,4"></polyline>
+                        <path d="M21,12v7a2,2 0,0 1,-2,2H5a2,2 0,0 1,-2,-2V5a2,2 0,0 1,2,-2h11"></path>
+                    </svg>
+                    Aprovar Alterações
+                </button>
 
-<div id="gestao-content">
+                <button id="gestao-visualizar-fichas" type="button" class="gestao-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14,2 14,8 20,8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10,9 9,9 8,9"></polyline>
+                    </svg>
+                    Lista de Fichas
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="gestao-section">
+        <div id="gestao-content" class="gestao-content-card">
+            <!-- View: Pending approvals list -->
+            <div id="gestao-view-approvals" class="gestao-view gestao-view--approvals">
+                <div class="gestao-approvals-list" id="gestao-approvals-list">
+                    <div class="gestao-approvals-header">
+                        <h3>Pedidos de alteração pendentes</h3>
+                        <p>
+                            Aqui são apresentados os pedidos de alteração de ficha que aguardam aprovação.
+                        </p>
+                    </div>
+
+                    <div class="gestao-table-wrapper">
+                        <table class="gestao-table" aria-describedby="gestao-approvals-caption">
+                            <caption id="gestao-approvals-caption" class="sr-only">
+                                Lista de fichas de colaboradores com alterações pendentes de aprovação.
+                            </caption>
+                            <thead>
+                            <tr>
+                                <th scope="col">Colaborador</th>
+                                <th scope="col">Data do pedido</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Ação</th>
+                            </tr>
+                            </thead>
+                            <tbody id="gestao-approvals-tbody">
+                            <!-- Rows rendered by JS -->
+                            </tbody>
+                        </table>
+
+                        <p class="gestao-approvals-empty" id="gestao-approvals-empty">
+                            Não existem pedidos pendentes de aprovação.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Future second view goes here (diff / lista de colaboradores) -->
+            <div id="gestao-view-other" class="gestao-view gestao-view--other" style="display:none;">
+                <!-- Placeholder for second view -->
+            </div>
+        </div>
+    </section>
 </div>

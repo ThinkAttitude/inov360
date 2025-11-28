@@ -5,17 +5,6 @@ import {
     updateHierarchy,
     updatePermissions
 } from '../api.js';
-import {PERMISSIONS} from '../dashboard.js';
-
-export const PERM_LABELS = {
-    [PERMISSIONS.CONTROLO_COLABS]: 'Controlo de Colaboradores',
-    [PERMISSIONS.MARCACAO_DIRETA]: 'Marcação Direta de Férias/Ausências',
-    [PERMISSIONS.MAPAS_HORARIOS]: 'Mapas de Horários',
-    [PERMISSIONS.PEDIDOS_HORAS_EXTRA]: 'Pedidos de Horas Extra',
-    [PERMISSIONS.APROVACAO_HORAS_EXTRA]: 'Aprovação de Horas Extra',
-    [PERMISSIONS.GESTAO_FICHAS]: 'Gestão de Fichas',
-    [PERMISSIONS.FINANCEIRA]: 'Financeira',
-};
 
 let collabs = [];
 const hierarchyState = {

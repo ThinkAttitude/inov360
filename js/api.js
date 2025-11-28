@@ -51,7 +51,7 @@ export async function register(userData) {
     });
 }
 
-/* Collaborator Management */
+/* Collaborator Management (controlo_collabs) */
 export async function getAllCollaborators() {
     return apiFetch('collab_management/collabs_list.php', {
         method: 'GET',
@@ -99,5 +99,18 @@ export async function getHierarchyByUser(userId = null) {
 
     return apiFetch(`collab_management/get_hierarchy.php?${params.toString()}`, {
         method: 'GET'
+    });
+}
+
+/* Document Management (gestao_fichas) */
+export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
+    const params = new URLSearchParams();
+
+    if (q && q.trim() !== '') params.append('q', q.trim());
+    params.append('page', String(page));
+    params.append('page_size', String(pageSize));
+
+    return apiFetch(`employee_info/record/aval_requests.php?${params.toString()}`, {
+        method: 'GET',
     });
 }
