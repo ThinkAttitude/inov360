@@ -99,11 +99,55 @@ try {
         }));
     }
 
+    $itemsByUserId = [];
+
+    foreach ($rows as $r) {
+        $uid = (int)$r['user_id'];
+
+        if (!isset($itemsByUserId[$uid])) {
+            $itemsByUserId[$uid] = [
+                'user' => [
+                    'id'    => $uid,
+                    'name'  => $r['user_name'],
+                    'email' => $r['user_email'],
+                ],
+                'profile'  => null,
+                'emergency'=> null,
+            ];
+        }
+
+        // Pedido de alteração de perfil
+        if (!empty($r['profile_req_id'])) {
+            $itemsByUserId[$uid]['profile'] = [
+                'id'         => (int)$r['profile_req_id'],
+                'email'      => $r['profile_email'],
+                'telefone'   => $r['profile_telefone'],
+                'morada'     => $r['profile_morada'],
+                'nib'        => $r['profile_nib'],
+                'created_at' => $r['profile_created_at'],
+            ];
+        }
+
+        // Pedido de alteração de contacto de emergência
+        if (!empty($r['emergency_req_id'])) {
+            $itemsByUserId[$uid]['emergency'] = [
+                'id'         => (int)$r['emergency_req_id'],
+                'nome'       => $r['emergency_nome'],
+                'parentesco' => $r['emergency_parentesco'],
+                'telefone'   => $r['emergency_telefone'],
+                'created_at' => $r['emergency_created_at'],
+            ];
+        }
+    }
+
+    $items = array_values($itemsByUserId);
+
+
     echo json_encode([
         'success'   => true,
         'page'      => $page,
         'page_size' => $pageSize,
-        'items'     => $rows
+        'items'     => $items
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 } catch (Throwable $e) {
