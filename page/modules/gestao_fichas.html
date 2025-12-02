@@ -7,72 +7,95 @@
             <p class="gestao-desc">
                 Selecione a ação que pretende realizar para gerir as fichas dos colaboradores.
             </p>
-
-            <div class="gestao-actions">
-                <button id="gestao-aprovacoes" type="button" class="gestao-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9,11 12,14 22,4"></polyline>
-                        <path d="M21,12v7a2,2 0,0 1,-2,2H5a2,2 0,0 1,-2,-2V5a2,2 0,0 1,2,-2h11"></path>
-                    </svg>
-                    Aprovar Alterações
-                </button>
-
-                <button id="gestao-visualizar-fichas" type="button" class="gestao-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10,9 9,9 8,9"></polyline>
-                    </svg>
-                    Lista de Fichas
-                </button>
-            </div>
         </div>
     </header>
 
     <section class="gestao-section">
-        <div id="gestao-content" class="gestao-content-card">
-            <!-- View: Pending approvals list -->
-            <div id="gestao-view-approvals" class="gestao-view gestao-view--approvals">
-                <div class="gestao-approvals-list" id="gestao-approvals-list">
-                    <div class="gestao-approvals-header">
-                        <h3>Pedidos de alteração pendentes</h3>
-                        <p>
-                            Aqui são apresentados os pedidos de alteração de ficha que aguardam aprovação.
-                        </p>
-                    </div>
+        <div class="gestao-main">
+            <div class="gestao-tabs">
+                <button
+                        id="gestao-aprovacoes"
+                        type="button"
+                        class="gestao-tab gestao-tab--active"
+                >
+                    Pedidos
+                </button>
 
-                    <div class="gestao-table-wrapper">
-                        <table class="gestao-table" aria-describedby="gestao-approvals-caption">
-                            <caption id="gestao-approvals-caption" class="sr-only">
-                                Lista de fichas de colaboradores com alterações pendentes de aprovação.
-                            </caption>
-                            <thead>
-                            <tr>
-                                <th scope="col">Colaborador</th>
-                                <th scope="col">Data do pedido</th>
-                                <th scope="col">Estado</th>
-                                <th scope="col">Ação</th>
-                            </tr>
-                            </thead>
-                            <tbody id="gestao-approvals-tbody">
-                            <!-- Rows rendered by JS -->
-                            </tbody>
-                        </table>
+                <button
+                        id="gestao-visualizar-fichas"
+                        type="button"
+                        class="gestao-tab"
+                >
+                    Fichas
+                </button>
+            </div>
+            <div id="gestao-content" class="gestao-content-card">
+                <!-- Pending approvals list -->
+                <div id="gestao-view-approvals" class="gestao-view gestao-view--approvals">
+                    <div class="gestao-approvals-list" id="gestao-approvals-list">
+                        <div class="gestao-approvals-header">
+                            <h3>Pedidos de alteração pendentes</h3>
+                            <p>
+                                Aqui são apresentados os pedidos de alteração de ficha que aguardam aprovação.
+                            </p>
+                        </div>
 
-                        <p class="gestao-approvals-empty" id="gestao-approvals-empty">
-                            Não existem pedidos pendentes de aprovação.
-                        </p>
+                        <div class="gestao-table-wrapper">
+                            <table class="gestao-table" aria-describedby="gestao-approvals-caption">
+                                <caption id="gestao-approvals-caption" class="sr-only">
+                                    Lista de fichas de colaboradores com alterações pendentes de aprovação.
+                                </caption>
+                                <thead>
+                                <tr>
+                                    <th scope="col">Colaborador</th>
+                                    <th scope="col">Data do pedido</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col">Ação</th>
+                                </tr>
+                                </thead>
+                                <tbody id="gestao-approvals-tbody">
+                                <!-- Rows rendered by JS -->
+                                </tbody>
+                            </table>
+
+                            <p class="gestao-approvals-empty" id="gestao-approvals-empty">
+                                Não existem pedidos pendentes de aprovação.
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Future second view goes here (diff / lista de colaboradores) -->
-            <div id="gestao-view-other" class="gestao-view gestao-view--other" style="display:none;">
-                <!-- Placeholder for second view -->
+                <!-- All records list (diff / lista de colaboradores) -->
+                <div id="gestao-view-allrecs" class="gestao-view gestao-view--allrecs">
+                    <div class="gestao-allrecs-list">
+                        <div class="gestao-allrecs-header">
+                            <h3>Todos os colaboradores</h3>
+                            <p>Lista de colaboradores e respetiva empresa, para consulta de fichas.</p>
+                        </div>
+
+                        <div class="gestao-table-wrapper">
+                            <table class="gestao-table" aria-describedby="gestao-allrecs-caption">
+                                <caption id="gestao-allrecs-caption" class="sr-only">
+                                    Lista de todos os colaboradores com a respetiva empresa.
+                                </caption>
+                                <thead>
+                                <tr>
+                                    <th scope="col">Colaborador</th>
+                                    <th scope="col">Empresa</th>
+                                    <th scope="col">Ação</th>
+                                </tr>
+                                </thead>
+                                <tbody id="gestao-allrecs-tbody">
+                                <!-- Rows rendered by JS -->
+                                </tbody>
+                            </table>
+
+                            <p class="gestao-allrecs-empty" id="gestao-allrecs-empty">
+                                Não existem colaboradores para apresentar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

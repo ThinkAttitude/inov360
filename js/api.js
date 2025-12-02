@@ -102,7 +102,7 @@ export async function getHierarchyByUser(userId = null) {
     });
 }
 
-/* Document Management (gestao_fichas) */
+/* RecordD Management (gestao_fichas) */
 export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
     const params = new URLSearchParams();
 
@@ -111,6 +111,40 @@ export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
     params.append('page_size', String(pageSize));
 
     return apiFetch(`employee_info/record/aval_requests.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function getAllRecords({
+                                         page = 1,
+                                         pageSize = 25,
+                                         q = '',
+                                         companyId = null,
+                                         orderBy = 'name',
+                                         orderDir = 'asc',
+                                     } = {}) {
+    const params = new URLSearchParams();
+
+    params.append('page', String(page));
+    params.append('page_size', String(pageSize));
+
+    if (q && q.trim() !== '') {
+        params.append('q', q.trim());
+    }
+
+    if (companyId != null) {
+        params.append('company_id', String(companyId));
+    }
+
+    if (orderBy) {
+        params.append('order_by', orderBy);
+    }
+
+    if (orderDir) {
+        params.append('order_dir', orderDir);
+    }
+
+    return apiFetch(`employee_info/aval_list_all.php?${params.toString()}`, {
         method: 'GET',
     });
 }

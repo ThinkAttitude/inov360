@@ -1,6 +1,7 @@
-import { getAllPendingRequests } from '../api.js';
+import {getAllPendingRequests, getAllRecords} from '../api.js';
 
-let approvalsCache = null; // null = not loaded yet
+let approvalsCache = null;
+let allRecsCache = null;
 
 function buildPendingReqs(rows) {
     const tbody = document.getElementById('gestao-approvals-tbody');
@@ -35,8 +36,8 @@ function buildPendingReqs(rows) {
 
         tr.innerHTML = `
             <td>
-                <div class="gestao-colab-name">${row.user_name}</div>
-                ${row.user_email ? `<div class="gestao-colab-email">${row.user_email}</div>` : ''}
+                <div class="gestao-collab-name">${row.user_name}</div>
+                ${row.user_email ? `<div class="gestao-collab-email">${row.user_email}</div>` : ''}
             </td>
             <td>${requestedAt || '-'}</td>
             <td>
@@ -103,28 +104,113 @@ async function renderPendingReqs() {
 
 function showPendingRecsView() {
     const approvalsView = document.getElementById('gestao-view-approvals');
-    const otherView = document.getElementById('gestao-view-other');
+    const recordsView = document.getElementById('gestao-view-allrecs');
     if (!approvalsView) return;
 
     const alreadyActive = approvalsView.classList.contains('gestao-view--active');
     if (!alreadyActive) {
         approvalsView.classList.add('gestao-view--active');
-        if (otherView) otherView.classList.remove('gestao-view--active');
+        if (recordsView) recordsView.classList.remove('gestao-view--active');
     }
 
-    // If we already have data, just re-render without hitting the API again
+    // if we already have data, just re-render without hitting the API again
     if (approvalsCache !== null) {
         buildPendingReqs(approvalsCache);
         return;
     }
 
-    // First time: actually call the API
     renderPendingReqs();
 }
 
+function buildAllRecs(rows) {
+    const tbody = document.getElementById('gestao-allrecs-tbody');
+    const emptyEl = document.getElementById('gestao-allrecs-empty');
+    if (!tbody || !emptyEl) return;
+
+    tbody.innerHTML = '';
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        emptyEl.textContent = 'Não existem colaboradores para apresentar.';
+        emptyEl.style.display = 'block';
+        return;
+    }
+
+    emptyEl.style.display = 'none';
+
+    rows.forEach(row => {
+        const tr = document.createElement('tr');
+
+        const collabName = row.name || '';
+        const companyName = (row.company && row.company.name) || '';
+
+        tr.dataset.userId = String(row.id ?? '');
+
+        tr.innerHTML = `
+            <td>
+                <div class="gestao-collab-name">${collabName}</div>
+                ${row.email ? `<div class="gestao-collab-email">${row.email}</div>` : ''}
+            </td>
+            <td>
+                <div class="gestao-company-name">${companyName}</div>
+            </td>
+            <td>
+                <button type="button" class="gestao-table-action">
+                    Ver ficha
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+function bindAllRecsInteraction() {
+    const tbody = document.getElementById('gestao-allrecs-tbody');
+    if (!tbody) return;
+
+    tbody.addEventListener('click', event => {
+        const row = event.target.closest('tr[data-user-id]');
+        if (!row) return;
+
+        const userId = row.dataset.userId || null;
+
+        // Later: route to specific collaborator record view
+        console.log('All records row clicked:', { userId });
+    });
+}
+
+async function renderAllRecs() {
+    const emptyEl = document.getElementById('gestao-allrecs-empty');
+
+    if (emptyEl) {
+        emptyEl.textContent = 'A carregar colaboradores...';
+        emptyEl.style.display = 'block';
+    }
+
+    try {
+        const res = await getAllRecords();
+
+        if (!res || res.success !== true || !Array.isArray(res.items)) {
+            throw new Error('Invalid response');
+        }
+
+        allRecsCache = res.items;
+        buildAllRecs(allRecsCache);
+    } catch (err) {
+        console.error('Failed to load all records:', err);
+        allRecsCache = [];
+        buildAllRecs(allRecsCache);
+        if (emptyEl) {
+            emptyEl.textContent = 'Não foi possível carregar os colaboradores.';
+            emptyEl.style.display = 'block';
+        }
+    }
+}
+
+
 function showAllRecsView() {
     const approvalsView = document.getElementById('gestao-view-approvals');
-    const otherView = document.getElementById('gestao-view-other');
+    const otherView = document.getElementById('gestao-view-allrecs');
     if (!otherView) return;
 
     const alreadyActive = otherView.classList.contains('gestao-view--active');
@@ -133,8 +219,14 @@ function showAllRecsView() {
         if (approvalsView) approvalsView.classList.remove('gestao-view--active');
     }
 
-    // TODO: render the second view here when it exists
+    if (allRecsCache !== null) {
+        buildAllRecs(allRecsCache);
+        return;
+    }
+
+    renderAllRecs();
 }
+
 
 function bindMainBtns() {
     const btnApprovals = document.getElementById('gestao-aprovacoes');
@@ -156,4 +248,5 @@ function bindMainBtns() {
 export function mountGstFchs() {
     bindMainBtns();
     bindPendingRequestsInteraction();
+    bindAllRecsInteraction();
 }
