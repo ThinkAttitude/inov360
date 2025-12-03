@@ -12,87 +12,89 @@
 
     <section class="gestao-section">
         <div class="gestao-main">
-            <div class="gestao-tabs">
-                <button
-                        id="gestao-aprovacoes"
-                        type="button"
-                        class="gestao-tab gestao-tab--active"
-                >
-                    Pedidos
-                </button>
+            <div class="gestao-shell">
+                <div class="gestao-tabs">
+                    <button
+                            id="gestao-aprovacoes"
+                            type="button"
+                            class="gestao-tab gestao-tab--active"
+                    >
+                        Pedidos
+                    </button>
 
-                <button
-                        id="gestao-visualizar-fichas"
-                        type="button"
-                        class="gestao-tab"
-                >
-                    Fichas
-                </button>
-            </div>
-            <div id="gestao-content" class="gestao-content-card">
-                <!-- Pending approvals list -->
-                <div id="gestao-view-approvals" class="gestao-view gestao-view--approvals">
-                    <div class="gestao-approvals-list" id="gestao-approvals-list">
-                        <div class="gestao-approvals-header">
-                            <h3>Pedidos de alteração pendentes</h3>
-                            <p>
-                                Aqui são apresentados os pedidos de alteração de ficha que aguardam aprovação.
-                            </p>
-                        </div>
+                    <button
+                            id="gestao-visualizar-fichas"
+                            type="button"
+                            class="gestao-tab"
+                    >
+                        Fichas
+                    </button>
+                </div>
+                <div id="gestao-content" class="gestao-content-card">
+                    <!-- Pending approvals list -->
+                    <div id="gestao-view-approvals" class="gestao-view gestao-view--approvals">
+                        <div class="gestao-approvals-list" id="gestao-approvals-list">
+                            <div class="gestao-approvals-header">
+                                <h3>Pedidos de alteração pendentes</h3>
+                                <p>
+                                    Aqui são apresentados os pedidos de alteração de ficha que aguardam aprovação.
+                                </p>
+                            </div>
 
-                        <div class="gestao-table-wrapper">
-                            <table class="gestao-table" aria-describedby="gestao-approvals-caption">
-                                <caption id="gestao-approvals-caption" class="sr-only">
-                                    Lista de fichas de colaboradores com alterações pendentes de aprovação.
-                                </caption>
-                                <thead>
-                                <tr>
-                                    <th scope="col">Colaborador</th>
-                                    <th scope="col">Data do pedido</th>
-                                    <th scope="col">Estado</th>
-                                    <th scope="col">Ação</th>
-                                </tr>
-                                </thead>
-                                <tbody id="gestao-approvals-tbody">
-                                <!-- Rows rendered by JS -->
-                                </tbody>
-                            </table>
+                            <div class="gestao-table-wrapper">
+                                <table class="gestao-table" aria-describedby="gestao-approvals-caption">
+                                    <caption id="gestao-approvals-caption" class="sr-only">
+                                        Lista de fichas de colaboradores com alterações pendentes de aprovação.
+                                    </caption>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Colaborador</th>
+                                        <th scope="col">Data do pedido</th>
+                                        <th scope="col">Estado</th>
+                                        <th scope="col">Ação</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="gestao-approvals-tbody">
+                                    <!-- Rows rendered by JS -->
+                                    </tbody>
+                                </table>
 
-                            <p class="gestao-approvals-empty" id="gestao-approvals-empty">
-                                Não existem pedidos pendentes de aprovação.
-                            </p>
+                                <p class="gestao-approvals-empty" id="gestao-approvals-empty">
+                                    Não existem pedidos pendentes de aprovação.
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- All records list (diff / lista de colaboradores) -->
-                <div id="gestao-view-allrecs" class="gestao-view gestao-view--allrecs">
-                    <div class="gestao-allrecs-list">
-                        <div class="gestao-allrecs-header">
-                            <h3>Todos os colaboradores</h3>
-                            <p>Lista de colaboradores e respetiva empresa, para consulta de fichas.</p>
-                        </div>
+                    <!-- All records list (diff / lista de colaboradores) -->
+                    <div id="gestao-view-allrecs" class="gestao-view gestao-view--allrecs">
+                        <div class="gestao-allrecs-list">
+                            <div class="gestao-allrecs-header">
+                                <h3>Todos os colaboradores</h3>
+                                <p>Lista de colaboradores e respetiva empresa, para consulta de fichas.</p>
+                            </div>
 
-                        <div class="gestao-table-wrapper">
-                            <table class="gestao-table" aria-describedby="gestao-allrecs-caption">
-                                <caption id="gestao-allrecs-caption" class="sr-only">
-                                    Lista de todos os colaboradores com a respetiva empresa.
-                                </caption>
-                                <thead>
-                                <tr>
-                                    <th scope="col">Colaborador</th>
-                                    <th scope="col">Empresa</th>
-                                    <th scope="col">Ação</th>
-                                </tr>
-                                </thead>
-                                <tbody id="gestao-allrecs-tbody">
-                                <!-- Rows rendered by JS -->
-                                </tbody>
-                            </table>
+                            <div class="gestao-table-wrapper">
+                                <table class="gestao-table" aria-describedby="gestao-allrecs-caption">
+                                    <caption id="gestao-allrecs-caption" class="sr-only">
+                                        Lista de todos os colaboradores com a respetiva empresa.
+                                    </caption>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Colaborador</th>
+                                        <th scope="col">Empresa</th>
+                                        <th scope="col">Ação</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="gestao-allrecs-tbody">
+                                    <!-- Rows rendered by JS -->
+                                    </tbody>
+                                </table>
 
-                            <p class="gestao-allrecs-empty" id="gestao-allrecs-empty">
-                                Não existem colaboradores para apresentar.
-                            </p>
+                                <p class="gestao-allrecs-empty" id="gestao-allrecs-empty">
+                                    Não existem colaboradores para apresentar.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

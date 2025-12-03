@@ -3,6 +3,18 @@ import {getAllPendingRequests, getAllRecords} from '../api.js';
 let approvalsCache = null;
 let allRecsCache = null;
 
+function setActiveTab(which) {
+    const tabPedidos = document.getElementById('gestao-aprovacoes');
+    const tabFichas = document.getElementById('gestao-visualizar-fichas');
+    if (!tabPedidos || !tabFichas) return;
+
+    const isPedidos = which === 'pedidos';
+
+    tabPedidos.classList.toggle('gestao-tab--active', isPedidos);
+    tabFichas.classList.toggle('gestao-tab--active', !isPedidos);
+}
+
+
 function buildPendingReqs(rows) {
     const tbody = document.getElementById('gestao-approvals-tbody');
     const emptyEl = document.getElementById('gestao-approvals-empty');
@@ -107,13 +119,14 @@ function showPendingRecsView() {
     const recordsView = document.getElementById('gestao-view-allrecs');
     if (!approvalsView) return;
 
+    setActiveTab('pedidos');
+
     const alreadyActive = approvalsView.classList.contains('gestao-view--active');
     if (!alreadyActive) {
         approvalsView.classList.add('gestao-view--active');
         if (recordsView) recordsView.classList.remove('gestao-view--active');
     }
 
-    // if we already have data, just re-render without hitting the API again
     if (approvalsCache !== null) {
         buildPendingReqs(approvalsCache);
         return;
@@ -121,6 +134,7 @@ function showPendingRecsView() {
 
     renderPendingReqs();
 }
+
 
 function buildAllRecs(rows) {
     const tbody = document.getElementById('gestao-allrecs-tbody');
@@ -213,6 +227,8 @@ function showAllRecsView() {
     const otherView = document.getElementById('gestao-view-allrecs');
     if (!otherView) return;
 
+    setActiveTab('fichas');
+
     const alreadyActive = otherView.classList.contains('gestao-view--active');
     if (!alreadyActive) {
         otherView.classList.add('gestao-view--active');
@@ -226,6 +242,7 @@ function showAllRecsView() {
 
     renderAllRecs();
 }
+
 
 
 function bindMainBtns() {

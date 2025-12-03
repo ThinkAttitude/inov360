@@ -102,7 +102,7 @@ export async function getHierarchyByUser(userId = null) {
     });
 }
 
-/* RecordD Management (gestao_fichas) */
+/* Record Management (gestao_fichas) */
 export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
     const params = new URLSearchParams();
 

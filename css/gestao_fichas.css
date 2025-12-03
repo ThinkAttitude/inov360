@@ -50,9 +50,9 @@
 }
 
 .gestao-shell {
-    border: 1px solid rgba(15, 23, 42, 0.12);
+    border: 2px solid var(--gradient-1);
     border-radius: 16px;
-    background: var(--white);
+    background: transparent;
     box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
     overflow: hidden;
     display: flex;
@@ -65,9 +65,20 @@
     display: flex;
     align-items: flex-end;
     gap: 0.4rem;
-    padding: 0.6rem 1.1rem 0;
+    padding: 0.6rem 1.1rem 0 3rem;
     background: transparent;
-    border-bottom: 2px solid var(--gradient-1);
+    border-bottom: none;
+}
+
+.gestao-tabs::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--gradient-1);
+    z-index: 0;
 }
 
 .gestao-tab {
@@ -81,7 +92,8 @@
     font-weight: 600;
     cursor: pointer;
     outline: none;
-    margin-bottom: -2px;
+    margin-bottom: 0;
+    z-index: 1;
     transition:
             color 0.18s ease,
             border-color 0.22s ease,
@@ -98,13 +110,13 @@
 
 .gestao-tab--active {
     border-color: var(--gradient-1);
-    border-bottom-color: transparent;
+    border-bottom-color: var(--white);
     background: var(--white);
     color: var(--navy-blue);
     padding: 0.45rem 1.8rem;
     transform: translateY(-1px);
     box-shadow: 0 10px 26px rgba(15, 23, 42, 0.15);
-    z-index: 1;
+    z-index: 2;
 }
 
 /* Active separator inside the tab (small gradient line) */
@@ -120,11 +132,6 @@
     opacity: 0.95;
 }
 
-.gestao-content-card {
-    padding: 1.75rem 1.5rem;
-    border-top: none;
-}
-
 /* Layout around content card */
 .gestao-section {
     display: flex;
@@ -133,13 +140,11 @@
 }
 
 .gestao-content-card {
-    margin-top: 0; /* stick right under the blue line */
-    border: 1px solid rgba(15, 23, 42, 0.12);
-    border-radius: 0 0 16px 16px; /* rounded only at bottom, tabs “own” the top */
+    margin-top: 0;
     background: var(--white);
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+    box-shadow: none;
     padding: 1.75rem 1.5rem;
-    border-top: none; /* blue line from tabs acts as the top border */
+    border: none;
 }
 
 .gestao-view {
@@ -325,35 +330,3 @@
     border: 0;
 }
 
-/* Mobile */
-@media (max-width: 768px) {
-    .gestao-page {
-        padding: 2rem 1rem 2.5rem;
-    }
-
-    .gestao-title {
-        font-size: 1.85rem;
-    }
-
-    .gestao-tabs {
-        gap: 0.35rem;
-    }
-
-    .gestao-tab {
-        padding: 0.45rem 1.05rem;
-        font-size: 0.85rem;
-    }
-
-    .gestao-content-card {
-        padding: 1.25rem 1rem;
-    }
-
-    .gestao-content-card {
-        padding: 1.25rem 1rem;
-    }
-
-    .gestao-table th,
-    .gestao-table td {
-        padding: 0.7rem 0.75rem;
-    }
-}
