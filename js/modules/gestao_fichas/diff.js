@@ -1,4 +1,5 @@
 import {createDecision, getRecord, getRecordChanges} from '../../api.js';
+import {PROFILE_FIELD_LABELS} from './record.js';
 
 const diffState = {
     userId: null,
@@ -17,13 +18,7 @@ function renderDiffView(oldProfile, newProfile, changed) {
     const old = oldProfile || {};
     const neu = newProfile || {};
 
-    const keys = [];
-    Object.keys(old).forEach(k => {
-        if (!keys.includes(k)) keys.push(k);
-    });
-    Object.keys(neu).forEach(k => {
-        if (!keys.includes(k)) keys.push(k);
-    });
+    const keys = Object.keys(PROFILE_FIELD_LABELS);
 
     if (keys.length === 0) {
         oldEl.textContent = 'Nenhum campo para apresentar.';
@@ -50,9 +45,16 @@ function renderDiffView(oldProfile, newProfile, changed) {
     const newBody = document.createElement('tbody');
 
     keys.forEach(key => {
-        const oldVal = old[key] == null ? '' : String(old[key]);
-        const newVal = neu[key] == null ? '' : String(neu[key]);
-        const isChanged = changed && changed[key];
+        const label = PROFILE_FIELD_LABELS[key];
+        if (!label) return;
+
+        const oldValRaw = Object.prototype.hasOwnProperty.call(old, key) ? old[key] : null;
+        const newValRaw = Object.prototype.hasOwnProperty.call(neu, key) ? neu[key] : null;
+
+        const oldVal = oldValRaw == null ? '' : String(oldValRaw);
+        const newVal = newValRaw == null ? '' : String(newValRaw);
+
+        const isChanged = !!(changed && changed[key]);
 
         const trOld = document.createElement('tr');
         if (isChanged) trOld.classList.add('gestao-diff-row--changed-old');
@@ -66,18 +68,20 @@ function renderDiffView(oldProfile, newProfile, changed) {
                 <span class="gestao-diff-label-inner">
                     <span class="gestao-diff-icon gestao-diff-icon--old" aria-hidden="true">
                         <svg viewBox="0 0 24 24" class="gestao-diff-icon-svg">
-                            <path d="M18 6L6 18M6 6l12 12"
-                                  stroke="currentColor"
-                                  stroke-width="2.2"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round" />
+                            <path
+                                d="M18 6L6 18M6 6l12 12"
+                                stroke="currentColor"
+                                stroke-width="2.2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
                         </svg>
                     </span>
-                    <span class="gestao-diff-label-text">${key}</span>
+                    <span class="gestao-diff-label-text">${label}</span>
                 </span>
             `;
         } else {
-            thOld.textContent = key;
+            thOld.textContent = label;
         }
 
         const tdOld = document.createElement('td');
@@ -110,11 +114,11 @@ function renderDiffView(oldProfile, newProfile, changed) {
                             />
                         </svg>
                     </span>
-                <span class="gestao-diff-label-text">${key}</span>
+                    <span class="gestao-diff-label-text">${label}</span>
                 </span>
             `;
         } else {
-            thNew.textContent = key;
+            thNew.textContent = label;
         }
 
         const tdNew = document.createElement('td');
@@ -240,7 +244,7 @@ function showDiffViewForRequest(userId, profileReqId, emergencyReqId, approvalsC
         const row = approvalsCache.find(r => String(r.user_id) === String(userId));
         if (row) {
             const who = row.user_name || 'colaborador';
-            desc = `Pedido de alteração da ficha de ${who}${row.user_email ? ` (${row.user_email})` : ''}.`;
+            desc = `Pedido de alteração da ficha de ${who}.`;
         }
     }
     if (subtitleEl) subtitleEl.textContent = desc;
@@ -271,7 +275,6 @@ function bindDiffViewControls() {
         });
     }
 }
-
 
 export function openDiffForRequest(userId, profileReqId, emergencyReqId, approvalsCache) {
     showDiffViewForRequest(userId, profileReqId, emergencyReqId, approvalsCache);

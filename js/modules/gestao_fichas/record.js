@@ -1,5 +1,50 @@
 import {getRecord} from '../../api.js';
 
+export const PROFILE_FIELD_LABELS = {
+    nome: 'Nome',
+    email: 'E-mail',
+    telefone: 'Telefone',
+    morada: 'Morada',
+    codigo_postal: 'Código postal',
+    freguesia: 'Freguesia',
+    concelho: 'Concelho',
+    distrito: 'Distrito',
+    naturalidade: 'Naturalidade',
+    habilitacoes: 'Habilitações',
+    pai: 'Pai',
+    mae: 'Mãe',
+    estado_civil: 'Estado civil',
+    data_nascimento: 'Data de nascimento',
+    pais: 'País',
+    tipo_documento: 'Tipo de documento',
+    numero_documento: 'Número de documento',
+    emitido_em: 'Emitido em',
+    arquivo: 'Arquivo',
+    validade_documento: 'Validade do documento',
+    nif: 'NIF',
+    numero_seg_social: 'Número de Segurança Social',
+    descontos_fiscais: 'Descontos fiscais',
+    reparticao_financas: 'Repartição de finanças',
+    regiao: 'Região',
+    estado_fiscal: 'Estado fiscal',
+    deficiencia: 'Deficiência',
+    conjugue_deficiente: 'Cônjuge deficiente',
+    num_dependentes: 'N.º de dependentes',
+    num_dependentes_deficientes: 'N.º de dependentes deficientes',
+    pensionista: 'Pensionista',
+    data_admissao: 'Data de admissão',
+    tipo_contrato: 'Tipo de contrato',
+    profissao: 'Profissão',
+    categoria: 'Categoria',
+    regime: 'Regime',
+    horas_semana: 'Horas por semana',
+    salario_base: 'Salário base',
+    subsidio_alimentacao: 'Subsídio de alimentação',
+    nib: 'NIB',
+    ordenado_liquido: 'Ordenado líquido',
+    validacao_empresa: 'Validação da empresa',
+};
+
 const recordState = {
     userId: null,
 };
@@ -11,12 +56,7 @@ function renderRecordTable(profile) {
     container.innerHTML = '';
 
     const record = profile || {};
-    const keys = Object.keys(record);
-
-    if (keys.length === 0) {
-        container.textContent = 'Nenhum dado para apresentar.';
-        return;
-    }
+    const keys = Object.keys(PROFILE_FIELD_LABELS);
 
     const wrapper = document.createElement('div');
     wrapper.className = 'gestao-table-wrapper gestao-table-wrapper--record';
@@ -30,16 +70,19 @@ function renderRecordTable(profile) {
     const tbody = document.createElement('tbody');
 
     keys.forEach(key => {
+        const label = PROFILE_FIELD_LABELS[key];
+        if (!label) return;
+
         const tr = document.createElement('tr');
 
         const th = document.createElement('th');
         th.scope = 'row';
         th.className = 'gestao-record-cell-label';
-        th.textContent = key;
+        th.textContent = label;
 
         const td = document.createElement('td');
         td.className = 'gestao-record-cell-value';
-        const value = record[key];
+        const value = Object.prototype.hasOwnProperty.call(record, key) ? record[key] : null;
         td.textContent = value == null ? '' : String(value);
 
         tr.appendChild(th);
@@ -60,8 +103,7 @@ async function loadRecord(userId, name, email) {
     if (container) container.textContent = 'A carregar ficha...';
     if (subtitle) {
         const who = name || 'colaborador';
-        const emailPart = email ? ` (${email})` : '';
-        subtitle.textContent = `Ficha completa de ${who}${emailPart}.`;
+        subtitle.textContent = `Ficha completa de ${who}.`;
     }
 
     try {

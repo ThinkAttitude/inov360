@@ -14,6 +14,56 @@
         <div class="gestao-main">
             <div class="gestao-shell">
                 <div class="gestao-tabs">
+                    <div class="gestao-tabs-nav">
+                        <button
+                                type="button"
+                                class="gestao-tabs-nav-btn"
+                                id="gestao-nav-back"
+                                aria-label="Voltar"
+                        >
+                            <svg viewBox="0 0 24 24" width="18" height="18">
+                                <line
+                                        x1="6" y1="12" x2="18" y2="12"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                />
+                                <polyline
+                                        points="11 7 6 12 11 17"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                />
+                            </svg>
+                        </button>
+
+                        <button
+                                type="button"
+                                class="gestao-tabs-nav-btn"
+                                id="gestao-nav-forward"
+                                aria-label="Avançar"
+                        >
+                            <svg viewBox="0 0 24 24" width="18" height="18">
+                                <line
+                                        x1="6" y1="12" x2="18" y2="12"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                />
+                                <polyline
+                                        points="13 7 18 12 13 17"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+
                     <button
                             id="gestao-aprovacoes"
                             type="button"
@@ -49,7 +99,7 @@
                                     <thead>
                                     <tr>
                                         <th scope="col">Colaborador</th>
-                                        <th scope="col">Data do pedido</th>
+                                        <th scope="col">Data</th>
                                         <th scope="col">Estado</th>
                                         <th scope="col">Ação</th>
                                     </tr>
@@ -67,24 +117,14 @@
 
                         <!-- Diff view -->
                         <div class="gestao-diff-view" id="gestao-diff-view">
-                            <!-- Back icon in the top-right corner -->
-                            <button
-                                    type="button"
-                                    class="gestao-diff-back-icon"
-                                    id="gestao-diff-back"
-                                    aria-label="Voltar aos pedidos"
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </button>
-
+                            <!-- Back icon in the top-left corner -->
                             <div class="gestao-diff-header">
-                                <h3>Comparar ficha do colaborador</h3>
-                                <p id="gestao-diff-subtitle">
-                                    Selecione um pedido da lista para ver as alterações em detalhe.
-                                </p>
+                                <div class="gestao-diff-header-text">
+                                    <h3>Comparar ficha do colaborador</h3>
+                                    <p id="gestao-diff-subtitle">
+                                        Selecione um pedido da lista para ver as alterações detalhadamente.
+                                    </p>
+                                </div>
                             </div>
 
                             <div class="gestao-diff-columns">
@@ -149,23 +189,6 @@
                                         Selecione um colaborador para ver a ficha completa.
                                     </p>
                                 </div>
-                                <button
-                                        type="button"
-                                        class="gestao-diff-back-icon"
-                                        id="gestao-record-back"
-                                        aria-label="Voltar para a lista de fichas"
-                                >
-                                    <svg viewBox="0 0 24 24" width="18" height="18">
-                                        <path
-                                                d="M15 6l-6 6 6 6"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                stroke-width="2"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                        />
-                                    </svg>
-                                </button>
                             </div>
                             <div id="gestao-record-table"></div>
                         </div>
