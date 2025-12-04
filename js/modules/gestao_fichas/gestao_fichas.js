@@ -1,4 +1,5 @@
-import {getAllPendingRequests, getAllRecords} from '../api.js';
+import { getAllPendingRequests, getAllRecords } from '../../api.js';
+import { openDiffForRequest, mountGstFchsDiff } from './diff.js';
 
 let approvalsCache = null;
 let allRecsCache = null;
@@ -14,6 +15,7 @@ function setActiveTab(which) {
     tabFichas.classList.toggle('gestao-tab--active', !isPedidos);
 }
 
+/* ---------- Pending requests (Pedidos) ---------- */
 
 function buildPendingReqs(rows) {
     const tbody = document.getElementById('gestao-approvals-tbody');
@@ -78,7 +80,7 @@ function bindPendingRequestsInteraction() {
         const profileReqId = row.dataset.profileReqId || null;
         const emergencyReqId = row.dataset.emergencyReqId || null;
 
-        // Later: switch to diff view for this request
+        openDiffForRequest(userId, profileReqId, emergencyReqId, approvalsCache);
     });
 }
 
@@ -135,6 +137,7 @@ function showPendingRecsView() {
     renderPendingReqs();
 }
 
+/* ---------- All records (Fichas) ---------- */
 
 function buildAllRecs(rows) {
     const tbody = document.getElementById('gestao-allrecs-tbody');
@@ -178,21 +181,6 @@ function buildAllRecs(rows) {
     });
 }
 
-function bindAllRecsInteraction() {
-    const tbody = document.getElementById('gestao-allrecs-tbody');
-    if (!tbody) return;
-
-    tbody.addEventListener('click', event => {
-        const row = event.target.closest('tr[data-user-id]');
-        if (!row) return;
-
-        const userId = row.dataset.userId || null;
-
-        // Later: route to specific collaborator record view
-        console.log('All records row clicked:', { userId });
-    });
-}
-
 async function renderAllRecs() {
     const emptyEl = document.getElementById('gestao-allrecs-empty');
 
@@ -221,7 +209,6 @@ async function renderAllRecs() {
     }
 }
 
-
 function showAllRecsView() {
     const approvalsView = document.getElementById('gestao-view-approvals');
     const otherView = document.getElementById('gestao-view-allrecs');
@@ -243,7 +230,7 @@ function showAllRecsView() {
     renderAllRecs();
 }
 
-
+/* ---------- Main tabs ---------- */
 
 function bindMainBtns() {
     const btnApprovals = document.getElementById('gestao-aprovacoes');
@@ -265,5 +252,5 @@ function bindMainBtns() {
 export function mountGstFchs() {
     bindMainBtns();
     bindPendingRequestsInteraction();
-    bindAllRecsInteraction();
+    mountGstFchsDiff();
 }

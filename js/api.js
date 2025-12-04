@@ -148,3 +148,31 @@ export async function getAllRecords({
         method: 'GET',
     });
 }
+
+export async function getRecord(userId) {
+    const params = new URLSearchParams();
+    params.append('user_id', String(userId));
+
+    return apiFetch(`employee_info/record/aval_view_record.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function getRecordChanges(userId) {
+    const params = new URLSearchParams();
+    params.append('user_id', String(userId));
+
+    return apiFetch(`employee_info/record/aval_requests.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function createDecision(userId, decision) {
+    return apiFetch('employee_info/record/aval_decision.php', {
+        method: 'POST',
+        body: {
+            user_id: userId,
+            decision
+        }
+    });
+}

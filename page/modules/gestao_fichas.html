@@ -64,6 +64,50 @@
                                 </p>
                             </div>
                         </div>
+
+                        <!-- DIFF VIEW (new) -->
+                        <div class="gestao-diff-view" id="gestao-diff-view">
+                            <!-- Back icon in the top-right corner -->
+                            <button
+                                    type="button"
+                                    class="gestao-diff-back-icon"
+                                    id="gestao-diff-back"
+                                    aria-label="Voltar aos pedidos"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+
+                            <div class="gestao-diff-header">
+                                <h3>Comparar ficha do colaborador</h3>
+                                <p id="gestao-diff-subtitle">
+                                    Selecione um pedido da lista para ver as alterações em detalhe.
+                                </p>
+                            </div>
+
+                            <div class="gestao-diff-columns">
+                                <div class="gestao-diff-column gestao-diff-column--old">
+                                    <h4>Registo atual</h4>
+                                    <div class="gestao-diff-fields" id="gestao-diff-old"></div>
+                                </div>
+
+                                <div class="gestao-diff-column gestao-diff-column--new">
+                                    <h4>Pedido de alteração</h4>
+                                    <div class="gestao-diff-fields" id="gestao-diff-new"></div>
+                                </div>
+                            </div>
+
+                            <div class="gestao-diff-footer">
+                                <button type="button" class="btn-secondary" id="gestao-diff-reject">
+                                    Rejeitar
+                                </button>
+                                <button type="button" class="btn-primary" id="gestao-diff-accept">
+                                    Aceitar
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- All records list (diff / lista de colaboradores) -->

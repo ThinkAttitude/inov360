@@ -2,7 +2,7 @@ import {CARD_TYPES} from "./dashboard.js";
 import {mountCalendar} from "./modules/horarios.js";
 import {initForm} from "./modules/marcacao_direta.js";
 import {mountClbMngmt} from "./modules/controlo_colabs.js";
-import {mountGstFchs} from "./modules/gestao_fichas.js";
+import {mountGstFchs} from "./modules/gestao_fichas/gestao_fichas.js";
 
 export const Paths = {
     ...CARD_TYPES,
