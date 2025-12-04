@@ -368,6 +368,50 @@
     display: none;
 }
 
+.gestao-record-view {
+    display: none;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: 260px;
+    position: relative;
+}
+
+.gestao-record-view--active {
+    display: flex;
+}
+
+.gestao-allrecs-list--hidden {
+    display: none;
+}
+
+.gestao-record-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.gestao-record-header-text h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+}
+
+.gestao-record-header-text p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.gestao-table-wrapper--record {
+    margin: 0;
+}
+
+.gestao-record-table .gestao-record-cell-label {
+    width: 40%;
+}
+
 /* Table */
 .gestao-table-wrapper {
     border-radius: 12px;

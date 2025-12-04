@@ -1,5 +1,6 @@
 import { getAllPendingRequests, getAllRecords } from '../../api.js';
 import { openDiffForRequest, mountGstFchsDiff } from './diff.js';
+import { openRecordForUser, mountGstFchsRecord } from './record.js';
 
 let approvalsCache = null;
 let allRecsCache = null;
@@ -161,6 +162,8 @@ function buildAllRecs(rows) {
         const companyName = (row.company && row.company.name) || '';
 
         tr.dataset.userId = String(row.id ?? '');
+        tr.dataset.userName = collabName;
+        tr.dataset.userEmail = row.email || '';
 
         tr.innerHTML = `
             <td>
@@ -178,6 +181,24 @@ function buildAllRecs(rows) {
         `;
 
         tbody.appendChild(tr);
+    });
+}
+
+function bindAllRecsInteraction() {
+    const tbody = document.getElementById('gestao-allrecs-tbody');
+    if (!tbody) return;
+
+    tbody.addEventListener('click', event => {
+        const row = event.target.closest('tr[data-user-id]');
+        if (!row) return;
+
+        const userId = row.dataset.userId;
+        if (!userId) return;
+
+        const name = row.dataset.userName || '';
+        const email = row.dataset.userEmail || '';
+
+        openRecordForUser(userId, name, email);
     });
 }
 
@@ -252,5 +273,7 @@ function bindMainBtns() {
 export function mountGstFchs() {
     bindMainBtns();
     bindPendingRequestsInteraction();
+    bindAllRecsInteraction();
     mountGstFchsDiff();
+    mountGstFchsRecord();
 }

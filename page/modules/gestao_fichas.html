@@ -65,7 +65,7 @@
                             </div>
                         </div>
 
-                        <!-- DIFF VIEW (new) -->
+                        <!-- Diff view -->
                         <div class="gestao-diff-view" id="gestao-diff-view">
                             <!-- Back icon in the top-right corner -->
                             <button
@@ -112,7 +112,7 @@
 
                     <!-- All records list (diff / lista de colaboradores) -->
                     <div id="gestao-view-allrecs" class="gestao-view gestao-view--allrecs">
-                        <div class="gestao-allrecs-list">
+                        <div class="gestao-allrecs-list" id="gestao-allrecs-list">
                             <div class="gestao-allrecs-header">
                                 <h3>Todos os colaboradores</h3>
                                 <p>Lista de colaboradores e respetiva empresa, para consulta de fichas.</p>
@@ -139,6 +139,35 @@
                                     Não existem colaboradores para apresentar.
                                 </p>
                             </div>
+                        </div>
+
+                        <div class="gestao-record-view" id="gestao-record-view">
+                            <div class="gestao-record-header">
+                                <div class="gestao-record-header-text">
+                                    <h3>Ficha do colaborador</h3>
+                                    <p id="gestao-record-subtitle">
+                                        Selecione um colaborador para ver a ficha completa.
+                                    </p>
+                                </div>
+                                <button
+                                        type="button"
+                                        class="gestao-diff-back-icon"
+                                        id="gestao-record-back"
+                                        aria-label="Voltar para a lista de fichas"
+                                >
+                                    <svg viewBox="0 0 24 24" width="18" height="18">
+                                        <path
+                                                d="M15 6l-6 6 6 6"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="gestao-record-table"></div>
                         </div>
                     </div>
                 </div>
