@@ -1,811 +1,105 @@
+<link rel="stylesheet" href="../../css/ficha_collab.css">
+
 <div class="ficha-page">
-        <!-- Modern Header -->
-        <div class="ficha-header">
-            <div class="header-left">
-                <div class="page-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                    </svg>
-                </div>
-                <div class="header-text">
-                    <h2 id="ficha-title">Minha Ficha de Colaborador</h2>
-                    <p id="ficha-subtitle"><strong>Colaborador:</strong> <span id="user-name-display"></span> (<span id="user-email-display"></span>)</p>
-                    <p class="note" id="ficha-note">Visualize os seus dados pessoais. Para alterações, clique no botão abaixo.</p>
-                </div>
+    <div class="ficha-header">
+        <div class="ficha-header-left">
+            <div class="ficha-page-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14,2 14,8 20,8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
             </div>
-            <div class="header-actions">
-                <button type="button" class="btn-primary" id="abrirEdicaoCompleta" style="background:linear-gradient(135deg,#10b981,#059669);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    Edição Completa
-                </button>
+            <div class="ficha-header-text">
+                <h2 id="ficha-title">A minha ficha de colaborador</h2>
+                <p id="ficha-subtitle">
+                    <strong>Colaborador:</strong>
+                    <span id="user-name-display"></span>
+                    (<span id="user-email-display"></span>)
+                </p>
+                <p class="ficha-note-text" id="ficha-note">
+                    Visualize os seus dados pessoais. Para alterações, clique no botão abaixo.
+                </p>
             </div>
         </div>
-
-        <!-- Main Content -->
-        <div class="ficha-content">
-            <!-- Personal Info Section -->
-            <div class="ficha-section">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                    </div>
-                    <h3>Dados Pessoais</h3>
-                </div>
-                <div class="info-grid" id="dados-pessoais">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Family & ID Info Section -->
-            <div class="ficha-section">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                    </div>
-                    <h3>Informação Familiar e Identificação</h3>
-                </div>
-                <div class="info-grid" id="dados-familiares">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Tax Information Section -->
-            <div class="ficha-section">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="1" x2="12" y2="23"></line>
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                        </svg>
-                    </div>
-                    <h3>Dados Fiscais</h3>
-                </div>
-                <div class="info-grid" id="dados-fiscais">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Contract Information Section -->
-            <div class="ficha-section">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                            <line x1="8" y1="21" x2="16" y2="21"></line>
-                            <line x1="12" y1="17" x2="12" y2="21"></line>
-                        </svg>
-                    </div>
-                    <h3>Dados Contratuais</h3>
-                </div>
-                <div class="info-grid" id="dados-contratuais">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
-
-            <!-- Emergency Contacts Section -->
-            <div class="ficha-section">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                        </svg>
-                    </div>
-                    <h3>Contactos de Emergência</h3>
-                </div>
-                <div id="contactos-container">
-                    <!-- Will be populated by JavaScript -->
-                </div>
-            </div>
+        <div class="ficha-header-actions">
+            <button type="button" class="btn-primary ficha-btn-green" id="abrir-edicao-completa">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar
+            </button>
         </div>
     </div>
 
-    <style>
-        /* Modern Ficha Page Styles */
-        .ficha-page {
-            padding: 0;
-            background: #f8fafc;
-            min-height: 100vh;
-        }
-
-        .ficha-header {
-            background: white;
-            padding: 2rem 2.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .page-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 8px 24px rgba(62, 132, 242, 0.25);
-        }
-
-        .header-text h2 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--navy-blue);
-            margin-bottom: 0.25rem;
-            letter-spacing: -0.5px;
-        }
-
-        .header-text p {
-            color: var(--text-light);
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(62, 132, 242, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(62, 132, 242, 0.4);
-        }
-
-        .ficha-content {
-            padding: 2rem 2.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .ficha-section {
-            background: white;
-            border-radius: 20px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid #e2e8f0;
-            background: #f8fafc;
-        }
-
-        .section-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .section-header h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--navy-blue);
-            margin: 0;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1rem;
-            padding: 2rem;
-        }
-
-        .info-card {
-            background: #f8fafc;
-            padding: 1.25rem;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s ease;
-        }
-
-        .info-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-color: var(--light-blue);
-        }
-
-        .info-card.highlight {
-            background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
-            border-color: #d1fae5;
-        }
-
-        .info-card.highlight:hover {
-            border-color: #10b981;
-        }
-
-        .info-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-        }
-
-        .info-value {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--navy-blue);
-            word-break: break-word;
-        }
-
-        .info-card.highlight .info-value {
-            color: #059669;
-            font-size: 1.125rem;
-        }
-
-        /* Emergency Contacts */
-        .empty-contacts {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem 2rem;
-            text-align: center;
-        }
-
-        .empty-icon {
-            color: var(--text-light);
-            margin-bottom: 1rem;
-        }
-
-        .empty-contacts p {
-            color: var(--text-light);
-            font-size: 1rem;
-        }
-
-        .contacts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            padding: 2rem;
-        }
-
-        .contact-card {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            background: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s ease;
-        }
-
-        .contact-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            border-color: var(--light-blue);
-        }
-
-        .contact-avatar {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .contact-name {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--navy-blue);
-            margin-bottom: 0.25rem;
-        }
-
-        .contact-relation {
-            font-size: 0.875rem;
-            color: var(--text-light);
-            margin-bottom: 0.5rem;
-        }
-
-        .contact-phone {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--text-dark);
-            font-weight: 500;
-        }
-
-        /* Animations */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .ficha-page {
-            animation: fadeInUp 0.4s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .ficha-header {
-                padding: 1.5rem 2rem;
-            }
-
-            .ficha-content {
-                padding: 1.5rem 2rem;
-            }
-
-            .info-grid {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            }
-        }
-
-        @media (max-width: 768px) {
-            .ficha-header {
-                flex-direction: column;
-                gap: 1rem;
-                padding: 1.5rem;
-                text-align: center;
-            }
-
-            .ficha-content {
-                padding: 1rem 1.5rem;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-                padding: 1.5rem;
-            }
-
-            .contacts-grid {
-                grid-template-columns: 1fr;
-                padding: 1.5rem;
-            }
-
-            .section-header {
-                padding: 1rem 1.5rem;
-            }
-        }
-    </style>
-
-    <!-- Modal Edição Completa -->
-    <div id="modalEdicaoCompleta" class="modal-overlay" style="display:none;align-items:center;justify-content:center;">
-        <div class="modal-container" style="background:#fff;width:90%;max-width:1100px;max-height:90vh;overflow:auto;border-radius:16px;padding:2rem;position:relative;">
-            <button type="button" id="fecharModalEdicao" style="position:absolute;top:12px;right:12px;background:#f1f5f9;border:none;width:36px;height:36px;border-radius:8px;font-size:20px;cursor:pointer;">×</button>
-            <h3 style="margin-top:0;">Edição Completa da Ficha</h3>
-            <form id="formEdicaoCompleta" action="../../api/pedidos/arh_guardar_ficha.php" method="POST" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;">
-                <input type="hidden" name="user_id" id="edit-user-id">
-                <div id="form-fields-container">
-                    <!-- Will be populated by JavaScript -->
+    <div class="ficha-content">
+        <div class="ficha-section">
+            <div class="ficha-section-header">
+                <div class="ficha-section-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
                 </div>
-                <fieldset style="grid-column:1/-1;border:1px solid #e2e8f0;padding:1rem 1.25rem;border-radius:12px;">
-                    <legend style="padding:0 .5rem;font-weight:600;color:#334155;">Contacto de Emergência</legend>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
-                        <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                            <span>Nome</span>
-                            <input name="emergencia_nome" id="emergencia_nome" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;" />
-                        </label>
-                        <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                            <span>Parentesco</span>
-                            <input name="emergencia_parentesco" id="emergencia_parentesco" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;" />
-                        </label>
-                        <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                            <span>Telefone</span>
-                            <input name="emergencia_telefone" id="emergencia_telefone" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;" />
-                        </label>
-                    </div>
-                </fieldset>
-                <div style="grid-column:1/-1;display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem;">
-                    <button type="button" id="cancelarEdicaoCompleta" style="padding:.75rem 1.25rem;border:1px solid #e2e8f0;background:#f1f5f9;border-radius:10px;font-weight:500;cursor:pointer;">Cancelar</button>
-                    <button type="submit" class="btn-primary" style="padding:.75rem 1.5rem;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.5rem;">
-                        <span class="label-text">Guardar</span>
-                        <span class="loading-spinner" style="display:none;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;"></span>
-                    </button>
+                <h3>Dados Pessoais</h3>
+            </div>
+            <div class="ficha-info-grid" id="dados-pessoais"></div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-header">
+                <div class="ficha-section-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
                 </div>
-            </form>
+                <h3>Informação Familiar e Identificação</h3>
+            </div>
+            <div class="ficha-info-grid" id="dados-familiares"></div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-header">
+                <div class="ficha-section-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <h3>Dados Fiscais</h3>
+            </div>
+            <div class="ficha-info-grid" id="dados-fiscais"></div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-header">
+                <div class="ficha-section-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                </div>
+                <h3>Dados Contratuais</h3>
+            </div>
+            <div class="ficha-info-grid" id="dados-contratuais"></div>
+        </div>
+
+        <div class="ficha-section">
+            <div class="ficha-section-header">
+                <div class="ficha-section-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                </div>
+                <h3>Contactos de Emergência</h3>
+            </div>
+            <div id="contactos-container"></div>
         </div>
     </div>
-
-    <style>
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:4000;padding:1rem;}
-    </style>
-
-    <script>
-        (function initFichaColaborador() {
-            // Load collaborator data from API
-            async function loadFichaData() {
-                try {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const userId = urlParams.get('user_id') || window.CURRENT_USER?.id;
-
-                    const response = await fetch(`../../api/users/get_ficha_colaborador.php?user_id=${userId}`);
-                    const data = await response.json();
-
-                    if (!data.success) {
-                        throw new Error(data.message || 'Erro ao carregar dados');
-                    }
-
-                    populateHeader(data);
-                    populateSections(data);
-                    populateContacts(data.contactos_emergencia || []);
-                    setupEditModal(data);
-                } catch (error) {
-                    console.error('Error loading ficha data:', error);
-                    if (typeof showToast === 'function') {
-                        showToast('❌ Erro ao carregar dados: ' + error.message, 'error');
-                    }
-                }
-            }
-
-            function populateHeader(data) {
-                document.getElementById('user-name-display').textContent = data.user_info.name || '';
-                document.getElementById('user-email-display').textContent = data.user_info.email || '';
-
-                if (data.is_own_profile) {
-                    document.getElementById('ficha-title').textContent = 'Minha Ficha de Colaborador';
-                    document.getElementById('ficha-note').textContent = 'Visualize os seus dados pessoais. Para alterações, clique no botão abaixo.';
-                } else {
-                    document.getElementById('ficha-title').textContent = 'Ficha de Colaborador';
-                    document.getElementById('ficha-note').textContent = 'Como Admin RH, pode visualizar e editar os dados deste colaborador.';
-                }
-            }
-
-            function populateSections(data) {
-                const dados = data.dados;
-
-                // Dados Pessoais
-                const dadosPessoais = [
-                    { label: 'Nome', value: dados.nome },
-                    { label: 'Email', value: dados.email },
-                    { label: 'Telefone', value: dados.telefone },
-                    { label: 'Morada', value: dados.morada },
-                    { label: 'Código Postal', value: dados.codigo_postal },
-                    { label: 'Freguesia', value: dados.freguesia },
-                    { label: 'Concelho', value: dados.concelho },
-                    { label: 'Distrito', value: dados.distrito },
-                    { label: 'Naturalidade', value: dados.naturalidade },
-                    { label: 'Habilitações', value: dados.habilitacoes }
-                ];
-                populateInfoGrid('dados-pessoais', dadosPessoais);
-
-                // Dados Familiares
-                const dadosFamiliares = [
-                    { label: 'Pai', value: dados.pai },
-                    { label: 'Mãe', value: dados.mae },
-                    { label: 'Estado Civil', value: dados.estado_civil },
-                    { label: 'Data Nascimento', value: dados.data_nascimento },
-                    { label: 'País', value: dados.pais },
-                    { label: 'Tipo Documento', value: dados.tipo_documento },
-                    { label: 'Número Documento', value: dados.numero_documento },
-                    { label: 'Emitido em', value: dados.emitido_em },
-                    { label: 'Arquivo', value: dados.arquivo },
-                    { label: 'Validade Documento', value: dados.validade_documento },
-                    { label: 'NIF', value: dados.nif },
-                    { label: 'Número Segurança Social', value: dados.numero_seg_social }
-                ];
-                populateInfoGrid('dados-familiares', dadosFamiliares);
-
-                // Dados Fiscais
-                const dadosFiscais = [
-                    { label: 'Descontos Fiscais', value: dados.descontos_fiscais },
-                    { label: 'Repartição Finanças', value: dados.reparticao_financas },
-                    { label: 'Região', value: dados.regiao },
-                    { label: 'Estado Fiscal', value: dados.estado_fiscal },
-                    { label: 'Deficiência', value: dados.deficiencia },
-                    { label: 'Cônjuge Deficiente', value: dados.conjugue_deficiente ? 'Sim' : 'Não' },
-                    { label: 'Nº Dependentes', value: dados.num_dependentes },
-                    { label: 'Nº Dependentes Deficientes', value: dados.num_dependentes_deficientes },
-                    { label: 'Pensionista', value: dados.pensionista ? 'Sim' : 'Não' }
-                ];
-                populateInfoGrid('dados-fiscais', dadosFiscais);
-
-                // Dados Contratuais
-                const dadosContratuais = [
-                    { label: 'Data Admissão', value: dados.data_admissao },
-                    { label: 'Tipo de Contrato', value: dados.tipo_contrato },
-                    { label: 'Profissão', value: dados.profissao },
-                    { label: 'Categoria', value: dados.categoria },
-                    { label: 'Regime', value: dados.regime },
-                    { label: 'Horas/Semana', value: dados.horas_semana },
-                    { label: 'Salário Base', value: dados.salario_base ? dados.salario_base + ' €' : '', highlight: true },
-                    { label: 'Sub. Alimentação', value: dados.subsidio_alimentacao ? dados.subsidio_alimentacao + ' €' : '' },
-                    { label: 'NIB', value: dados.nib },
-                    { label: 'Ordenado Líquido', value: dados.ordenado_liquido ? dados.ordenado_liquido + ' €' : '', highlight: true },
-                    { label: 'Validação Empresa', value: dados.validacao_empresa }
-                ];
-                populateInfoGrid('dados-contratuais', dadosContratuais);
-            }
-
-            function populateInfoGrid(containerId, items) {
-                const container = document.getElementById(containerId);
-                container.innerHTML = items.map(item => `
-                    <div class="info-card${item.highlight ? ' highlight' : ''}">
-                        <div class="info-label">${item.label}</div>
-                        <div class="info-value">${item.value || '-'}</div>
-                    </div>
-                `).join('');
-            }
-
-            function populateContacts(contacts) {
-                const container = document.getElementById('contactos-container');
-
-                if (!contacts || contacts.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-contacts">
-                            <div class="empty-icon">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                </svg>
-                            </div>
-                            <p>Sem contactos de emergência registados.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                container.innerHTML = `
-                    <div class="contacts-grid">
-                        ${contacts.map(c => `
-                            <div class="contact-card">
-                                <div class="contact-avatar">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="12" cy="7" r="4"></circle>
-                                    </svg>
-                                </div>
-                                <div class="contact-info">
-                                    <div class="contact-name">${c.nome || ''}</div>
-                                    <div class="contact-relation">${c.parentesco || ''}</div>
-                                    <div class="contact-phone">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                                        </svg>
-                                        ${c.telefone || ''}
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
-
-            function setupEditModal(data) {
-                const modal = document.getElementById('modalEdicaoCompleta');
-                const btnOpen = document.getElementById('abrirEdicaoCompleta');
-                const closeBtns = [document.getElementById('fecharModalEdicao'), document.getElementById('cancelarEdicaoCompleta')];
-
-                btnOpen.addEventListener('click', () => {
-                    modal.style.display = 'flex';
-                    document.body.style.overflow = 'hidden';
-                    populateEditForm(data);
-                });
-
-                closeBtns.forEach(btn => btn.addEventListener('click', () => {
-                    modal.style.display = 'none';
-                    document.body.style.overflow = '';
-                }));
-
-                setupEditFormSubmit();
-            }
-
-            function populateEditForm(data) {
-                document.getElementById('edit-user-id').value = data.target_user_id;
-
-                // Populate emergency contacts
-                const contacts = data.contactos_emergencia || [];
-                if (contacts.length > 0) {
-                    document.getElementById('emergencia_nome').value = contacts[0].nome || '';
-                    document.getElementById('emergencia_parentesco').value = contacts[0].parentesco || '';
-                    document.getElementById('emergencia_telefone').value = contacts[0].telefone || '';
-                }
-
-                // Create form fields dynamically based on dados
-                const container = document.getElementById('form-fields-container');
-                const dados = data.dados;
-
-                const enumOptions = {
-                    'estado_civil': ['Solteiro', 'Casado', 'Viuvo', 'Divorciado', 'Uniao de Facto', 'Separado Judicialmente'],
-                    'tipo_documento': ['CC', 'Titulo Residencia', 'Passaporte'],
-                    'tipo_contrato': ['Sem termo', 'Termo certo', 'Termo incerto', 'Estágio', 'Prestação serviços'],
-                    'regime': ['Tempo Inteiro', 'Tempo Parcial'],
-                    'estado_fiscal': ['Nao Casado', 'Casado 1 Titular', 'Casado 2 Titulares'],
-                    'deficiencia': ['Nao Deficiente', 'Deficiente', 'Defic. F.Armadas'],
-                    'conjugue_deficiente': ['Sim', 'Não'],
-                    'pensionista': ['Sim', 'Não']
-                };
-
-                const dateFields = ['data_nascimento', 'emitido_em', 'validade_documento', 'data_admissao'];
-                const moneyFields = ['salario_base', 'subsidio_alimentacao', 'ordenado_liquido'];
-
-                container.innerHTML = Object.entries(dados)
-                    .filter(([key]) => key !== 'user_id')
-                    .map(([key, value]) => {
-                        const label = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-
-                        if (enumOptions[key]) {
-                            const options = enumOptions[key].map(opt =>
-                                `<option value="${opt}" ${value === opt ? 'selected' : ''}>${opt}</option>`
-                            ).join('');
-                            return `
-                                <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                                    <span>${label}</span>
-                                    <select name="${key}" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;">
-                                        ${options}
-                                    </select>
-                                </label>
-                            `;
-                        } else if (dateFields.includes(key)) {
-                            return `
-                                <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                                    <span>${label}</span>
-                                    <input type="date" name="${key}" value="${value || ''}" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;" />
-                                </label>
-                            `;
-                        } else if (moneyFields.includes(key)) {
-                            return `
-                                <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                                    <span>${label}</span>
-                                    <input type="text" inputmode="decimal" name="${key}" value="${value || ''}" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;" />
-                                </label>
-                            `;
-                        } else {
-                            return `
-                                <label style="display:flex;flex-direction:column;font-size:.75rem;font-weight:600;color:#475569;gap:4px;">
-                                    <span>${label}</span>
-                                    <input name="${key}" value="${value || ''}" style="padding:.6rem .75rem;border:1px solid #cbd5e1;border-radius:8px;" />
-                                </label>
-                            `;
-                        }
-                    }).join('');
-            }
-
-            function setupEditFormSubmit() {
-                const form = document.getElementById('formEdicaoCompleta');
-                const moneyFields = ['salario_base', 'subsidio_alimentacao', 'ordenado_liquido'];
-
-                function sanitizarValor(v) {
-                    if (v == null) return '';
-                    v = v.toString().trim();
-                    if (v === '') return '';
-                    v = v.replace(/\s+/g, '');
-                    if (/,\d{2}$/.test(v)) {
-                        v = v.replace(/\./g, '').replace(/,/g, '.');
-                    } else if (/\.\d{2}$/.test(v) && v.indexOf(',') > -1) {
-                        v = v.replace(/,/g, '');
-                    } else {
-                        const parts = v.split('.');
-                        if (parts.length > 2) {
-                            const last = parts.pop();
-                            if (/^\d{2}$/.test(last)) {
-                                v = parts.join('') + '.' + last;
-                            } else {
-                                v = parts.join('') + last;
-                            }
-                        }
-                        v = v.replace(/,/g, '');
-                    }
-                    const num = parseFloat(v);
-                    if (isNaN(num)) return '';
-                    return num.toFixed(2).replace('.', ',');
-                }
-
-                moneyFields.forEach(name => {
-                    const input = form.querySelector(`[name="${name}"]`);
-                    if (input) {
-                        input.addEventListener('blur', () => {
-                            const v = sanitizarValor(input.value);
-                            if (v !== '') input.value = v;
-                        });
-                    }
-                });
-
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-
-                    moneyFields.forEach(name => {
-                        const input = form.querySelector(`[name="${name}"]`);
-                        if (input) {
-                            const v = sanitizarValor(input.value);
-                            input.value = v;
-                        }
-                    });
-
-                    const fd = new FormData(form);
-                    const btn = form.querySelector('button[type="submit"]');
-                    const label = btn.querySelector('.label-text');
-                    const spinner = btn.querySelector('.loading-spinner');
-
-                    label.style.display = 'none';
-                    spinner.style.display = 'inline-block';
-                    btn.disabled = true;
-
-                    fetch(form.action, { method: 'POST', body: fd, credentials: 'same-origin', cache: 'no-store' })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (typeof showToast === 'function') {
-                                showToast(data.success ? '✅ Ficha guardada.' : '❌ ' + (data.message || 'Erro ao guardar'), data.success ? 'success' : 'error');
-                            }
-                            if (data.success) {
-                                setTimeout(() => {
-                                    document.getElementById('modalEdicaoCompleta').style.display = 'none';
-                                    document.body.style.overflow = '';
-                                    loadFichaData();
-                                }, 900);
-                            }
-                        })
-                        .catch(() => {
-                            if (typeof showToast === 'function') showToast('❌ Erro de rede.', 'error');
-                        })
-                        .finally(() => {
-                            label.style.display = '';
-                            spinner.style.display = 'none';
-                            btn.disabled = false;
-                        });
-                });
-            }
-
-            // Initialize on page load
-            loadFichaData();
-        })();
-    </script>
+</div>

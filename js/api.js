@@ -33,6 +33,7 @@ async function apiFetch(endpoint, options = {}) {
     }
 }
 
+/* Auth */
 export async function login(email, password) {
     return apiFetch('auth/login.php', {
         method: 'POST',
