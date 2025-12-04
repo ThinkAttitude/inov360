@@ -51,7 +51,7 @@ export async function register(userData) {
     });
 }
 
-/* Collaborator Management */
+/* Collaborator Management (controlo_collabs) */
 export async function getAllCollaborators() {
     return apiFetch('collab_management/collabs_list.php', {
         method: 'GET',
@@ -99,5 +99,80 @@ export async function getHierarchyByUser(userId = null) {
 
     return apiFetch(`collab_management/get_hierarchy.php?${params.toString()}`, {
         method: 'GET'
+    });
+}
+
+/* Record Management (gestao_fichas) */
+export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
+    const params = new URLSearchParams();
+
+    if (q && q.trim() !== '') params.append('q', q.trim());
+    params.append('page', String(page));
+    params.append('page_size', String(pageSize));
+
+    return apiFetch(`employee_info/record/aval_requests.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function getAllRecords({
+                                         page = 1,
+                                         pageSize = 25,
+                                         q = '',
+                                         companyId = null,
+                                         orderBy = 'name',
+                                         orderDir = 'asc',
+                                     } = {}) {
+    const params = new URLSearchParams();
+
+    params.append('page', String(page));
+    params.append('page_size', String(pageSize));
+
+    if (q && q.trim() !== '') {
+        params.append('q', q.trim());
+    }
+
+    if (companyId != null) {
+        params.append('company_id', String(companyId));
+    }
+
+    if (orderBy) {
+        params.append('order_by', orderBy);
+    }
+
+    if (orderDir) {
+        params.append('order_dir', orderDir);
+    }
+
+    return apiFetch(`employee_info/aval_list_all.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function getRecord(userId) {
+    const params = new URLSearchParams();
+    params.append('user_id', String(userId));
+
+    return apiFetch(`employee_info/record/aval_view_record.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function getRecordChanges(userId) {
+    const params = new URLSearchParams();
+    params.append('user_id', String(userId));
+
+    return apiFetch(`employee_info/record/aval_requests.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export async function createDecision(userId, decision) {
+    return apiFetch('employee_info/record/aval_decision.php', {
+        method: 'POST',
+        body: {
+            user_id: userId,
+            decision
+        }
     });
 }

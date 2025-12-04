@@ -393,7 +393,7 @@ paths:
   /employee_info/record/aval_requests.php:
     get:
       tags: [employee_record]
-      summary: Lista de utilizadores com pedidos pendentes (último de cada tipo)
+      summary: Lista de todos os pedidos pendentes para aprovação
       security: [{ cookieAuth: [] }]
       parameters:
         - in: query

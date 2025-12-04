@@ -1,29 +1,200 @@
-<link rel="stylesheet" href="../../css/legacy/fichas_colaboradores.css">
+<link rel="stylesheet" href="../../css/gestao_fichas.css">
 
-<div class="page-header">
-    <h2>Gestão de Fichas de Colaboradores</h2>
-    <p>Selecione a ação que pretende realizar para gerir as fichas dos colaboradores.</p>
-</div>
+<div class="controlo-page gestao-page">
+    <header class="gestao-header">
+        <div class="gestao-header-inner">
+            <h2 class="gestao-title">Gestão de Fichas de Colaboradores</h2>
+            <p class="gestao-desc">
+                Selecione a ação que pretende realizar para gerir as fichas dos colaboradores.
+            </p>
+        </div>
+    </header>
 
-<div class="action-buttons">
-    <button id="ver_aprovacoes" type="button" class="gestao-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9,11 12,14 22,4"></polyline>
-            <path d="M21,12v7a2,2 0,0 1,-2,2H5a2,2 0,0 1,-2,-2V5a2,2 0,0 1,2,-2h11"></path>
-        </svg>
-        Aprovar Alterações de Colaboradores
-    </button>
-    <button id="visualizar_fichas" type="button" class="gestao-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14,2 14,8 20,8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10,9 9,9 8,9"></polyline>
-        </svg>
-        Lista de Colaboradores
-    </button>
-</div>
+    <section class="gestao-section">
+        <div class="gestao-main">
+            <div class="gestao-shell">
+                <div class="gestao-tabs">
+                    <div class="gestao-tabs-nav">
+                        <button
+                                type="button"
+                                class="gestao-tabs-nav-btn"
+                                id="gestao-nav-back"
+                                aria-label="Voltar"
+                        >
+                            <svg viewBox="0 0 24 24" width="18" height="18">
+                                <line
+                                        x1="6" y1="12" x2="18" y2="12"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                />
+                                <polyline
+                                        points="11 7 6 12 11 17"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                />
+                            </svg>
+                        </button>
 
-<div id="gestao-content">
+                        <button
+                                type="button"
+                                class="gestao-tabs-nav-btn"
+                                id="gestao-nav-forward"
+                                aria-label="Avançar"
+                        >
+                            <svg viewBox="0 0 24 24" width="18" height="18">
+                                <line
+                                        x1="6" y1="12" x2="18" y2="12"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                />
+                                <polyline
+                                        points="13 7 18 12 13 17"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <button
+                            id="gestao-aprovacoes"
+                            type="button"
+                            class="gestao-tab gestao-tab--active"
+                    >
+                        Pedidos
+                    </button>
+
+                    <button
+                            id="gestao-visualizar-fichas"
+                            type="button"
+                            class="gestao-tab"
+                    >
+                        Fichas
+                    </button>
+                </div>
+                <div id="gestao-content" class="gestao-content-card">
+                    <!-- Pending approvals list -->
+                    <div id="gestao-view-approvals" class="gestao-view gestao-view--approvals">
+                        <div class="gestao-approvals-list" id="gestao-approvals-list">
+                            <div class="gestao-approvals-header">
+                                <h3>Pedidos de alteração pendentes</h3>
+                                <p>
+                                    Aqui são apresentados os pedidos de alteração de ficha que aguardam aprovação.
+                                </p>
+                            </div>
+
+                            <div class="gestao-table-wrapper">
+                                <table class="gestao-table" aria-describedby="gestao-approvals-caption">
+                                    <caption id="gestao-approvals-caption" class="sr-only">
+                                        Lista de fichas de colaboradores com alterações pendentes de aprovação.
+                                    </caption>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Colaborador</th>
+                                        <th scope="col">Data</th>
+                                        <th scope="col">Estado</th>
+                                        <th scope="col">Ação</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="gestao-approvals-tbody">
+                                    <!-- Rows rendered by JS -->
+                                    </tbody>
+                                </table>
+
+                                <p class="gestao-approvals-empty" id="gestao-approvals-empty">
+                                    Não existem pedidos pendentes de aprovação.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Diff view -->
+                        <div class="gestao-diff-view" id="gestao-diff-view">
+                            <!-- Back icon in the top-left corner -->
+                            <div class="gestao-diff-header">
+                                <div class="gestao-diff-header-text">
+                                    <h3>Comparar ficha do colaborador</h3>
+                                    <p id="gestao-diff-subtitle">
+                                        Selecione um pedido da lista para ver as alterações detalhadamente.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="gestao-diff-columns">
+                                <div class="gestao-diff-column gestao-diff-column--old">
+                                    <h4>Registo atual</h4>
+                                    <div class="gestao-diff-fields" id="gestao-diff-old"></div>
+                                </div>
+
+                                <div class="gestao-diff-column gestao-diff-column--new">
+                                    <h4>Pedido de alteração</h4>
+                                    <div class="gestao-diff-fields" id="gestao-diff-new"></div>
+                                </div>
+                            </div>
+
+                            <div class="gestao-diff-footer">
+                                <button type="button" class="btn-secondary" id="gestao-diff-reject">
+                                    Rejeitar
+                                </button>
+                                <button type="button" class="btn-primary" id="gestao-diff-accept">
+                                    Aceitar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- All records list (diff / lista de colaboradores) -->
+                    <div id="gestao-view-allrecs" class="gestao-view gestao-view--allrecs">
+                        <div class="gestao-allrecs-list" id="gestao-allrecs-list">
+                            <div class="gestao-allrecs-header">
+                                <h3>Todos os colaboradores</h3>
+                                <p>Lista de colaboradores e respetiva empresa, para consulta de fichas.</p>
+                            </div>
+
+                            <div class="gestao-table-wrapper">
+                                <table class="gestao-table" aria-describedby="gestao-allrecs-caption">
+                                    <caption id="gestao-allrecs-caption" class="sr-only">
+                                        Lista de todos os colaboradores com a respetiva empresa.
+                                    </caption>
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Colaborador</th>
+                                        <th scope="col">Empresa</th>
+                                        <th scope="col">Ação</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="gestao-allrecs-tbody">
+                                    <!-- Rows rendered by JS -->
+                                    </tbody>
+                                </table>
+
+                                <p class="gestao-allrecs-empty" id="gestao-allrecs-empty">
+                                    Não existem colaboradores para apresentar.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="gestao-record-view" id="gestao-record-view">
+                            <div class="gestao-record-header">
+                                <div class="gestao-record-header-text">
+                                    <h3>Ficha do colaborador</h3>
+                                    <p id="gestao-record-subtitle">
+                                        Selecione um colaborador para ver a ficha completa.
+                                    </p>
+                                </div>
+                            </div>
+                            <div id="gestao-record-table"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
