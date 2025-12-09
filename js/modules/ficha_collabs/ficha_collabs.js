@@ -1,4 +1,5 @@
-import {getSelfRecord} from '../api.js';
+import {getSelfRecord} from '../../api.js';
+import {FICHA_SECTIONS} from './ficha_collabs_fields.js';
 
 function escapeHtml(value) {
     if (value === null || value === undefined) return '';
@@ -11,52 +12,55 @@ function escapeHtml(value) {
     });
 }
 
-function formatLabel(key) {
-    return key.replace(/_/g, ' ').toUpperCase();
+function getSectionSource(sectionId, data) {
+    if (sectionId === 'dados-fiscais') return data.finance || {};
+    return data.profile || {};
 }
 
-function filterFlatProps(source, { skipId = false } = {}) {
-    return Object.fromEntries(
-        Object.entries(source || {}).filter(([key, value]) => {
-            if (skipId && key === 'id') return false;
-            if (value == null) return false;
-            if (typeof value === 'object') return false;
-            return true;
-        })
-    );
+function renderSections(sectionsConfig, data) {
+    Object.entries(sectionsConfig).forEach(function ([containerId, fieldMap]) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const source = getSectionSource(containerId, data);
+        const parts = [];
+
+        Object.entries(fieldMap).forEach(function ([field, config]) {
+            let label;
+            let suffix = '';
+            let highlight = false;
+
+            if (typeof config === 'string') {
+                label = config;
+            } else {
+                label = config.label;
+                suffix = config.suffix || '';
+                highlight = !!config.highlight;
+            }
+
+            const raw = source ? source[field] : undefined;
+            let value = raw === null || raw === undefined || raw === '' ? '-' : String(raw);
+            if (value !== '-' && suffix) value += suffix;
+
+            const classes = 'ficha-info-card' + (highlight ? ' ficha-highlight' : '');
+
+            parts.push(
+                '<div class="' + classes + '">' +
+                '<div class="ficha-info-label">' + escapeHtml(label) + '</div>' +
+                '<div class="ficha-info-value">' + escapeHtml(value) + '</div>' +
+                '</div>'
+            );
+        });
+
+        container.innerHTML = parts.join('');
+    });
 }
 
-function renderGrid(containerId, source) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const obj = filterFlatProps(source);
-    const entries = Object.entries(obj);
-
-    if (!entries.length) {
-        container.innerHTML = '';
-        return;
-    }
-
-    container.innerHTML = entries.map(function (pair) {
-        const key = pair[0];
-        const rawValue = pair[1];
-        const label = formatLabel(key);
-        const value = rawValue === '' ? '-' : String(rawValue);
-        return (
-            '<div class="ficha-info-card">' +
-            '<div class="ficha-info-label">' + escapeHtml(label) + '</div>' +
-            '<div class="ficha-info-value">' + escapeHtml(value) + '</div>' +
-            '</div>'
-        );
-    }).join('');
-}
-
-function renderHeader(user) {
+function renderHeader(profile) {
     const nameEl = document.getElementById('user-name-display');
     const emailEl = document.getElementById('user-email-display');
-    if (nameEl) nameEl.textContent = user && user.name ? user.name : '';
-    if (emailEl) emailEl.textContent = user && user.email ? user.email : '';
+    if (nameEl) nameEl.textContent = profile && profile.name ? profile.name : '';
+    if (emailEl) emailEl.textContent = profile && profile.email ? profile.email : '';
 }
 
 function renderEmergency(emergency) {
@@ -103,48 +107,20 @@ function renderEmergency(emergency) {
         '</div>';
 }
 
-async function fetchFichaData() {
-    const res = await getSelfRecord();
-
-    const user = res.user || {};
-    const profile = res.profile || {};
-    const finance = res.finance || {};
-    const emergency = res.emergency || {};
-
-    const profilePersonal = profile.personal || profile;
-    const profileFamily = profile.family || {};
-    const profileContract = profile.contract || {};
-
-    const userSimple = filterFlatProps(user, { skipId: true });
-    const personalSource = Object.assign({}, userSimple, profilePersonal || {});
-
-    return {
-        user,
-        personalSource,
-        profileFamily,
-        finance,
-        profileContract,
-        emergency
-    };
-}
-
 async function loadAndRenderFicha() {
     try {
-        const {
-            user,
-            personalSource,
-            profileFamily,
-            finance,
-            profileContract,
-            emergency
-        } = await fetchFichaData();
+        const res = await getSelfRecord();
+        if (!res || res.success !== true) return;
 
-        renderHeader(user);
-        renderGrid('dados-pessoais', personalSource);
-        renderGrid('dados-familiares', profileFamily);
-        renderGrid('dados-fiscais', finance);
-        renderGrid('dados-contratuais', profileContract);
-        renderEmergency(emergency);
+        const data = {
+            profile: res.profile || {},
+            finance: res.finance || {},
+            emergency: res.emergency || {}
+        };
+
+        renderHeader(data.profile);
+        renderSections(FICHA_SECTIONS, data);
+        renderEmergency(data.emergency);
     } catch (e) {
         console.error('Erro ao carregar ficha:', e);
     }
