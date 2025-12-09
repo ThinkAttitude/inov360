@@ -177,3 +177,9 @@ export async function createDecision(userId, decision) {
         }
     });
 }
+
+export async function getSelfRecord() {
+    return apiFetch('employee_info/view_self.php', {
+        method: 'GET'
+    });
+}

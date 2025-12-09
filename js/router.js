@@ -3,6 +3,7 @@ import {mountCalendar} from "./modules/horarios.js";
 import {initForm} from "./modules/marcacao_direta.js";
 import {mountClbMngmt} from "./modules/controlo_colabs.js";
 import {mountGstFchs} from "./modules/gestao_fichas/gestao_fichas.js";
+import {mountFichaCollab} from "./modules/ficha_collabs.js";
 
 export const Paths = {
     ...CARD_TYPES,
@@ -68,7 +69,7 @@ export const Routes = {
     },
     [Paths.FICHA_COLLAB]: {
         html: '/page/modules/ficha_collab.html',
-        js: null
+        js: mountFichaCollab
     }
 };
 
