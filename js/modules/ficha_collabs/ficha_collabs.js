@@ -1,9 +1,9 @@
-import {getSelfRecord} from '../../api.js';
+import {getSelfRecord, createRecordRequest} from '../../api.js';
 import {FICHA_SECTIONS} from './ficha_collabs_fields.js';
-import {initEditToggle} from "./edit_toggle.js";
+import {initEditToggle} from './edit_toggle.js';
 
-let fichaState = null;
-let editToggle = null;
+let fichaBaseState = null;
+let fichaToggle = null;
 
 function escapeHtml(value) {
     if (value === null || value === undefined) return '';
@@ -16,12 +16,17 @@ function escapeHtml(value) {
     });
 }
 
+function renderHeader(profile) {
+    const nameEl = document.getElementById('user-name-display');
+    if (nameEl) nameEl.textContent = profile && profile.name ? profile.name : '';
+}
+
 function renderSections(mode, sectionsConfig, state, onChange) {
     Object.entries(sectionsConfig).forEach(function ([containerId, fieldMap]) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const sourceKey = containerId === 'dados-fiscais' ? 'finance' : 'profile';
+        const sourceKey = 'profile';
         const source = state[sourceKey] || {};
         const parts = [];
 
@@ -41,29 +46,44 @@ function renderSections(mode, sectionsConfig, state, onChange) {
             }
 
             const raw = source[field];
-            const inputId = 'ficha-input-' + containerId + '-' + field;
+            const baseValue = raw === null || raw === undefined ? '' : String(raw);
+
+            const isRequestField =
+                field === 'email' ||
+                field === 'telefone' ||
+                field === 'morada' ||
+                field === 'nib';
+
+            const inputId = isRequestField
+                ? field
+                : 'ficha-input-' + containerId + '-' + field;
 
             if (mode === 'edit' && editable) {
-                const baseValue = raw === null || raw === undefined ? '' : String(raw);
                 const classes = 'ficha-info-card' + (highlight ? ' ficha-highlight' : '');
                 const suffixSpan = suffix
                     ? '<span class="ficha-info-suffix">' + escapeHtml(suffix) + '</span>'
+                    : '';
+                const collabAttr = isRequestField
+                    ? ' data-collab-field="' + field + '"'
                     : '';
 
                 parts.push(
                     '<div class="' + classes + '">' +
                     '<label class="ficha-info-label" for="' + inputId + '">' + escapeHtml(label) + '</label>' +
                     '<div class="ficha-info-edit-wrapper">' +
-                    '<input id="' + inputId + '" class="ficha-info-input" ' +
-                    'data-section="' + sourceKey + '" ' +
-                    'data-field="' + field + '" ' +
-                    'value="' + escapeHtml(baseValue) + '">' +
+                    '<input id="' + inputId + '" class="ficha-info-input"' +
+                    ' data-section="' + sourceKey + '"' +
+                    ' data-field="' + field + '"' +
+                    collabAttr +
+                    ' data-original="' + escapeHtml(baseValue) + '"' +
+                    ' value="' + escapeHtml(baseValue) + '">' +
                     suffixSpan +
                     '</div>' +
                     '</div>'
                 );
             } else {
-                let value = raw === null || raw === undefined || raw === '' ? '-' : String(raw);
+                let value = baseValue;
+                if (!value) value = '-';
                 if (value !== '-' && suffix) value += suffix;
 
                 const classes = 'ficha-info-card' + (highlight ? ' ficha-highlight' : '');
@@ -85,18 +105,15 @@ function renderSections(mode, sectionsConfig, state, onChange) {
                 input.addEventListener('input', function () {
                     const sectionKey = input.getAttribute('data-section');
                     const field = input.getAttribute('data-field');
-                    if (!state[sectionKey]) state[sectionKey] = {};
-                    state[sectionKey][field] = input.value;
-                    if (typeof onChange === 'function') onChange(state);
+                    if (sectionKey && field) {
+                        if (!state[sectionKey]) state[sectionKey] = {};
+                        state[sectionKey][field] = input.value;
+                        if (typeof onChange === 'function') onChange(state);
+                    }
                 });
             });
         }
     });
-}
-
-function renderHeader(profile) {
-    const nameEl = document.getElementById('user-name-display');
-    if (nameEl) nameEl.textContent = profile && profile.nome ? profile.nome : '';
 }
 
 function renderEmergency(mode, state, onChange) {
@@ -162,27 +179,25 @@ function renderEmergency(mode, state, onChange) {
         '</div>' +
         '<div class="ficha-contact-info">' +
         '<div class="ficha-info-group">' +
-        '<label class="ficha-info-label" for="ficha-emergencia-nome">Nome</label>' +
-        '<input class="ficha-info-input" id="ficha-emergencia-nome" data-emergency="emergencia_nome" value="' + escapeHtml(nome) + '">' +
+        '<label class="ficha-info-label" for="emergencia_nome">Nome</label>' +
+        '<input class="ficha-info-input" id="emergencia_nome" data-section="emergency" data-field="emergencia_nome" data-collab-field="emergencia_nome" data-original="' + escapeHtml(nome) + '" value="' + escapeHtml(nome) + '">' +
         '</div>' +
         '<div class="ficha-info-group">' +
-        '<label class="ficha-info-label" for="ficha-emergencia-parentesco">Parentesco</label>' +
-        '<input class="ficha-info-input" id="ficha-emergencia-parentesco" data-emergencia="emergencia_parentesco" value="' + escapeHtml(parentesco) + '">' +
+        '<label class="ficha-info-label" for="emergencia_parentesco">Parentesco</label>' +
+        '<input class="ficha-info-input" id="emergencia_parentesco" data-section="emergency" data-field="emergencia_parentesco" data-collab-field="emergencia_parentesco" data-original="' + escapeHtml(parentesco) + '" value="' + escapeHtml(parentesco) + '">' +
         '</div>' +
         '<div class="ficha-info-group">' +
-        '<label class="ficha-info-label" for="ficha-emergencia-telefone">Telefone</label>' +
-        '<input class="ficha-info-input" id="ficha-emergencia-telefone" data-emergencia="emergencia_telefone" value="' + escapeHtml(telefone) + '">' +
+        '<label class="ficha-info-label" for="emergencia_telefone">Telefone</label>' +
+        '<input class="ficha-info-input" id="emergencia_telefone" data-section="emergency" data-field="emergencia_telefone" data-collab-field="emergencia_telefone" data-original="' + escapeHtml(telefone) + '" value="' + escapeHtml(telefone) + '">' +
         '</div>' +
         '</div>' +
         '</div>' +
         '</div>';
 
-    const inputs = container.querySelectorAll('.ficha-info-input[id^="ficha-emergencia-"]');
+    const inputs = container.querySelectorAll('.ficha-info-input');
     inputs.forEach(function (input) {
         input.addEventListener('input', function () {
-            const field =
-                input.getAttribute('data-emergencia') ||
-                input.getAttribute('data-emergency');
+            const field = input.getAttribute('data-field');
             if (!state.emergency) state.emergency = {};
             state.emergency[field] = input.value;
             if (typeof onChange === 'function') onChange(state);
@@ -191,17 +206,47 @@ function renderEmergency(mode, state, onChange) {
 }
 
 function renderFicha(mode, state, onChange) {
-    renderHeader(state.profile);
-    renderSections(mode, FICHA_SECTIONS, state, onChange);
-    renderEmergency(mode, state, onChange);
+    const viewState = mode === 'view' ? fichaBaseState : state;
+    const profile = viewState.profile || {};
+    renderHeader(profile);
+    renderSections(mode, FICHA_SECTIONS, viewState, onChange);
+    renderEmergency(mode, viewState, onChange);
 }
 
-async function loadAndRenderFicha() {
+function getInputValue(id) {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    return el.value == null ? '' : String(el.value);
+}
+
+function buildCollabRequestPayload() {
+    const payload = {
+        email: getInputValue('email'),
+        contacto_telefone: getInputValue('telefone'),
+        morada: getInputValue('morada'),
+        nib: getInputValue('nib'),
+        emergencia_nome: getInputValue('emergencia_nome'),
+        emergencia_parentesco: getInputValue('emergencia_parentesco'),
+        emergencia_telefone: getInputValue('emergencia_telefone')
+    };
+
+    Object.keys(payload).forEach(function (key) {
+        if (payload[key] === '') delete payload[key];
+    });
+
+    return payload;
+}
+
+function cloneState(obj) {
+    return JSON.parse(JSON.stringify(obj || {}));
+}
+
+async function loadAndInitFicha() {
     try {
         const res = await getSelfRecord();
         if (!res || res.success !== true) return;
 
-        fichaState = {
+        fichaBaseState = {
             profile: res.profile || {},
             finance: res.finance || {},
             emergency: res.emergency || {}
@@ -209,27 +254,44 @@ async function loadAndRenderFicha() {
 
         const button = document.getElementById('abrir-edicao-completa');
         if (!button) {
-            renderFicha('view', fichaState, function () {});
+            renderFicha('view', fichaBaseState, function () {
+            });
             return;
         }
 
-        if (!editToggle) {
-            editToggle = initEditToggle(button, {
+        if (!fichaToggle) {
+            fichaToggle = initEditToggle(button, {
                 render: function (mode, state, onChange) {
                     renderFicha(mode, state, onChange);
                 },
-                onSave: async function (state) {
-                    return true;
+                onSave: async function () {
+                    const payload = buildCollabRequestPayload();
+                    const keys = Object.keys(payload);
+                    if (!keys.length) {
+                        if (typeof showToast === 'function') {
+                            showToast('Nenhuma alteração para guardar.', 'info');
+                        }
+                        return false;
+                    }
+
+                    return createRecordRequest(payload)
+                        .then( (r) => {
+                            return !(!r || r.success !== true);
+                        })
+                        .catch(function (e) {
+                            console.error('Erro ao submeter pedido:', e);
+                            return false;
+                        });
                 }
             });
         }
 
-        editToggle.setState(fichaState);
+        fichaToggle.setState(cloneState(fichaBaseState));
     } catch (e) {
         console.error('Erro ao carregar ficha:', e);
     }
 }
 
 export async function mountFichaCollab() {
-    await loadAndRenderFicha();
+    await loadAndInitFicha();
 }

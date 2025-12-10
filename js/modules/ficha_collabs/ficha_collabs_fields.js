@@ -1,7 +1,7 @@
 export const PERSONAL_FIELDS = {
     nome: 'Nome',
     email: { label: 'Email', editable: true },
-    contacto_telefone: { label: 'Contacto telefone', editable: true },
+    telefone: { label: 'Contacto telefone', editable: true },
     morada: { label: 'Morada', editable: true },
     codigo_postal: 'Código Postal',
     freguesia: 'Freguesia',

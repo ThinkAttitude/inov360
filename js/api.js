@@ -183,3 +183,10 @@ export async function getSelfRecord() {
         method: 'GET'
     });
 }
+
+export async function createRecordRequest(payload) {
+    return apiFetch('employee_info/record/collab_request.php', {
+        method: 'POST',
+        body: payload
+    });
+}
