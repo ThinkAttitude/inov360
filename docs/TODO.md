@@ -60,6 +60,7 @@
 - [ ] Exportar a lista para formato .xlsx (Excel) **[~4 horas]**
 - [ ] Obter e apresentar lista detalhada de todos os pedidos pendentes **[~1 dia]**
 - [ ] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~4 horas]**
+- [ ] Edição Direta de todos os campos de cada ficha.
 
 ## Financeira
 - [ ] Apresentar painel de finanças **[~1 dia]**
@@ -94,4 +95,4 @@
 ## A minha ficha
 - [x] Apresentar painéis separados para dados pessoais, informação familiar e identificação, dados fiscais, dados contratuais e contactos de emergência
 - [ ] Obter e listar a informação para todos os campos de dados pessoais, informação familiar e identificação, dados fiscais, dados contratuais e contactos de emergência **[~1 dia]**
-- [ ] Permitir alterar quaisquer dados e registar as alterações na base de dados **[~1 dia]**
+- [ ] Permitir alterar certos dados especificos e registar as alterações na base de dados **[~1 dia]**
