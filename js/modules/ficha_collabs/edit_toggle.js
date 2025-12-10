@@ -17,35 +17,63 @@ export function initEditToggle(button, options) {
     let base = null;
     let current = null;
     let mode = 'view';
+    let secondary = null;
 
     function dirty() {
         return JSON.stringify(current) !== JSON.stringify(base);
     }
 
-    function updateButton() {
-            button.classList.remove('btn-variant-green', 'btn-variant-red');
+    function renderSecondaryBtn() {
+        if (secondary) return secondary;
+        secondary = document.createElement('button');
+        secondary.type = 'button';
+        secondary.className = 'btn-secondary';
+        secondary.textContent = 'Cancelar';
+        const parent = button.parentNode;
+        if (parent) parent.insertBefore(secondary, button);
+        secondary.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!base) return;
+            current = clone(base);
+            mode = 'view';
+            renderMode();
+            updatePrimaryBtn();
+        });
+        return secondary;
+    }
 
-            switch (mode) {
-                case 'view':
-                    setLabel('Editar');
-                    button.classList.add('btn-variant-green');
-                    break;
-                case 'edit':
-                    if (!dirty()) {
-                        setLabel('Cancelar');
-                        button.classList.add('btn-variant-red');
-                    } else {
-                        setLabel('Guardar');
-                    }
-                    break;
-                default:
-                    break;
-            }
+    function updatePrimaryBtn() {
+        button.classList.remove('btn-variant-green', 'btn-variant-red');
+        const isDirty = dirty();
+
+        if (secondary && (mode !== 'edit' || !isDirty)) {
+            secondary.remove();
+            secondary = null;
         }
+
+        switch (mode) {
+            case 'view':
+                setLabel('Editar');
+                button.classList.add('btn-variant-green');
+                break;
+            case 'edit':
+                if (!isDirty) {
+                    setLabel('Cancelar');
+                    button.classList.add('btn-variant-red');
+                } else {
+                    setLabel('Guardar');
+                    renderSecondaryBtn();
+                }
+                break;
+            default:
+                setLabel('Editar');
+                button.classList.add('btn-variant-green');
+        }
+    }
 
     function handleChange(nextState) {
         current = nextState;
-        updateButton();
+        updatePrimaryBtn();
     }
 
     function renderMode() {
@@ -58,14 +86,14 @@ export function initEditToggle(button, options) {
         if (mode === 'view') {
             mode = 'edit';
             renderMode();
-            updateButton();
+            updatePrimaryBtn();
             return;
         }
         if (!dirty()) {
             current = clone(base);
             mode = 'view';
             renderMode();
-            updateButton();
+            updatePrimaryBtn();
             return;
         }
         const ok = await onSave(current);
@@ -73,7 +101,7 @@ export function initEditToggle(button, options) {
         base = clone(current);
         mode = 'view';
         renderMode();
-        updateButton();
+        updatePrimaryBtn();
     });
 
     function setState(state) {
@@ -81,7 +109,7 @@ export function initEditToggle(button, options) {
         current = clone(state);
         mode = 'view';
         renderMode();
-        updateButton();
+        updatePrimaryBtn();
     }
 
     return { setState };

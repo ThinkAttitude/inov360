@@ -29,6 +29,7 @@ function renderSections(mode, sectionsConfig, state, onChange) {
             let label;
             let suffix = '';
             let highlight = false;
+            let editable = false;
 
             if (typeof config === 'string') {
                 label = config;
@@ -36,11 +37,32 @@ function renderSections(mode, sectionsConfig, state, onChange) {
                 label = config.label;
                 suffix = config.suffix || '';
                 highlight = !!config.highlight;
+                editable = !!config.editable;
             }
 
             const raw = source[field];
+            const inputId = 'ficha-input-' + containerId + '-' + field;
 
-            if (mode === 'view') {
+            if (mode === 'edit' && editable) {
+                const baseValue = raw === null || raw === undefined ? '' : String(raw);
+                const classes = 'ficha-info-card' + (highlight ? ' ficha-highlight' : '');
+                const suffixSpan = suffix
+                    ? '<span class="ficha-info-suffix">' + escapeHtml(suffix) + '</span>'
+                    : '';
+
+                parts.push(
+                    '<div class="' + classes + '">' +
+                    '<label class="ficha-info-label" for="' + inputId + '">' + escapeHtml(label) + '</label>' +
+                    '<div class="ficha-info-edit-wrapper">' +
+                    '<input id="' + inputId + '" class="ficha-info-input" ' +
+                    'data-section="' + sourceKey + '" ' +
+                    'data-field="' + field + '" ' +
+                    'value="' + escapeHtml(baseValue) + '">' +
+                    suffixSpan +
+                    '</div>' +
+                    '</div>'
+                );
+            } else {
                 let value = raw === null || raw === undefined || raw === '' ? '-' : String(raw);
                 if (value !== '-' && suffix) value += suffix;
 
@@ -50,29 +72,6 @@ function renderSections(mode, sectionsConfig, state, onChange) {
                     '<div class="' + classes + '">' +
                     '<div class="ficha-info-label">' + escapeHtml(label) + '</div>' +
                     '<div class="ficha-info-value">' + escapeHtml(value) + '</div>' +
-                    '</div>'
-                );
-            } else {
-                const baseValue = raw === null || raw === undefined ? '' : String(raw);
-                const classes = 'ficha-info-card' + (highlight ? ' ficha-highlight' : '');
-                const inputAttrs =
-                    'class="ficha-info-input" ' +
-                    'data-section="' + sourceKey + '" ' +
-                    'data-field="' + field + '" ' +
-                    'value="' + escapeHtml(baseValue) + '"';
-
-                let suffixSpan = '';
-                if (suffix) {
-                    suffixSpan = '<span class="ficha-info-suffix">' + escapeHtml(suffix) + '</span>';
-                }
-
-                parts.push(
-                    '<div class="' + classes + '">' +
-                    '<div class="ficha-info-label">' + escapeHtml(label) + '</div>' +
-                    '<div class="ficha-info-edit-wrapper">' +
-                    '<input ' + inputAttrs + '>' +
-                    suffixSpan +
-                    '</div>' +
                     '</div>'
                 );
             }
@@ -120,9 +119,9 @@ function renderEmergency(mode, state, onChange) {
             return;
         }
 
-        const nome = escapeHtml(emergency.nome || '');
-        const parentesco = escapeHtml(emergency.parentesco || '');
-        const telefone = escapeHtml(emergency.telefone || '');
+        const nome = escapeHtml(emergency.emergencia_nome || emergency.nome || '');
+        const parentesco = escapeHtml(emergency.emergencia_parentesco || emergency.parentesco || '');
+        const telefone = escapeHtml(emergency.emergencia_telefone || emergency.telefone || '');
 
         container.innerHTML =
             '<div class="ficha-contacts-grid">' +
@@ -148,9 +147,9 @@ function renderEmergency(mode, state, onChange) {
         return;
     }
 
-    const nome = emergency.nome || '';
-    const parentesco = emergency.parentesco || '';
-    const telefone = emergency.telefone || '';
+    const nome = emergency.emergencia_nome || emergency.nome || '';
+    const parentesco = emergency.emergencia_parentesco || emergency.parentesco || '';
+    const telefone = emergency.emergencia_telefone || emergency.telefone || '';
 
     container.innerHTML =
         '<div class="ficha-contacts-grid">' +
@@ -162,20 +161,28 @@ function renderEmergency(mode, state, onChange) {
         '</svg>' +
         '</div>' +
         '<div class="ficha-contact-info">' +
-        '<div class="ficha-info-label">Nome</div>' +
-        '<input class="ficha-info-input" data-emergency="nome" value="' + escapeHtml(nome) + '">' +
-        '<div class="ficha-info-label">Parentesco</div>' +
-        '<input class="ficha-info-input" data-emergency="parentesco" value="' + escapeHtml(parentesco) + '">' +
-        '<div class="ficha-info-label">Telefone</div>' +
-        '<input class="ficha-info-input" data-emergency="telefone" value="' + escapeHtml(telefone) + '">' +
+        '<div class="ficha-info-group">' +
+        '<label class="ficha-info-label" for="ficha-emergencia-nome">Nome</label>' +
+        '<input class="ficha-info-input" id="ficha-emergencia-nome" data-emergency="emergencia_nome" value="' + escapeHtml(nome) + '">' +
+        '</div>' +
+        '<div class="ficha-info-group">' +
+        '<label class="ficha-info-label" for="ficha-emergencia-parentesco">Parentesco</label>' +
+        '<input class="ficha-info-input" id="ficha-emergencia-parentesco" data-emergencia="emergencia_parentesco" value="' + escapeHtml(parentesco) + '">' +
+        '</div>' +
+        '<div class="ficha-info-group">' +
+        '<label class="ficha-info-label" for="ficha-emergencia-telefone">Telefone</label>' +
+        '<input class="ficha-info-input" id="ficha-emergencia-telefone" data-emergencia="emergencia_telefone" value="' + escapeHtml(telefone) + '">' +
+        '</div>' +
         '</div>' +
         '</div>' +
         '</div>';
 
-    const inputs = container.querySelectorAll('.ficha-info-input[data-emergency]');
+    const inputs = container.querySelectorAll('.ficha-info-input[id^="ficha-emergencia-"]');
     inputs.forEach(function (input) {
         input.addEventListener('input', function () {
-            const field = input.getAttribute('data-emergency');
+            const field =
+                input.getAttribute('data-emergencia') ||
+                input.getAttribute('data-emergency');
             if (!state.emergency) state.emergency = {};
             state.emergency[field] = input.value;
             if (typeof onChange === 'function') onChange(state);

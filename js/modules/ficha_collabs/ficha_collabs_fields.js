@@ -1,8 +1,8 @@
 export const PERSONAL_FIELDS = {
     nome: 'Nome',
-    email: 'Email',
-    telefone: 'Telefone',
-    morada: 'Morada',
+    email: { label: 'Email', editable: true },
+    contacto_telefone: { label: 'Contacto telefone', editable: true },
+    morada: { label: 'Morada', editable: true },
     codigo_postal: 'Código Postal',
     freguesia: 'Freguesia',
     concelho: 'Concelho',
@@ -45,10 +45,10 @@ export const CONTRACT_FIELDS = {
     categoria: 'Categoria',
     regime: 'Regime',
     horas_semana: 'Horas/Semana',
-    salario_base: {label: 'Salário Base', suffix: ' €', highlight: true},
-    subsidio_alimentacao: {label: 'Sub. Alimentação', suffix: ' €'},
-    nib: 'NIB',
-    ordenado_liquido: {label: 'Ordenado Líquido', suffix: ' €', highlight: true},
+    salario_base: { label: 'Salário Base', suffix: ' €', highlight: true },
+    subsidio_alimentacao: { label: 'Sub. Alimentação', suffix: ' €' },
+    nib: { label: 'NIB', editable: true },
+    ordenado_liquido: { label: 'Ordenado Líquido', suffix: ' €', highlight: true },
     validacao_empresa: 'Validação Empresa'
 };
 
