@@ -176,3 +176,19 @@ export async function createDecision(userId, decision) {
         }
     });
 }
+
+export async function directEdit(userId, data = {}, syncUserEmail = false) {
+    const body = {
+        user_id: userId,
+        ...data,
+    };
+
+    if (syncUserEmail) {
+        body.sync_user_email = 1;
+    }
+
+    return apiFetch('employee_info/record/direct_edit.php', {
+        method: 'POST',
+        body,
+    });
+}
