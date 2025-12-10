@@ -79,34 +79,9 @@
     font-size: 0.95rem;
 }
 
-.btn-primary,
 .ficha-info-card,
 .ficha-contact-card {
     transition: all 0.2s ease;
-}
-
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-    color: #ffffff;
-    border: none;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    box-shadow: 0 4px 12px rgba(62, 132, 242, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(62, 132, 242, 0.4);
-}
-
-.ficha-btn-green {
-    background: linear-gradient(135deg, #10b981, #059669);
 }
 
 .ficha-content {
