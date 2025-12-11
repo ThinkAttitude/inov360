@@ -222,7 +222,7 @@ function getInputValue(id) {
 function buildCollabRequestPayload() {
     const payload = {
         email: getInputValue('email'),
-        contacto_telefone: getInputValue('telefone'),
+        telefone: getInputValue('telefone'),
         morada: getInputValue('morada'),
         nib: getInputValue('nib'),
         emergencia_nome: getInputValue('emergencia_nome'),
