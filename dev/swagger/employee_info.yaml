@@ -200,7 +200,7 @@ components:
           type: object
           nullable: true
 
-    ColabRequestRequest:
+    CollabRequestRequest:
       type: object
       properties:
         email: { type: string, format: email }
@@ -472,7 +472,7 @@ paths:
           description: USER_NOT_FOUND
           content: { application/json: { schema: { $ref: '#/components/schemas/ErrorSuccess' } } }
 
-  /employee_info/record/colab_request.php:
+  /employee_info/record/collab_request.php:
     post:
       tags: [employee_record]
       summary: Submissão (pelo próprio) de pedido de alteração de dados
@@ -481,9 +481,9 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ColabRequestRequest' }
+            schema: { $ref: '#/components/schemas/CollabRequestRequest' }
           application/x-www-form-urlencoded:
-            schema: { $ref: '#/components/schemas/ColabRequestRequest' }
+            schema: { $ref: '#/components/schemas/CollabRequestRequest' }
       responses:
         '200':
           description: Sucesso

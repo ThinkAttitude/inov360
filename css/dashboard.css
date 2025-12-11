@@ -326,11 +326,7 @@ body {
     font-weight: 600;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
-    color: var(--white);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-}
+
 
 .btn-ghost {
     background: transparent;

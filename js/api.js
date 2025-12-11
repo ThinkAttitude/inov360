@@ -192,3 +192,16 @@ export async function directEdit(userId, data = {}, syncUserEmail = false) {
         body,
     });
 }
+
+export async function getSelfRecord() {
+    return apiFetch('employee_info/view_self.php', {
+        method: 'GET'
+    });
+}
+
+export async function createRecordRequest(payload) {
+    return apiFetch('employee_info/record/collab_request.php', {
+        method: 'POST',
+        body: payload
+    });
+}
