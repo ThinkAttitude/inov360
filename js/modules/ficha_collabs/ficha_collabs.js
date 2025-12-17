@@ -267,12 +267,7 @@ async function loadAndInitFicha() {
                 onSave: async function () {
                     const payload = buildCollabRequestPayload();
                     const keys = Object.keys(payload);
-                    if (!keys.length) {
-                        if (typeof showToast === 'function') {
-                            showToast('Nenhuma alteração para guardar.', 'info');
-                        }
-                        return false;
-                    }
+                    if (!keys.length) return false;             // TODO: improve this section of the code
 
                     return createRecordRequest(payload)
                         .then( (r) => {

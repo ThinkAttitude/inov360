@@ -177,7 +177,7 @@ export async function createDecision(userId, decision) {
     });
 }
 
-export async function directEdit(userId, data = {}, syncUserEmail = false) {
+export async function updateRecord(userId, data = {}, syncUserEmail = false) {
     const body = {
         user_id: userId,
         ...data,

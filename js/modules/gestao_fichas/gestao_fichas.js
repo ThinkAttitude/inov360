@@ -1,6 +1,6 @@
 import {getAllPendingRequests, getAllRecords} from '../../api.js';
-import {openDiffForRequest, mountGstFchsDiff} from './diff.js';
-import {openRecordForUser, mountGstFchsRecord} from './record.js';
+import {openDiffForRequest, mountGstFchsDiff} from './gestao_fichas_diff.js';
+import {openRecordForUser, mountGstFchsRecord} from './gestao_fichas_records.js';
 
 /** @type {Array<any> | null} */
 let approvalsCache = null;

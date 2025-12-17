@@ -15,7 +15,7 @@ if (!is_array($perms) || !in_array(1, $perms, true)) {
 }
 
 require_once __DIR__ . '/../includes/db.php';
-//require_once __DIR__ . '/../includes/mailer.php';
+//require_once __DIR__ . '/../includes/mailer.php'; TODO: temporarily disabled email sending
 
 function read_payload(): array {
     $ctype = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -295,7 +295,7 @@ try {
                 'company_id' => $companyId
             ];
 
-            //send_collab_credentials_email($email, $nome, $passPlain, $creator);
+            // send_collab_credentials_email($email, $nome, $passPlain, $creator); TODO: temporarily disabled email sending
 
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
