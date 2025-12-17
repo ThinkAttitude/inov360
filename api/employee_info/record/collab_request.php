@@ -22,7 +22,7 @@ if (empty($payload) && $_SERVER['CONTENT_TYPE'] ?? '' && stripos($_SERVER['CONTE
 }
 
 $email   = trim((string)($payload['email'] ?? ''));
-$tel     = trim((string)($payload['contacto_telefone'] ?? ''));
+$tel     = trim((string)($payload['telefone'] ?? ''));
 $morada  = trim((string)($payload['morada'] ?? ''));
 $nib     = trim((string)($payload['nib'] ?? '')); // (legacy; se fores para IBAN, trocamos)
 

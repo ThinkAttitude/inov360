@@ -1,5 +1,5 @@
 import {createDecision, getRecord, getRecordChanges} from '../../api.js';
-import {PROFILE_FIELD_LABELS} from './record.js';
+import {PROFILE_FIELD_LABELS} from './gestao_fichas_records.js';
 
 const diffState = {
     userId: null,
@@ -142,6 +142,33 @@ function renderDiffView(oldProfile, newProfile, changed) {
     newEl.appendChild(newWrapper);
 }
 
+function compare(oldProfile, row) {
+    const base = oldProfile || {};
+    const newProfile = {...base};
+    const changed = {};
+
+    if (!row) return {newProfile, changed};
+
+    Object.keys(PROFILE_FIELD_LABELS).forEach(key => {
+        const apiKey = 'profile_' + key;
+        if (!(apiKey in row)) return;
+
+        const oldValRaw = base[key];
+        const newValRaw = row[apiKey];
+
+        const oldVal = oldValRaw == null ? '' : String(oldValRaw);
+        const newVal = newValRaw == null ? '' : String(newValRaw);
+
+        newProfile[key] = newValRaw;
+
+        if (oldVal !== newVal) {
+            changed[key] = true;
+        }
+    });
+
+    return {newProfile, changed};
+}
+
 async function loadDiffForRequest(userId) {
     const oldEl = document.getElementById('gestao-diff-old');
     const newEl = document.getElementById('gestao-diff-new');
@@ -166,27 +193,7 @@ async function loadDiffForRequest(userId) {
         const items = Array.isArray(newRes.items) ? newRes.items : [];
         const row = items.find(r => String(r.user_id) === String(userId)) || null;
 
-        const newProfile = {...oldProfile};
-        const changed = {};
-
-        if (row) {
-            if (row.profile_email !== null && row.profile_email !== undefined) {
-                newProfile.email = row.profile_email;
-                changed.email = true;
-            }
-            if (row.profile_telefone !== null && row.profile_telefone !== undefined) {
-                newProfile.telefone = row.profile_telefone;
-                changed.telefone = true;
-            }
-            if (row.profile_morada !== null && row.profile_morada !== undefined) {
-                newProfile.morada = row.profile_morada;
-                changed.morada = true;
-            }
-            if (row.profile_nib !== null && row.profile_nib !== undefined) {
-                newProfile.nib = row.profile_nib;
-                changed.nib = true;
-            }
-        }
+        const {newProfile, changed} = compare(oldProfile, row);
 
         renderDiffView(oldProfile, newProfile, changed);
     } catch (err) {
