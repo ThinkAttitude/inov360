@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 setTimeout(showWelcome, 300);
                 return;
             case "horarios":
-                url = "../admin/horarios.php";
+                url = "../admin/horarios.html";
                 break;
             case "pedidos_ferias":
                 url = "../admin/ferias_ausencias.php";

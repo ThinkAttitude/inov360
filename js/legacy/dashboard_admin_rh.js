@@ -276,7 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 url = buildFichaEditarUrl();
                 break;
             case "horarios":
-                url = "../admin_rh/horarios.php";
+                url = "../admin_rh/horarios.html";
                 break;
             case "pedidos_ferias":
                 url = "../admin_rh/ferias_ausencias.php";

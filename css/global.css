@@ -10,6 +10,7 @@
     /* Gradiente padrão (substituir em temas) */
     --gradient-1: var(--light-blue);
     --gradient-2: #5a9ff7;
+    --font-family: "Inter", "Roboto", system-ui, -apple-system, "Segoe UI", sans-serif;
 
     --hier-card-height: 64px;
     --hier-row-gap: 3.5rem;

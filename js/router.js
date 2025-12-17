@@ -1,5 +1,5 @@
 import {CARD_TYPES} from "./dashboard.js";
-import {mountCalendar} from "./modules/horarios.js";
+import {mountCalendar} from "./modules/horario/horarios.js";
 import {initForm} from "./modules/marcacao_direta.js";
 import {mountClbMngmt} from "./modules/controlo_colabs.js";
 import {mountGstFchs} from "./modules/gestao_fichas/gestao_fichas.js";
