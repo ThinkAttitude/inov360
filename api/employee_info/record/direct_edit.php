@@ -272,5 +272,5 @@ try {
         http_response_code(400); echo json_encode(['success'=>false,'error'=>'USER_EMAIL_EMPTY_NOT_ALLOWED']); exit;
     }
     http_response_code(500);
-    echo json_encode(['success'=>false,'error'=>'SERVER_ERROR']);
+    echo json_encode(['success'=>false,'error'=>$e]);
 }

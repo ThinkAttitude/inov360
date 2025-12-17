@@ -916,7 +916,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             // Phone validation
-            const phoneInput = form.querySelector('#contacto_telefone');
+            const phoneInput = form.querySelector('#telefone');
             if (phoneInput) {
                 phoneInput.addEventListener('input', function() {
                     // Basic phone validation (9 digits starting with 9, or international format)

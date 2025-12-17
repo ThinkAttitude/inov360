@@ -176,3 +176,32 @@ export async function createDecision(userId, decision) {
         }
     });
 }
+
+export async function updateRecord(userId, data = {}, syncUserEmail = false) {
+    const body = {
+        user_id: userId,
+        ...data,
+    };
+
+    if (syncUserEmail) {
+        body.sync_user_email = 1;
+    }
+
+    return apiFetch('employee_info/record/direct_edit.php', {
+        method: 'POST',
+        body,
+    });
+}
+
+export async function getSelfRecord() {
+    return apiFetch('employee_info/view_self.php', {
+        method: 'GET'
+    });
+}
+
+export async function createRecordRequest(payload) {
+    return apiFetch('employee_info/record/collab_request.php', {
+        method: 'POST',
+        body: payload
+    });
+}
