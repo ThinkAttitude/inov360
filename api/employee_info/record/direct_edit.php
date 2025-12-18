@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/api_error.php';
+$requestId = api_request_id();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 // ---------- Auth + perm (record_managment = 6)
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401);
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
+    api_json_error(401, 'UNAUTHENTICATED', 'Não autenticado.');
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(6, $perms, true)) {
-    http_response_code(403);
-    echo json_encode(['success'=>false,'error'=>'FORBIDDEN']); exit;
+    api_json_error(403, 'FORBIDDEN', 'Sem permissões.');
 }
 $actorId = (int)$_SESSION['user']['id'];
 
@@ -85,12 +85,10 @@ foreach ($payload as $k => $v) {
 
 // ---------- validações base
 if ($userId <= 0) {
-    http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'BAD_REQUEST','hint'=>'Provide user_id']); exit;
+    api_json_error(400, 'BAD_REQUEST', 'Provide user_id.');
 }
 if (!$cdUpdates && !$emUpdates) {
-    http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'NO_FIELDS']); exit;
+    api_json_error(400, 'NO_FIELDS', 'Não foram enviados campos para atualizar.');
 }
 
 // ---------- normalização de tipos
@@ -122,8 +120,8 @@ unset($v);
 
 // ---------- validações simples
 if (isset($cdUpdates['email']) && $cdUpdates['email'] !== null && $cdUpdates['email'] !== '' && !filter_var($cdUpdates['email'], FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'EMAIL_INVALID']); exit;
+    api_json_error(400, 'EMAIL_INVALID', 'Email inválido.');
+
 }
 $validaTelefone = function ($t) {
     if ($t === null || $t === '') return true;
@@ -131,16 +129,16 @@ $validaTelefone = function ($t) {
     return strlen($d) >= 9 && strlen($d) <= 15;
 };
 if (isset($cdUpdates['telefone']) && !$validaTelefone($cdUpdates['telefone'])) {
-    http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'PHONE_INVALID']); exit;
+    api_json_error(400, 'PHONE_INVALID', 'Telefone inválido.');
+
 }
 if (isset($emUpdates['telefone']) && !$validaTelefone($emUpdates['telefone'])) {
-    http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'EM_PHONE_INVALID']); exit;
+    api_json_error(400, 'EM_PHONE_INVALID', 'Telefone de emergência inválido.');
+
 }
 if (isset($cdUpdates['nib']) && $cdUpdates['nib'] !== null && $cdUpdates['nib'] !== '' && !preg_match('/^\d{21}$/', (string)$cdUpdates['nib'])) {
-    http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'NIB_INVALID']); exit;
+    api_json_error(400, 'NIB_INVALID', 'NIB inválido.');
+
 }
 $checkDate = function ($v) {
     if ($v === '' || $v === null) return true;
@@ -148,8 +146,9 @@ $checkDate = function ($v) {
 };
 foreach (['data_nascimento','validade_documento','data_admissao'] as $dk) {
     if (isset($cdUpdates[$dk]) && !$checkDate($cdUpdates[$dk])) {
-        http_response_code(400);
-        echo json_encode(['success'=>false,'error'=>'DATE_INVALID','field'=>$dk]); exit;
+        api_json_error(400, 'DATE_INVALID', 'Formato de data inválido (YYYY-MM-DD).', null, ['field' => $dk]);
+
+
     }
 }
 
@@ -161,7 +160,10 @@ try {
     $st = $pdo->prepare("SELECT id, email FROM `user` WHERE id=? LIMIT 1");
     $st->execute([$userId]);
     $u = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$u) { http_response_code(404); echo json_encode(['success'=>false,'error'=>'USER_NOT_FOUND']); exit; }
+    if (!$u) {
+        api_json_error(404, 'USER_NOT_FOUND', 'Utilizador não encontrado.');
+    }
+
 
     $pdo->beginTransaction();
 
@@ -263,14 +265,21 @@ try {
 
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-    error_log('direct_edit error: ' . $e->getMessage());
+
+    api_log_exception($e, $requestId, [
+        'endpoint' => 'employee_info/record/direct_edit.php',
+        'actor_id' => $actorId ?? null,
+        'user_id'  => $userId ?? null,
+    ]);
+
     $msg = $e->getMessage();
+
     if ($msg === 'EMAIL_IN_USE') {
-        http_response_code(409); echo json_encode(['success'=>false,'error'=>'EMAIL_IN_USE']); exit;
+        api_json_error(409, 'EMAIL_IN_USE', 'Email já está em uso.', $requestId);
     }
     if ($msg === 'USER_EMAIL_EMPTY_NOT_ALLOWED') {
-        http_response_code(400); echo json_encode(['success'=>false,'error'=>'USER_EMAIL_EMPTY_NOT_ALLOWED']); exit;
+        api_json_error(400, 'USER_EMAIL_EMPTY_NOT_ALLOWED', 'Email não pode ser vazio.', $requestId);
     }
-    http_response_code(500);
-    echo json_encode(['success'=>false,'error'=>$e]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado.', $requestId);
 }
