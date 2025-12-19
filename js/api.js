@@ -193,6 +193,7 @@ export async function updateRecord(userId, data = {}, syncUserEmail = false) {
     });
 }
 
+/* My Record (ficha_collabs) */
 export async function getSelfRecord() {
     return apiFetch('employee_info/view_self.php', {
         method: 'GET'
@@ -203,5 +204,18 @@ export async function createRecordRequest(payload) {
     return apiFetch('employee_info/record/collab_request.php', {
         method: 'POST',
         body: payload
+    });
+}
+
+/* Schedule Management (horario) */
+export async function getCalendarTimeframe(from, to) {
+    const params = new URLSearchParams();
+
+    if (from) params.append('from', String(from)); // YYYY-MM-DD
+    if (to) params.append('to', String(to));       // YYYY-MM-DD
+
+    const qs = params.toString();
+    return apiFetch(`calendar/get_month.php${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
     });
 }

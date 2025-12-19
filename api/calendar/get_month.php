@@ -6,7 +6,9 @@ header('Content-Type: application/json; charset=utf-8');
 
 /* ==== Segurança ==== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    http_response_code(401);
+    echo json_encode(["ok" => false, "code" => "UNAUTHENTICATED"]);
+    exit;
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
@@ -17,23 +19,28 @@ $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* ==== Helpers ==== */
-function ym_bounds(string $ym): array {
-    if (!preg_match('/^\d{4}-\d{2}$/', $ym)) return [null, null];
-    $first = new DateTime($ym . '-01');
-    $last  = (clone $first)->modify('last day of this month');
-    return [$first->format('Y-m-d'), $last->format('Y-m-d')];
+function is_date($d): bool {
+    return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$d);
 }
-function is_date($d){ return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/',$d); }
 
 /* ==== Input ==== */
-$month = $_GET['month'] ?? null;
-if (!$month && !empty($_GET['date']) && is_date($_GET['date'])) {
-    $month = (new DateTime($_GET['date']))->format('Y-m');
-}
-if (!$month) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_MONTH"]); exit; }
+$from = $_GET['from'] ?? null;
+$to   = $_GET['to'] ?? null;
 
-[$start,$end] = ym_bounds($month);
-if (!$start) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_MONTH"]); exit; }
+if (!is_date($from) || !is_date($to)) {
+    http_response_code(400);
+    echo json_encode(["ok" => false, "code" => "INVALID_TIMEFRAME"]);
+    exit;
+}
+
+$start = (string)$from;
+$end   = (string)$to;
+
+if ($start > $end) {
+    http_response_code(400);
+    echo json_encode(["ok" => false, "code" => "INVALID_TIMEFRAME_ORDER"]);
+    exit;
+}
 
 $userId = $selfId;
 
@@ -48,25 +55,10 @@ while ($cursor <= $last) {
         "workMin"   => 0,
         "oncallMin" => 0,
         "km"        => 0.0,
-        "statuses"  => [],    // ex.: {"WORK":"draft","KM":"submitted"}
-        "leaves"    => []     // ex.: [{"id":123,"type":"FERIAS","title":"Férias"}]
+        "statuses"  => [],
+        "leaves"    => []
     ];
     $cursor->modify('+1 day');
-}
-
-/* ==== Periodo do mês (se existir) ==== */
-$period = null;
-try {
-    $p = $pdo->prepare("
-      SELECT id, estado, period_start AS start, period_end AS end
-        FROM timesheet_periods
-       WHERE user_id=:u AND period_start=:s AND period_end=:e
-       LIMIT 1
-    ");
-    $p->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
-    $period = $p->fetch(PDO::FETCH_ASSOC) ?: null;
-} catch (Throwable $e) {
-    // ignora se não existir a tabela
 }
 
 /* ==== Agregados por dia (WORK/ONCALL/KM) ==== */
@@ -81,7 +73,7 @@ $agg = $pdo->prepare("
      AND tipo IN ('WORK','ONCALL','KM')
 GROUP BY DATE(inicio)
 ");
-$agg->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
+$agg->execute([':u' => $userId, ':s' => $start, ':e' => $end]);
 foreach ($agg as $row) {
     $d = $row['dia'];
     if (!isset($days[$d])) continue;
@@ -98,10 +90,11 @@ $sts = $pdo->prepare("
      AND DATE(inicio) BETWEEN :s AND :e
      AND tipo IN ('WORK','ONCALL','KM')
 ");
-$sts->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
+$sts->execute([':u' => $userId, ':s' => $start, ':e' => $end]);
 foreach ($sts as $r) {
-    $d = $r['dia']; if (!isset($days[$d])) continue;
-    $days[$d]['statuses'][$r['tipo']] = $r['status'];
+    $d = $r['dia'];
+    if (!isset($days[$d])) continue;
+    $days[$d]['statuses'][(string)$r['tipo']] = $r['status'];
 }
 
 /* ==== Férias/Ausências + Substituições (LEAVE e SUBSTITUTION) ==== */
@@ -113,11 +106,15 @@ $leaveQ = $pdo->prepare("
      AND DATE(fim)   >= :s
      AND DATE(inicio) <= :e
 ");
-$leaveQ->execute([':u'=>$userId, ':s'=>$start, ':e'=>$end]);
+$leaveQ->execute([':u' => $userId, ':s' => $start, ':e' => $end]);
 
 foreach ($leaveQ as $lv) {
-    $ls = new DateTime(max($start, substr($lv['inicio'],0,10)));
-    $le = new DateTime(min($end,   substr($lv['fim'],0,10)));
+    $lvStart = substr((string)$lv['inicio'], 0, 10);
+    $lvEnd   = substr((string)$lv['fim'], 0, 10);
+
+    $ls = new DateTime(max($start, $lvStart));
+    $le = new DateTime(min($end, $lvEnd));
+
     while ($ls <= $le) {
         $d = $ls->format('Y-m-d');
         if (isset($days[$d])) {
@@ -125,15 +122,15 @@ foreach ($leaveQ as $lv) {
                 "id"        => (int)$lv['id'],
                 "requestId" => $lv['leave_request_id'] ? (int)$lv['leave_request_id'] : null,
                 "title"     => $lv['titulo'] ?? ($lv['tipo'] === 'SUBSTITUTION' ? 'Substituição' : 'LEAVE'),
-                "kind"      => $lv['tipo'] // 'LEAVE' ou 'SUBSTITUTION' (para o frontend distinguir se quiser)
+                "kind"      => $lv['tipo']
             ];
         }
         $ls->modify('+1 day');
     }
 }
 
-/* ==== Totais do mês ==== */
-$totals = ["workMin"=>0,"oncallMin"=>0,"km"=>0.0];
+/* ==== Totais do intervalo ==== */
+$totals = ["workMin" => 0, "oncallMin" => 0, "km" => 0.0];
 foreach ($days as $d) {
     $totals['workMin']   += $d['workMin'];
     $totals['oncallMin'] += $d['oncallMin'];
@@ -143,8 +140,8 @@ foreach ($days as $d) {
 /* ==== Resposta ==== */
 echo json_encode([
     "ok"     => true,
-    "month"  => $month,
-    "period" => $period,          // null se não existir
+    "from"   => $start,
+    "to"     => $end,
     "days"   => array_values($days),
     "totals" => $totals
 ]);

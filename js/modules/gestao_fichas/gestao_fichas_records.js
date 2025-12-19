@@ -1,5 +1,7 @@
 import {updateRecord, getRecord} from '../../api.js';
 
+// TODO: Incorporate with the fields for ficha_collabs module if possible
+// TODO: Replace filtering readonly fields logic with iterating over a subset of editable fields
 const PROFILE_FIELDS = {
     nome: {label: 'Nome', type: 'text', readonly: true},
     email: {label: 'E-mail', type: 'text'},
