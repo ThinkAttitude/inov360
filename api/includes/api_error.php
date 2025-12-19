@@ -20,8 +20,6 @@ function api_log(string $level, string $message, string $requestId, array $conte
 
 function api_log_exception(Throwable $e, string $requestId, array $context = []): void {
     $payload = [
-        'ts' => gmdate('c'),
-        'level' => 'error',
         'request_id' => $requestId,
         'message' => $e->getMessage(),
         'type' => get_class($e),
