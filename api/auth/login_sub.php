@@ -1,8 +1,16 @@
 <?php
 session_start();
-header('Content-Type: application/json;');
 
-require_once "../includes/db.php";
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/api_error.php';
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    header('Allow: POST');
+    api_json_error(405, 'METHOD_NOT_ALLOWED', 'Método não permitido.');
+}
 
 function read_input(): array {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -13,29 +21,25 @@ function read_input(): array {
     }
     return $_POST ?: [];
 }
-function json_fail(int $status, string $message): void {
-    http_response_code($status);
-    echo json_encode(['success' => false, 'message' => $message]);
-    exit;
-}
 
 $input = read_input();
 $email = trim($input['email'] ?? $input['email_login'] ?? '');
 $password = (string)($input['password'] ?? '');
 
 if ($email === '' || $password === '') {
-    json_fail(400, 'Email e palavra-passe são obrigatórios.');
+    api_json_error(400, 'MISSING_FIELDS', 'Email e palavra-passe são obrigatórios.');
 }
 
 try {
     $pdo = db_connect();
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $stmt = $pdo->prepare('SELECT id, email, password, name FROM user_sub WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user || !password_verify($password, $user['password'])) {
-        json_fail(401, 'Email ou palavra-passe incorretos.');
+        api_json_error(401, 'UNAUTHORIZED', 'Email ou palavra-passe incorretos.');
     }
 
 // Sessão
@@ -47,19 +51,22 @@ try {
     ];
 
     echo json_encode([
-        'success'  => true,
-        'message'  => 'Login realizado com sucesso.',
-        'is_login' => $_SESSION['is_login'],
-        'user'     => [
+        'user' => [
             'id'    => (int)$user['id'],
-            'email' => $user['email'],
-            'name'  => $user['name'],
+            'email' => (string)$user['email'],
+            'name'  => (string)$user['name'],
         ]
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 
 
 } catch (Throwable $e) {
-    error_log($e->getMessage());
-    echo json_encode(['success' => false, 'message' => $e]);
-    exit;
+    $requestId = api_request_id();
+
+    api_log_exception($e, $requestId, [
+        'endpoint' => 'auth/login_sub.php',
+        'email' => $email,
+    ]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Erro interno do servidor.', $requestId);
 }

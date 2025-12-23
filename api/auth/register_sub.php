@@ -1,8 +1,15 @@
 <?php
-declare(strict_types=1);
-header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/api_error.php';
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    header('Allow: POST');
+    api_json_error(405, 'METHOD_NOT_ALLOWED', 'Método não permitido.');
+}
 
 function read_input(): array {
     $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -13,18 +20,11 @@ function read_input(): array {
     }
     return $_POST ?: [];
 }
-function json_fail(int $status, string $message, array $extra = []): void {
-    http_response_code($status);
-    echo json_encode(['success' => false, 'message' => $message] + $extra);
-    exit;
-}
 
 $input = read_input();
-
 $email_login      = trim($input['email'] ?? $input['email_login'] ?? '');
 $password         = (string)($input['password'] ?? '');
 $confirm_password = (string)($input['confirm_password'] ?? $input['password_confirm'] ?? '');
-
 $name             = trim($input['name'] ?? $input['nome_contacto'] ?? '');
 
 // Subempreiteiro
@@ -38,22 +38,22 @@ $zona_atuacao   = trim($input['zona_atuacao'] ?? ''); // Norte/Centro/Sul/Nacion
 
 // Validações básicas
 if ($email_login === '' || !filter_var($email_login, FILTER_VALIDATE_EMAIL)) {
-    json_fail(400, 'Email de login inválido.');
+    api_json_error(400, 'BAD_REQUEST', 'Email de login inválido.');
 }
 if (strlen($password) < 8) {
-    json_fail(400, 'Password deve ter pelo menos 8 caracteres.');
+    api_json_error(400, 'BAD_REQUEST', 'Password deve ter pelo menos 8 caracteres.');
 }
 if ($password !== $confirm_password) {
-    json_fail(400, 'As passwords não coincidem.');
+    api_json_error(400, 'BAD_REQUEST', 'As passwords não coincidem.');
 }
 
 // Validações sub
 if ($nome_empresa === '' || $nif === '' || $morada === '' || $nome_contacto === '' || $telemovel === '' || $zona_atuacao === '') {
-    json_fail(400, 'Campos obrigatórios do subempreiteiro em falta (nome_empresa, nif, morada, nome_contacto, telemovel, zona_atuacao).');
+    api_json_error(400, 'BAD_REQUEST', 'Campos obrigatórios do subempreiteiro em falta (nome_empresa, nif, morada, nome_contacto, telemovel, zona_atuacao).');
 }
 $zonaValid = ['Norte','Centro','Sul','Nacional'];
 if (!in_array($zona_atuacao, $zonaValid, true)) {
-    json_fail(400, 'zona_atuacao inválida. Use: Norte, Centro, Sul ou Nacional.');
+    api_json_error(400, 'BAD_REQUEST', 'zona_atuacao inválida. Use: Norte, Centro, Sul ou Nacional.');
 }
 
 
@@ -67,7 +67,7 @@ try {
     $stmt = $pdo->prepare('SELECT 1 FROM user_sub WHERE email = ? LIMIT 1');
     $stmt->execute([$email_login]);
     if ($stmt->fetchColumn()) {
-        json_fail(409, 'Já existe um utilizador com esse email.');
+        api_json_error(409, 'CONFLIT', 'Já existe um utilizador com esse email.');
     }
 
     // Transação
@@ -98,14 +98,17 @@ try {
     $pdo->commit();
 
     echo json_encode([
-        'success' => true,
-        'message' => 'Registo efetuado com sucesso.',
         'data' => [
             'user_id' => $userId,
             'name'    => $userName
         ]
     ]);
 } catch (Throwable $e) {
-    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-    json_fail(500, 'Falha ao registar utilizador.', ['erro_debug' => $e]);
+    $requestId = api_request_id();
+
+    api_log_exception($e, $requestId, [
+        'endpoint' => 'auth/register_sub.php',
+    ]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Erro interno do servidor.', $requestId);
 }
