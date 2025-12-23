@@ -258,8 +258,10 @@ try {
     $emergency = $stmtEmerg->fetch(PDO::FETCH_ASSOC) ?: null;
 
     echo json_encode([
-        'success' => true,
-        'updated' => ['profile'=>$profile, 'emergency'=>$emergency]
+        'updated' => [
+            'profile'   => $profile,
+            'emergency' => $emergency
+        ]
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 
