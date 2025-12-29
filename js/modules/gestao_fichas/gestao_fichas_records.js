@@ -215,7 +215,7 @@ async function saveRecordEdits() {
 
     try {
         const res = await updateRecord(recordState.userId, updates, true);
-        if (!res || res.success !== true) {
+        if (!res) {
             throw new Error('Resposta inválida de direct_edit');
         }
 

@@ -1,10 +1,13 @@
 <?php
 session_start();
+
+require_once __DIR__ . '/../includes/api_error.php';
+$requestId = api_request_id();
+
 header('Content-Type: application/json');
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    echo json_encode(['success' => false, 'message' => 'Método não permitido.']);
-    exit;
+    api_json_error(405, 'METHOD NOT ALLOWED', 'Método não permitido.');
 }
 
 require_once "../includes/db.php";
@@ -14,26 +17,24 @@ $email = $input["email"] ?? '';
 $password = $input["password"] ?? '';
 
 if ($email === '' || $password === '') {
-    echo json_encode(['success' => false, 'message' => 'Email e palavra-passe são obrigatórios.']);
-    exit;
+    api_json_error(401, 'UNAUTHORIZED', 'Email e palavra-passe são obrigatórios.');
 }
 
 try {
-    $conn = db_connect();
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = db_connect();
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // 1) Buscar utilizador (sem role)
-    $stmt = $conn->prepare("SELECT id, name, email, password FROM user WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, name, email, password FROM user WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user || !password_verify($password, $user["password"])) {
-        echo json_encode(['success' => false, 'message' => 'Email ou palavra-passe incorretos.']);
-        exit;
+        api_json_error(401, 'UNAUTHORIZED', 'Email ou palavra-passe incorretos.');
     }
 
     // 2) Permissões (array de IDs)
-    $stmtPerm = $conn->prepare("
+    $stmtPerm = $pdo->prepare("
         SELECT p.id
         FROM user_permission up
         JOIN permission p ON p.id = up.permission_id
@@ -43,7 +44,7 @@ try {
     $permissions = array_map('intval', $stmtPerm->fetchAll(PDO::FETCH_COLUMN));
 
     // 3) Responsáveis (array de IDs)
-    $stmtResp = $conn->prepare("
+    $stmtResp = $pdo->prepare("
         SELECT cr.responsavel_id
         FROM colaborador_responsaveis cr
         WHERE cr.colaborador_id = ?
@@ -55,7 +56,7 @@ try {
     $responsaveis = array_map('intval', $stmtResp->fetchAll(PDO::FETCH_COLUMN));
 
     // 3b) Subordinados (array de IDs)  // >> ADICIONADO <<
-    $stmtSub = $conn->prepare("
+    $stmtSub = $pdo->prepare("
         SELECT cr.colaborador_id
         FROM colaborador_responsaveis cr
         WHERE cr.responsavel_id = ?
@@ -75,26 +76,25 @@ try {
         "email"        => $user["email"],
         "permissions"  => $permissions,
         "responsaveis" => $responsaveis,
-        "subordinados" => $subordinados,   // >> ADICIONADO <<
+        "subordinados" => $subordinados,
     ];
 
-    // 5) Resposta para o frontend decidir o fluxo
     echo json_encode([
-        'success' => true,
-        'message' => 'Login realizado com sucesso.',
         'user' => [
             'id'           => (int)$user['id'],
             'name'         => $user['name'],
             'email'        => $user['email'],
             'permissions'  => $permissions,
             'responsaveis' => $responsaveis,
-            'subordinados' => $subordinados,  // >> ADICIONADO <<
+            'subordinados' => $subordinados,
         ]
-    ]);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 
 } catch (Throwable $e) {
-    error_log($e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Erro interno do servidor.']);
-    exit;
+    api_log_exception($e, $requestId, [
+        'endpoint' => '.../login.php',
+    ]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado.', $requestId);
 }

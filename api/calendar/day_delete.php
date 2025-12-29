@@ -1,23 +1,26 @@
 <?php
-// api/calendar/day_delete.php  (versão simples: limpa TUDO do dia)
-declare(strict_types=1);
 session_start();
+
+require_once __DIR__ . '/../includes/api_error.php';
+$requestId = api_request_id();
+
 header('Content-Type: application/json; charset=utf-8');
 
-/* ===== SEGURANÇA ===== */
+if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
+    api_json_error(405, 'METHOD_NOT_ALLOWED', 'Método não permitido.');
+}
+
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    api_json_error(401, 'UNAUTHORIZED', 'Unauthenticated.');
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
-/* ===== DB ===== */
-require_once __DIR__ . '/../includes/db.php';
+require_once "../includes/db.php";
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/* ===== HELPERS ===== */
+// helpers
 function json_input(): array {
     $raw = file_get_contents('php://input');
     $d = json_decode($raw, true);
@@ -33,35 +36,34 @@ function period_is_locked(PDO $pdo, int $uid, string $date): bool {
             AND estado IN ('submitted','approved','locked')
           LIMIT 1";
     try { $st=$pdo->prepare($sql); $st->execute([':u'=>$uid, ':d'=>$date]); return (bool)$st->fetchColumn(); }
-    catch(Throwable $e){ return false; }
+    catch(Throwable $e){
+        if ($pdo->inTransaction()) $pdo->rollBack();
+
+        $requestId = api_request_id();
+
+        api_log_exception($e, $requestId, [
+            'endpoint' => '.../day_delete.php',
+        ]);
+
+        api_json_error(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado.', $requestId);
+        return false; }
 }
 
-/* ===== VERBO ===== */
-if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
-    http_response_code(405);
-    echo json_encode(["ok"=>false,"code"=>"METHOD_NOT_ALLOWED"]); exit;
-}
-
-/* ===== INPUT ===== */
+// input
 $in   = json_input();
 $date = $in['date'] ?? '';
 if (!is_valid_date($date)) {
-    http_response_code(400);
-    echo json_encode(["ok"=>false,"code"=>"INVALID_DATE"]);
-    exit;
+    api_json_error(400, 'BAD_REQUEST', 'Invalid date.');
 }
 
 /* User alvo: sessão por defeito; só manager pode indicar outro user_id */
 $userId = $selfId;
 
 if (period_is_locked($pdo, $userId, $date)) {
-    http_response_code(409);
-    echo json_encode(["ok"=>false,"code"=>"PERIOD_LOCKED"]);
-    exit;
+    api_json_error(409, 'CONFLIT', 'Periods Locked.');
 }
 
-/* ===== EXECUTA: limpa TUDO do dia (WORK, ONCALL, KM) ===== */
-/* Se tens a coluna gerada `dia` em eventos, podes trocar DATE(inicio)=? por dia=? */
+// exec
 try {
     $sql = "DELETE FROM eventos
            WHERE user_id = ?
@@ -78,6 +80,11 @@ try {
         "deleted" => $st->rowCount()
     ]);
 } catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+
+    api_log_exception($e, $requestId, [
+        'endpoint' => '.../day_delete.php',
+    ]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado.', $requestId);
 }

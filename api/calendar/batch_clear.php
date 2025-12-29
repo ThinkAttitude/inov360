@@ -1,21 +1,26 @@
 <?php
-// api/calendar/batch_clear.php
-declare(strict_types=1);
 session_start();
+
+require_once __DIR__ . '/../includes/api_error.php';
+$requestId = api_request_id();
+
 header('Content-Type: application/json; charset=utf-8');
 
-/* ===== SEGURANÇA ===== */
-if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
+    api_json_error(405, 'METHOD_NOT_ALLOWED', 'Método não permitido.');
 }
+
+if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
+    api_json_error(401, 'UNAUTHORIZED', 'Unauthenticated.');
+}
+
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
-/* ===== DB ===== */
-require_once __DIR__ . '/../includes/db.php';
+require_once "../includes/db.php";
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/* ===== HELPERS ===== */
+// helpers
 function json_input(): array { $raw=file_get_contents('php://input'); $d=json_decode($raw,true); return is_array($d)?$d:[]; }
 function is_valid_date(string $d): bool { return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $d); }
 function period_is_locked(PDO $pdo, int $uid, string $date): bool {
@@ -23,23 +28,18 @@ function period_is_locked(PDO $pdo, int $uid, string $date): bool {
     try{ $st=$pdo->prepare($sql); $st->execute([':u'=>$uid,':d'=>$date]); return (bool)$st->fetchColumn(); }catch(Throwable $e){ return false; }
 }
 
-/* ===== VERBO ===== */
-if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
-    http_response_code(405); echo json_encode(["ok"=>false,"code"=>"METHOD_NOT_ALLOWED"]); exit;
-}
-
-/* ===== INPUT ===== */
+// input
 $in    = json_input();
 $start = $in['start'] ?? '';
 $end   = $in['end']   ?? '';
 if (!is_valid_date($start) || !is_valid_date($end) || $start > $end) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_RANGE"]); exit;
+    api_json_error(400, 'BAD_REQUEST', 'Invalid range.');
 }
 $applyWeekend = array_key_exists('applyWeekend',$in) ? (bool)$in['applyWeekend'] : True;
 
 $userId = $selfId;
 
-/* ===== EXEC ===== */
+// exec
 $deleted = 0; $skippedLocked=[];
 try{
     $pdo->beginTransaction();
@@ -71,6 +71,11 @@ try{
     $pdo->commit();
     echo json_encode(["ok"=>true,"user_id"=>$userId,"range"=>[$start,$end],"deleted"=>$deleted,"skippedLocked"=>$skippedLocked]);
 }catch(Throwable $e){
-    if($pdo->inTransaction()) $pdo->rollBack();
-    http_response_code(500); echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+
+    api_log_exception($e, $requestId, [
+        'endpoint' => '.../batch_clear.php',
+    ]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado.', $requestId);
 }

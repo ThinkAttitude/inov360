@@ -32,14 +32,8 @@ const handleSubmit = async (event) => {
     setLoadingState(true);
 
     try {
-        const response = await login(emailInput.value, passwordInput.value);
-        if (response.success) {
-            const user = {
-                id: response.user.id,
-                name: response.user.name
-            }
-            window.location.href = 'dashboard.php';
-        }
+        await login(emailInput.value, passwordInput.value);
+        window.location.href = 'dashboard.php'; // TODO: Need to validate success first.
     } catch (error) {
         showError(error.message);
     } finally {
