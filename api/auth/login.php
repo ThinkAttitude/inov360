@@ -21,11 +21,11 @@ if ($email === '' || $password === '') {
 }
 
 try {
-    $conn = db_connect();
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = db_connect();
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // 1) Buscar utilizador (sem role)
-    $stmt = $conn->prepare("SELECT id, name, email, password FROM user WHERE email = ?");
+    $stmt = $pdo->prepare("SELECT id, name, email, password FROM user WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -34,7 +34,7 @@ try {
     }
 
     // 2) Permissões (array de IDs)
-    $stmtPerm = $conn->prepare("
+    $stmtPerm = $pdo->prepare("
         SELECT p.id
         FROM user_permission up
         JOIN permission p ON p.id = up.permission_id
@@ -44,7 +44,7 @@ try {
     $permissions = array_map('intval', $stmtPerm->fetchAll(PDO::FETCH_COLUMN));
 
     // 3) Responsáveis (array de IDs)
-    $stmtResp = $conn->prepare("
+    $stmtResp = $pdo->prepare("
         SELECT cr.responsavel_id
         FROM colaborador_responsaveis cr
         WHERE cr.colaborador_id = ?
@@ -56,7 +56,7 @@ try {
     $responsaveis = array_map('intval', $stmtResp->fetchAll(PDO::FETCH_COLUMN));
 
     // 3b) Subordinados (array de IDs)  // >> ADICIONADO <<
-    $stmtSub = $conn->prepare("
+    $stmtSub = $pdo->prepare("
         SELECT cr.colaborador_id
         FROM colaborador_responsaveis cr
         WHERE cr.responsavel_id = ?
