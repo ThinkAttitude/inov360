@@ -92,8 +92,6 @@ try {
     exit;
 
 } catch (Throwable $e) {
-    $requestId = api_request_id();
-
     api_log_exception($e, $requestId, [
         'endpoint' => '.../login.php',
     ]);
