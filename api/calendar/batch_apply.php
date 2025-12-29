@@ -1,22 +1,26 @@
 <?php
-// api/calendar/batch_apply.php  (placeholders corrigidos)
-declare(strict_types=1);
 session_start();
+
+require_once __DIR__ . '/../includes/api_error.php';
+$requestId = api_request_id();
+
 header('Content-Type: application/json; charset=utf-8');
 
-/* ===== SEGURANÇA ===== */
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    api_json_error(405, 'METHOD_NOT_ALLOWED', 'Método não permitido.');
+}
+
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    api_json_error(401, 'UNAUTHORIZED', 'Unauthenticated.');
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
-/* ===== DB ===== */
-require_once __DIR__ . '/../includes/db.php';
+require_once "../includes/db.php";
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-/* ===== HELPERS ===== */
+// helpers
 function json_input(): array { $raw=file_get_contents('php://input'); $d=json_decode($raw,true); return is_array($d)?$d:[]; }
 function is_valid_date(string $d): bool { return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $d); }
 function smin($v){ return ($v===null||$v==='')?null:max(0,(int)$v); }
@@ -26,12 +30,12 @@ function period_is_locked(PDO $pdo, int $uid, string $date): bool {
     try{ $st=$pdo->prepare($sql); $st->execute([':u'=>$uid, ':d'=>$date]); return (bool)$st->fetchColumn(); }catch(Throwable $e){ return false; }
 }
 
-/* ===== INPUT ===== */
+// input
 $in    = json_input();
 $start = $in['start'] ?? '';
 $end   = $in['end']   ?? '';
 if (!is_valid_date($start) || !is_valid_date($end) || $start > $end) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_RANGE"]); exit;
+    api_json_error(400, 'BAD_REQUEST', 'Invalid range.');
 }
 
 $userId = $selfId; // por padrão edita o próprio
@@ -44,35 +48,34 @@ $applyWeekend = !empty($in['applyWeekend']) || !empty($in['applyweekend']); // a
 $overwrite    = array_key_exists('overwrite',$in) ? (bool)$in['overwrite'] : true;
 
 if ($work===null && $oncall===null && $km===null) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"NO_FIELDS"]); exit;
+    api_json_error(400, 'BAD_REQUEST', 'Fields null.');
 }
-
-/* ===== PREPARED (sem placeholders repetidos) ===== */
-$upsertWork = $pdo->prepare("
-  INSERT INTO eventos (user_id, titulo, tipo, inicio, fim, minutos, status, source)
-  VALUES (:uid, :title, :tipo, CONCAT(:d1,' 00:00:00'), CONCAT(:d2,' 23:59:59'), :min, 'draft', 'manual')
-  ON DUPLICATE KEY UPDATE
-    minutos = IF(:ow1=1, VALUES(minutos), minutos),
-    inicio  = IF(:ow2=1, VALUES(inicio),  inicio),
-    fim     = IF(:ow3=1, VALUES(fim),     fim),
-    status  = IF(:ow4=1, 'draft', status),
-    updated_at = CURRENT_TIMESTAMP
-");
-
-$upsertKm = $pdo->prepare("
-  INSERT INTO eventos (user_id, titulo, tipo, inicio, fim, km, status, source)
-  VALUES (:uid, 'KM', 'KM', CONCAT(:d1,' 00:00:00'), CONCAT(:d2,' 23:59:59'), :km, 'draft', 'manual')
-  ON DUPLICATE KEY UPDATE
-    km     = IF(:okm1=1, VALUES(km), km),
-    status = IF(:okm2=1, 'draft', status),
-    updated_at = CURRENT_TIMESTAMP
-");
 
 /* ===== LOOP ===== */
 $summary = ["daysApplied"=>0, "workMin"=>0, "oncallMin"=>0, "km"=>0.0];
 $skippedLocked = [];
 
 try {
+    $upsertWork = $pdo->prepare("
+      INSERT INTO eventos (user_id, titulo, tipo, inicio, fim, minutos, status, source)
+      VALUES (:uid, :title, :tipo, CONCAT(:d1,' 00:00:00'), CONCAT(:d2,' 23:59:59'), :min, 'draft', 'manual')
+      ON DUPLICATE KEY UPDATE
+        minutos = IF(:ow1=1, VALUES(minutos), minutos),
+        inicio  = IF(:ow2=1, VALUES(inicio),  inicio),
+        fim     = IF(:ow3=1, VALUES(fim),     fim),
+        status  = IF(:ow4=1, 'draft', status),
+        updated_at = CURRENT_TIMESTAMP
+    ");
+
+    $upsertKm = $pdo->prepare("
+      INSERT INTO eventos (user_id, titulo, tipo, inicio, fim, km, status, source)
+      VALUES (:uid, 'KM', 'KM', CONCAT(:d1,' 00:00:00'), CONCAT(:d2,' 23:59:59'), :km, 'draft', 'manual')
+      ON DUPLICATE KEY UPDATE
+        km     = IF(:okm1=1, VALUES(km), km),
+        status = IF(:okm2=1, 'draft', status),
+        updated_at = CURRENT_TIMESTAMP
+    ");
+
     $pdo->beginTransaction();
 
     $d = new DateTime($start);
@@ -117,7 +120,13 @@ try {
 
     $pdo->commit();
     echo json_encode(["ok"=>true,"user_id"=>$userId,"range"=>[$start,$end],"summary"=>$summary,"skippedLocked"=>$skippedLocked]);
+
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    http_response_code(500); echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
+
+    api_log_exception($e, $requestId, [
+        'endpoint' => '.../batch_apply.php',
+    ]);
+
+    api_json_error(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado.', $requestId);
 }
