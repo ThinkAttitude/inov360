@@ -404,7 +404,7 @@ html body .horarios-nav-btn:hover {
     text-transform: lowercase;
 }
 
-.hour-badge.work {
+.hour-badge.trabalho {
     background: #10b981;
     color: white;
 }

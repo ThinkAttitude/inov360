@@ -263,12 +263,12 @@ html body .calendar-day.today {
     text-overflow: ellipsis;
 }
 
-.day-status.work {
+.day-status.trabalho {
     background: #dbeafe;
     color: #1e40af;
 }
 
-.calendar-day.today .day-status.work {
+.calendar-day.today .day-status.trabalho {
     background: rgba(255, 255, 255, 0.2) !important;
     color: white !important;
     border: 1px solid rgba(255, 255, 255, 0.3);

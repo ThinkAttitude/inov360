@@ -59,6 +59,11 @@
     gap: 2rem;
 }
 
+.horarios-page .horarios-outside {
+    pointer-events: none;
+    opacity: 0.35;
+}
+
 .horarios-page .calendar-section {
     background: #fff;
     border-radius: 20px;
@@ -119,20 +124,52 @@
     white-space: nowrap;
 }
 
-.horarios-page .legend-dot {
+.horarios-page .calendar-legend .legend-dot {
     width: 12px;
     height: 12px;
     border-radius: 999px;
-    flex: 0 0 12px;
+    flex-shrink: 0;
 }
 
-.horarios-page .legend-dot.event { background-color: #3788d8; }
+.horarios-page .legend-dot.trabalho { background-color: #3788d8; }
 .horarios-page .legend-dot.ferias { background-color: #10b981; }
 .horarios-page .legend-dot.ausencia { background-color: #f59e0b; }
 
 .horarios-page .calendar-container {
     padding: 2rem;
 }
+
+/* FullCalendar Customizations especially for */
+.horarios-page .fc .fc-bg-event.legend-dot {
+    opacity: 0.12;
+}
+
+.horarios-page .fc .horarios-outside {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.horarios-page .fc .horarios-outside .fc-daygrid-day-number {
+    visibility: hidden;
+}
+
+
+.horarios-page .fc .fc-daygrid-day.horarios-outside .fc-daygrid-day-number {
+    visibility: hidden;
+}
+
+.horarios-page .fc .horarios-work-hours {
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    background: rgba(55, 136, 216, 0.18);
+    color: var(--navy-blue);
+    white-space: nowrap;
+}
+
 
 #calendar {
     min-height: 400px;

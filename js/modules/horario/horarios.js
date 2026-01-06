@@ -1,17 +1,25 @@
 import {getCalendarTimeframe} from '../../api.js';
 
+/**
+ *
+ * @type {{calendar: null, libPromise: null}}
+ */
 const horariosState = {
     calendar: null,
     libPromise: null,
-    monthCache: new Map(),
-    daysByDate: new Map(),
 };
 
-const EVENT_COLORS = {
-    event: '#3788d8',
-    ferias: '#10b981',
-    ausencia: '#f59e0b',
+const HORARIOS_WINDOW = {
+    startPrevMonthDay: 25,
+    endCurrMonthDay: 25,
 };
+
+const DAY_KIND = Object.freeze({
+    TRABALHO: 'trabalho',
+    FERIAS: 'ferias',
+    AUSENCIA: 'ausencia',
+});
+
 
 function pad2(n) {
     return String(n).padStart(2, '0');
@@ -21,8 +29,17 @@ function ymd(date) {
     return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
-function endInclusiveYmd(exclusiveEnd) {
+function toInclusiveYmd(exclusiveEnd) {
     return ymd(new Date(exclusiveEnd.getTime() - 1));
+}
+
+function computeCalRange(currentDate) {
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    return {
+        start: new Date(y, m - 1, HORARIOS_WINDOW.startPrevMonthDay),
+        end: new Date(y, m, HORARIOS_WINDOW.endCurrMonthDay),
+    };
 }
 
 function extractDays(res) {
@@ -51,8 +68,8 @@ function ensureFullCalendar() {
 
         const existing = document.querySelector('script[data-fullcalendar-js]');
         if (existing) {
-            existing.addEventListener('load', () => resolve(), { once: true });
-            existing.addEventListener('error', reject, { once: true });
+            existing.addEventListener('load', () => resolve(), {once: true});
+            existing.addEventListener('error', reject, {once: true});
             return;
         }
 
@@ -67,97 +84,60 @@ function ensureFullCalendar() {
     return horariosState.libPromise;
 }
 
-async function getRangeDaysCached(from, to) {
-    const key = `${from}|${to}`;
-    if (horariosState.rangeCache.has(key)) return horariosState.rangeCache.get(key);
-
+async function fetchDays(fetchInfo) {
+    const from = ymd(fetchInfo.start);
+    const to = toInclusiveYmd(fetchInfo.end);
     const res = await getCalendarTimeframe(from, to);
-    const days = extractDays(res);
-
-    horariosState.rangeCache.set(key, days);
-    return days;
+    return extractDays(res);
 }
 
+// TODO: improve leave classification and check standardization
 function classifyLeave(leave) {
     const raw = String(
         leave?.tipo || leave?.type || leave?.label || leave?.titulo || leave?.title || ''
     ).toLowerCase();
 
-    if (raw.includes('féri') || raw.includes('feri') || raw.includes('vac')) return 'ferias';
-    return 'ausencia';
+    if (raw.includes('féri') || raw.includes('feri') || raw.includes('vac')) return DAY_KIND.FERIAS;
+    return DAY_KIND.AUSENCIA;
 }
 
-function buildEvents(daysByDate, rangeStart, rangeEnd) {
+function buildBackgroundEvents(days, windowStartStr, windowEndStr) {
     const events = [];
 
-    for (const [dateStr, day] of daysByDate.entries()) {
-        if (dateStr < rangeStart || dateStr > rangeEnd) continue;
+    for (let i = 0; i < days.length; i++) {
+        const day = days[i];
+        if (!day || !day.date) continue;
 
-        const leaves = Array.isArray(day?.leaves) ? day.leaves : [];
-        if (leaves.length === 0) continue;
+        const dateStr = day.date;
+        if (dateStr < windowStartStr || dateStr >= windowEndStr) continue;
 
-        for (const lv of leaves) {
-            const kind = classifyLeave(lv);
-            const title =
-                lv?.label ||
-                lv?.titulo ||
-                lv?.title ||
-                lv?.tipo ||
-                lv?.type ||
-                'Ausência';
+        const leaves = Array.isArray(day.leaves) ? day.leaves : [];
+        const hasLeave = leaves.length > 0;
 
-            events.push({
-                title: String(title),
-                start: dateStr,
-                allDay: true,
-                classNames: ['horarios-event', kind],
-                backgroundColor: EVENT_COLORS[kind] || EVENT_COLORS.event,
-                borderColor: EVENT_COLORS[kind] || EVENT_COLORS.event,
-            });
-        }
+        const workMin = day.workMin;
+        const hasWork = !hasLeave && workMin > 0;
+
+        let kind = null;
+
+        if (hasLeave) kind = classifyLeave(leaves[0]);
+        else if (hasWork) kind = DAY_KIND.TRABALHO;
+
+        if (!kind) continue;
+
+        events.push({
+            start: dateStr,
+            allDay: true,
+            display: 'background',
+            classNames: ['legend-dot', kind],
+        });
     }
 
     return events;
 }
 
-async function loadRangeModel(fetchInfo) {
-    const from = ymd(fetchInfo.start);
-    const to = endInclusiveYmd(fetchInfo.end);
-
-    const days = await getRangeDaysCached(from, to);
-
-    const daysByDate = new Map();
-    for (let i = 0; i < days.length; i++) {
-        const d = days[i];
-        if (!d || !d.date) continue;
-        daysByDate.set(d.date, d);
-    }
-
-    const events = buildEvents(daysByDate, from, to);
-    return { daysByDate, events };
-}
-
-function decorateDayCell(info) {
-    const dateStr = ymd(info.date);
-    const day = horariosState.daysByDate.get(dateStr);
-
-    info.el.classList.remove('marked', 'ferias', 'today');
-    info.el.dataset.date = dateStr;
-
-    const leaves = Array.isArray(day?.leaves) ? day.leaves : [];
-    const hasLeave = leaves.length > 0;
-    const hasWork = !hasLeave && typeof day?.workMin === 'number' && day.workMin > 0;
-    const isToday = dateStr === ymd(new Date()) && !hasLeave && !hasWork;
-
-    if (hasLeave) info.el.classList.add('ferias');
-    else if (hasWork) info.el.classList.add('marked');
-    else if (isToday) info.el.classList.add('today');
-}
-
-function handleEventClick(info) {
-    const date = info?.event?.start ? info.event.start.toLocaleDateString('pt-PT') : '';
-    const title = info?.event?.title ? String(info.event.title) : 'Evento';
-    alert(`Evento: ${title}\nData: ${date}`);
+const dayCellClassNames = (arg) => {
+    const inWindow = arg.date >= arg.view.currentStart && arg.date < arg.view.currentEnd;
+    return inWindow ? [] : ['horarios-outside'];
 }
 
 export async function mountCalendar() {
@@ -165,38 +145,38 @@ export async function mountCalendar() {
 
     const calendarEl = document.getElementById('calendar');
     if (!calendarEl) return;
-
     if (horariosState.calendar) return;
 
     horariosState.calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
+        initialView: 'opMonth',
         locale: 'pt',
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay',
+            right: 'opMonth,timeGridWeek,timeGridDay',
         },
-        buttonText: {
-            today: 'Hoje',
-            month: 'Mês',
-            week: 'Semana',
-            day: 'Dia',
+        views: {
+            opMonth: {
+                type: 'dayGrid',
+                buttonText: 'Mês',
+                visibleRange: computeCalRange,
+            },
         },
         height: 'auto',
-        dayCellDidMount: decorateDayCell,
+        dayCellClassNames,
         events: async (fetchInfo, success, fail) => {
             try {
-                const model = await loadRangeModel(fetchInfo);
-                horariosState.daysByDate = model.daysByDate;
-                if (horariosState.calendar && typeof horariosState.calendar.rerenderDates === 'function') {
-                    horariosState.calendar.rerenderDates();
-                }
-                success(model.events);
+                const days = await fetchDays(fetchInfo);
+
+                const view = horariosState.calendar.view;
+                const windowStartStr = ymd(view.currentStart);
+                const windowEndStr = ymd(view.currentEnd);
+
+                success(buildBackgroundEvents(days, windowStartStr, windowEndStr));
             } catch (err) {
                 fail(err);
             }
         },
-        eventClick: handleEventClick,
     });
 
     horariosState.calendar.render();

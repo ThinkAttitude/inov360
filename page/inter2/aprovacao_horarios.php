@@ -639,7 +639,7 @@ class AprovacaoHorarios {
                 .aprov-cal .day-details { margin-top: .25rem; display:flex; flex-direction:column; align-items:center; width:100%; }
                 .aprov-cal .badges { display:flex; flex-wrap:wrap; gap:.25rem; justify-content:center; }
                 .aprov-cal .hour-badge { font-size:.7rem; padding:.2rem .45rem; border-radius: 999px; font-weight:700; line-height:1; }
-                .aprov-cal .hour-badge.work { background:#10b981; color:#fff; }
+                .aprov-cal .hour-badge.trabalho { background:#10b981; color:#fff; }
                 .aprov-cal .hour-badge.extra { background:#f59e0b; color:#fff; }
                 .aprov-cal .hour-badge.prevention { background:#ef4444; color:#fff; }
                 .aprov-cal .hour-badge.km { background:#3b82f6; color:#fff; }
@@ -743,7 +743,7 @@ class AprovacaoHorarios {
                 .aprov-cal .day-details { margin-top: .25rem; display:flex; flex-direction:column; align-items:center; width:100%; }
                 .aprov-cal .badges { display:flex; flex-wrap:wrap; gap:.25rem; justify-content:center; }
                 .aprov-cal .hour-badge { font-size:.7rem; padding:.2rem .45rem; border-radius: 999px; font-weight:700; line-height:1; }
-                .aprov-cal .hour-badge.work { background:#10b981; color:#fff; }
+                .aprov-cal .hour-badge.trabalho { background:#10b981; color:#fff; }
                 .aprov-cal .hour-badge.extra { background:#f59e0b; color:#fff; }
                 .aprov-cal .hour-badge.prevention { background:#ef4444; color:#fff; }
                 .aprov-cal .hour-badge.km { background:#3b82f6; color:#fff; }
