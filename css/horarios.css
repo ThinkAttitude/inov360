@@ -158,18 +158,30 @@
     visibility: hidden;
 }
 
-.horarios-page .fc .horarios-work-hours {
-    margin-left: 0.5rem;
+/* force the flex aligment for the day headers so badge keeps its height */
+.horarios-page .fc .fc-daygrid-day-top {
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.horarios-page .fc .horarios-work-badge {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    line-height: 1;
+}
+
+
+.horarios-page .fc .horarios-work-badge {
     padding: 0.15rem 0.45rem;
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 700;
     line-height: 1;
-    background: rgba(55, 136, 216, 0.18);
-    color: var(--navy-blue);
+    color: #fff;
+    margin-left: 0.35rem;
     white-space: nowrap;
 }
-
 
 #calendar {
     min-height: 400px;
