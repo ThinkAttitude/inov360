@@ -220,6 +220,7 @@ function getInputValue(id) {
 }
 
 function buildCollabRequestPayload() {
+    // TODO: stop getting values from hardcoded IDs
     const payload = {
         email: getInputValue('email'),
         telefone: getInputValue('telefone'),
@@ -270,7 +271,7 @@ async function loadAndInitFicha() {
                     if (!keys.length) return false;             // TODO: improve this section of the code
 
                     return createRecordRequest(payload)
-                        .then( (r) => {
+                        .then( (r) => { // TODO: Remove
                             return !(!r || r.success !== true);
                         })
                         .catch(function (e) {

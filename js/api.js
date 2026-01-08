@@ -219,3 +219,23 @@ export async function getCalendarTimeframe(from, to) {
         method: 'GET',
     });
 }
+
+export async function createEventBatch(start, end, {workMin, km, applyWeekend = false, overwrite = true} = {}) {
+    return apiFetch('calendar/batch_apply.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: {
+            start,
+            end,
+            workMin,
+            km,
+            applyWeekend,
+            overwrite
+        },
+    });
+}
+
+export async function createEventByDay(date, opts) {
+    const d = String(date);
+    return createEventBatch(d, d, opts);
+}

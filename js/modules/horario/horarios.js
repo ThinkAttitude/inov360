@@ -210,12 +210,12 @@ export async function mountCalendar() {
 
     horariosState.calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'opMonth',
-        initialDate: getInitialOpMonthDate(new Date()),
+        initialDate: getInitialOpMonthDate(),
         locale: 'pt',
         headerToolbar: {
             left: 'opPrev,opNext today',
             center: 'title',
-            right: 'opMonth,timeGridWeek,timeGridDay',
+            right: 'opMonth,dayGridMonth,timeGridWeek,timeGridDay',
         },
         views: {
             opMonth: {

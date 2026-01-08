@@ -4,7 +4,7 @@ export const HORARIOS_WINDOW = Object.freeze({
 });
 
 export function getInitialOpMonthDate(now = new Date()) {
-    const d = now instanceof Date ? now : new Date();
+    const d = now;
     const shift = d.getDate() >= HORARIOS_WINDOW.startPrevMonthDay ? 1 : 0;
     return new Date(d.getFullYear(), d.getMonth() + shift, 1);
 }
