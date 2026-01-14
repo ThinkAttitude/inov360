@@ -3,7 +3,7 @@ import {initForm} from "../modules/marcacao_direta/marcacao_direta.js";
 import {mountClbMngmt} from "../modules/controlo_colabs/controlo_colabs.js";
 import {mountSchedule} from "../modules/horarios/horarios.js";
 import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js";
-import {mountFichaCollab} from "../modules/ficha_collabs/ficha_collabs.js";
+import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js";
 
 export const MODULES_BASE = '/frontend/modules';
 
@@ -61,10 +61,12 @@ export const ShellRoutes = Object.freeze({
 export const Routes = {
     [Path.INICIO]: {
         html: Route(`${MODULES_BASE}/dashboard/inicio.html`),
+        css: Route(`${MODULES_BASE}/dashboard/styles.css`),
         js: mountInicio
     },
     [Path.HORARIOS]: {
         html: Route(`${MODULES_BASE}/horarios/horarios.html`),
+        css: Route(`${MODULES_BASE}/horarios/styles.css`),
         js: mountSchedule
     },
     [Path.APROVACAO_HORARIOS]: {
@@ -93,6 +95,7 @@ export const Routes = {
     },
     [Path.CONTROLO_COLABS]: {
         html: Route(`${MODULES_BASE}/controlo_colabs/controlo_colabs.html`),
+        css: Route(`${MODULES_BASE}/controlo_colabs/styles.css`),
         js: mountClbMngmt
     },
     [Path.PEDIDOS_HORAS_EXTRA]: {
@@ -105,10 +108,12 @@ export const Routes = {
     },
     [Path.MARCACAO_DIRETA]: {
         html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`),
+        css: Route(`${MODULES_BASE}/marcacao_direta/styles.css`),
         js: initForm
     },
     [Path.GESTAO_FICHAS]: {
         html: Route(`${MODULES_BASE}/gestao_fichas/gestao_fichas.html`),
+        css: Route(`${MODULES_BASE}/gestao_fichas/styles.css`),
         js: mountGstFchs
     },
     [Path.FINANCEIRA]: {
@@ -116,10 +121,37 @@ export const Routes = {
         js: null
     },
     [Path.FICHA_COLLAB]: {
-        html: Route(`${MODULES_BASE}/ficha_collabs/ficha_collab.html`),
+        html: Route(`${MODULES_BASE}/ficha_collab/ficha_collab.html`),
+        css: Route(`${MODULES_BASE}/ficha_collab/styles.css`),
         js: mountFichaCollab
     }
 };
+
+const VIEW_CSS_ID = 'route-view-css';
+
+function ensureViewCssLink() {
+    let link = document.getElementById(VIEW_CSS_ID);
+    if (link) return link;
+
+    link = document.createElement('link');
+    link.id = VIEW_CSS_ID;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return link;
+}
+
+function setViewCss(route) {
+    const href = route?.css?.href || '';
+    const link = ensureViewCssLink();
+
+    if (!href) {
+        link.removeAttribute('href');
+        return;
+    }
+
+    if (link.getAttribute('href') === href) return;
+    link.setAttribute('href', href);
+}
 
 /**
  * Navigate to a given path
@@ -156,12 +188,13 @@ async function render() {
     const raw = window.location.hash.replace(/^#/, "").trim();
     const path = raw === "" ? Path.INICIO : raw;
     const route = isPath(path) ? Routes[path] : Routes[Path.INICIO];
-    const href = route.html.href;
+
+    setViewCss(route);
 
     try {
         // TODO: evaluate if this is true SPA behavior or if we should use a proper router
-        const res = await fetch(href, { credentials: "same-origin" });
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${href}`);
+        const res = await fetch(route.html.href, { credentials: "same-origin" });
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${route.html.href}`);
 
         container.innerHTML = await res.text();
 

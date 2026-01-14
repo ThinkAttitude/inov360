@@ -147,10 +147,11 @@ const CARD_DEFS = {
     },
 };
 
-// --- Session user (recommended for static dashboard.html) ---
+// Session user
 let CURRENT_USER = null;
 
 /**
+ * Gets the current user info from cache.
  * @returns {any|null}
  */
 export const getCurrentUser = () => {
@@ -163,11 +164,14 @@ export const getCurrentUser = () => {
  * @returns {Promise<*|null>}
  */
 export async function bootstrapCurrentUser() {
-    const user = window.CURRENT_USER || (await me());
-    if (!user) {
+    const res = window.CURRENT_USER || (await me());
+    // TODO: Better handling of invalid session
+    if (!res) {
         location.assign("/modules/login/login.html");
         return null;
     }
+
+    const user = res.user;
     CURRENT_USER = user;
     window.CURRENT_USER = user;
 
