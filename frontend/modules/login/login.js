@@ -1,6 +1,7 @@
 // Page Login
 import { login } from '../../app/api.js';
 import {navigate, Path} from "../../app/router.js";
+import {User} from "../../shared/user_store.js";
 
 const state = {
     isLoading: false
@@ -33,8 +34,9 @@ const handleSubmit = async (event) => {
     setLoadingState(true);
 
     try {
+        // TODO: Get user via response instead of using me()
         const response = await login(emailInput.value, passwordInput.value);
-
+        User.set((response.user))
         if (response.success) navigate(Path.INICIO);
     } catch (error) {
         showError(error.message);

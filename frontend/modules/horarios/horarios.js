@@ -24,9 +24,12 @@ const DAY_KIND = Object.freeze({
  * }}
  */
 const horariosState = {
-    calendar: null,
     libPromise: null,
-    daysByDate: new Map(),
+    view: {
+        calendar: null,
+        ctrl: null,
+        daysByDate: new Map(),
+    },
 };
 
 function pad2(n) {
@@ -49,7 +52,7 @@ function formatWorkTime(mins) {
     return r === 0 ? `${h}h` : `${h}h${pad2(r)}`;
 }
 
-function ensureFullCalendar() {
+function loadFullCalendar() {
     if (window.FullCalendar?.Internal?.globalLocales) return Promise.resolve();
     if (horariosState.libPromise) return horariosState.libPromise;
 
@@ -202,13 +205,43 @@ function dayCellClassNames(arg) {
     return inWindow ? [] : ['horarios-outside'];
 }
 
+function destroyCalendar() {
+    const v = horariosState.view;
+
+    if (v.ctrl) v.ctrl.abort();
+    v.ctrl = null;
+
+    if (v.calendar) v.calendar.destroy();
+    v.calendar = null;
+
+    v.daysByDate.clear();
+}
+
+
 export async function mountCalendar() {
-    await ensureFullCalendar();
+    const calRoot = document.getElementById('calendar');
+    if (!calRoot) return destroyCalendar;
 
-    const calendarEl = document.getElementById('calendar');
-    if (!calendarEl || horariosState.calendar) return;
+    const v = horariosState.view;
 
-    horariosState.calendar = new FullCalendar.Calendar(calendarEl, {
+    if (v.calendar) {
+        const sameEl = v.calendar.el === calRoot;
+        const inDom = document.contains(v.calendar.el);
+        if (sameEl && inDom) return destroyCalendar;
+        destroyCalendar();
+    }
+
+    const ctrl = new AbortController();
+    v.ctrl = ctrl;
+
+    await loadFullCalendar();
+
+    if (v.ctrl !== ctrl || ctrl.signal.aborted) return destroyCalendar;
+    if (!document.contains(calRoot)) return destroyCalendar;
+
+    let cal = null;
+
+    cal = new FullCalendar.Calendar(calRoot, {
         initialView: 'opMonth',
         initialDate: getInitialOpMonthDate(),
         locale: 'pt',
@@ -227,39 +260,48 @@ export async function mountCalendar() {
         customButtons: {
             opPrev: {
                 icon: 'chevron-left',
-                click: () => navigateOpMonth(horariosState.calendar, 'left', 'opMonth')
+                click: () => navigateOpMonth(cal, 'left', 'opMonth'),
             },
             opNext: {
                 icon: 'chevron-right',
-                click: () => navigateOpMonth(horariosState.calendar, 'right', 'opMonth')
+                click: () => navigateOpMonth(cal, 'right', 'opMonth'),
             },
         },
         height: 'auto',
-        // Runs whenever FullCalendar changes the active date range
-        datesSet: renderWorkBadges,     // we re-apply badges because month cells are recreated/updated
-        dayCellClassNames,              // Adds a class to hide days outside our custom visibleRange
+        datesSet: renderWorkBadges,
+        dayCellClassNames,
         events: async (fetchInfo, success, fail) => {
             try {
-                const days = await fetchDays(fetchInfo);
-                horariosState.daysByDate = indexDaysByDate(days);
+                if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return;
 
-                const view = horariosState.calendar.view;
+                const days = await fetchDays(fetchInfo);
+
+                if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return;
+
+                horariosState.view.daysByDate = indexDaysByDate(days);
+
+                const view = cal.view;
                 const windowStartStr = ymd(view.currentStart);
                 const windowEndStr = ymd(view.currentEnd);
 
                 success(buildBackgroundEvents(days, windowStartStr, windowEndStr));
+
+                requestAnimationFrame(() => {
+                    if (!ctrl.signal.aborted && horariosState.view.calendar === cal) renderWorkBadges();
+                });
             } catch (err) {
-                fail(err);
+                if (!ctrl.signal.aborted && horariosState.view.calendar === cal) fail(err);
             }
-            // ensures badges are inserted after FullCalendar finishes updating the DOM for this fetch cycle
-            // (events render is async and can replace day cell nodes)
-            requestAnimationFrame(renderWorkBadges);
         },
     });
 
-    horariosState.calendar.render();
+    v.calendar = cal;
+    cal.render();
+
+    return destroyCalendar;
 }
 
 export function mountSchedule() {
-    return mountCalendar();
+    mountCalendar();
+    return destroyCalendar;
 }

@@ -1,4 +1,5 @@
-import {logout, me} from "../../app/api.js";
+import {logout} from "../../app/api.js";
+import {User} from "../../shared/user_store.js";
 
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
@@ -147,40 +148,6 @@ const CARD_DEFS = {
     },
 };
 
-// Session user
-let CURRENT_USER = null;
-
-/**
- * Gets the current user info from cache.
- * @returns {any|null}
- */
-export const getCurrentUser = () => {
-    return CURRENT_USER || window.CURRENT_USER || null;
-}
-
-/**
- * Bootstraps the current user info into the dashboard shell.
- * Safe to call multiple times (will reuse cache).
- * @returns {Promise<*|null>}
- */
-export async function bootstrapCurrentUser() {
-    const res = window.CURRENT_USER || (await me());
-    // TODO: Better handling of invalid session
-    if (!res) {
-        location.assign("/modules/login/login.html");
-        return null;
-    }
-
-    const user = res.user;
-    CURRENT_USER = user;
-    window.CURRENT_USER = user;
-
-    const userNameEl = document.getElementById("userName");
-    if (userNameEl) userNameEl.textContent = user.name || "";
-
-    return user;
-}
-
 /**
  * Mounts the dashboard *shell* (sidebar/footer/logout/user).
  * Call once at app startup.
@@ -188,37 +155,36 @@ export async function bootstrapCurrentUser() {
  */
 export function mountDashboardShell() {
     const ctrl = new AbortController();
-    const { signal } = ctrl;
+    const {signal} = ctrl;
 
-    const footerYear = document.getElementById("yearSpan");
+    const footerYear = document.getElementById('yearSpan');
     if (footerYear) footerYear.textContent = String(new Date().getFullYear());
 
-    const logoutBtn = document.getElementById("logoutBtn");
+    const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener(
-            "click",
+            'click',
             (ev) => {
                 ev.preventDefault();
-                logout(); // keep your existing behavior
+                logout().finally(() => User.clear());
             },
-            { signal }
+            {signal}
         );
     }
 
-    // active nav highlight based on hash (not click)
     const setActive = () => {
-        const key = window.location.hash.replace(/^#/, "").trim();
-        document.querySelectorAll(".sidebar-menu li").forEach((li) => li.classList.remove("active"));
+        const key = window.location.hash.replace(/^#/, '').trim();
+        document.querySelectorAll('.sidebar-menu li').forEach((li) => li.classList.remove('active'));
 
-        const sel = key ? `.sidebar-menu [data-content="${CSS.escape(key)}"]` : `.sidebar-menu [data-content="${CARD_TYPES.INICIO}"]`;
-        const a = document.querySelector(sel);
-        a?.closest("li")?.classList.add("active");
+        const sel = key
+            ? `.sidebar-menu [data-content="${CSS.escape(key)}"]`
+            : `.sidebar-menu [data-content="${CARD_TYPES.INICIO}"]`;
+
+        document.querySelector(sel)?.closest('li')?.classList.add('active');
     };
 
-    window.addEventListener("hashchange", setActive, { signal });
-    setActive(); // initial
-
-    bootstrapCurrentUser().catch((err) => console.error("Failed to bootstrap user:", err));
+    window.addEventListener('hashchange', setActive, {signal});
+    setActive();
 
     return () => ctrl.abort();
 }
@@ -232,7 +198,7 @@ function createWelcomeCard(key) {
 
     const node = tpl.content.firstElementChild.cloneNode(true);
 
-    node.dataset.dynamic = "1";
+    node.dataset.dynamic = "1";     // mark as dynamic for later cleanup
 
     node.querySelector(".card-title")?.append(def.title);
     node.querySelector(".card-desc")?.append(def.description);
@@ -294,20 +260,13 @@ function upsertSidebarEntries(keys) {
     menu.insertBefore(frag, anchor || null);
 }
 
-/**
- * Mounts the "Início" view contents (cards, dynamic sidebar entries).
- * Called by the router after injecting inicio.html.
- * @returns {() => void} cleanup
- */
-export function mountInicio() {
-    const ctrl = new AbortController();
-
-    const user = getCurrentUser() || {};
-    const userPerms = new Set(user.permissions || []);
-    const hasSubs = (user.subordinados?.length ?? 0) > 0;
+function computeCardsFromUser(auth) {
+    const a = auth || {};
+    const perms = new Set(a.permissions || []);
+    const hasSubs = (a.subordinados?.length ?? 0) > 0;
 
     const permCards = Object.entries(CARD_DEFS)
-        .filter(([_, def]) => def.permission && userPerms.has(def.permission))
+        .filter(([_, def]) => def.permission && perms.has(def.permission))
         .map(([key]) => key);
 
     const sideCards = new Set(permCards);
@@ -317,13 +276,35 @@ export function mountInicio() {
         welcomeCards.add(CARD_TYPES.APROVACAO_HORARIOS);
         welcomeCards.add(CARD_TYPES.APROVACAO_FERIAS);
         welcomeCards.add(CARD_TYPES.CONSULTA_PEDIDOS);
+
         sideCards.add(CARD_TYPES.APROVACAO_HORARIOS);
         sideCards.add(CARD_TYPES.APROVACAO_FERIAS);
         sideCards.add(CARD_TYPES.CONSULTA_PEDIDOS);
     }
 
-    if (welcomeCards.size) upsertWelcomeCards([...welcomeCards]);
-    if (sideCards.size) upsertSidebarEntries([...sideCards]);
+    return {sideCards, welcomeCards};
+}
+
+/**
+ * Mounts the "Início" view contents (cards, dynamic sidebar entries).
+ * Called by the router after injecting inicio.html.
+ * @returns {() => void} cleanup
+ */
+export function mountInicio() {
+    const ctrl = new AbortController();
+
+    const user = User.get();
+    const el = document.getElementById("userName");
+    if (el) el.textContent = user?.name || "";
+
+    User.getPrivileges()
+        .then((userInfo) => {
+            const {sideCards, welcomeCards} = computeCardsFromUser(userInfo);
+
+            if (welcomeCards.size) upsertWelcomeCards([...welcomeCards]);
+            if (sideCards.size) upsertSidebarEntries([...sideCards]);
+        })
+        .catch((err) => console.error('Failed to load user for inicio:', err));
 
     return () => ctrl.abort();
 }

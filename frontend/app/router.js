@@ -65,7 +65,7 @@ export const Routes = {
         js: mountInicio
     },
     [Path.HORARIOS]: {
-        html: Route(`${MODULES_BASE}/horarios/horarios.html`),
+        html: Route(`${MODULES_BASE}/horarios/view.html`),
         css: Route(`${MODULES_BASE}/horarios/styles.css`),
         js: mountSchedule
     },
