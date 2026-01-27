@@ -6,6 +6,8 @@ import {
     updatePermissions
 } from '../../app/api.js';
 
+import './styles.css';
+
 let collabs = [];
 const hierarchyState = {
     userId: null,

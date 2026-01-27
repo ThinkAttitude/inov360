@@ -1,7 +1,8 @@
-// Page Login
 import { login } from '../../app/api.js';
 import {navigate, Path} from "../../app/router.js";
 import {User} from "../../shared/user_store.js";
+
+import './styles.css';
 
 const state = {
     isLoading: false

@@ -1,6 +1,8 @@
 import {logout} from "../../app/api.js";
 import {User} from "../../shared/user_store.js";
 
+import './styles.css';
+
 export const CARD_TYPES = Object.freeze({
     INICIO: 'inicio',
     HORARIOS: 'horarios',

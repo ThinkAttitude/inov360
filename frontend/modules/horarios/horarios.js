@@ -1,6 +1,8 @@
 import {getCalendarTimeframe} from '../../app/api.js';
 import {computeCalRange, getInitialOpMonthDate, navigateOpMonth} from './horarios_window.js';
 
+import './styles.css'
+
 const DAY_KIND = Object.freeze({
     TRABALHO: 'trabalho',
     FERIAS: 'ferias',

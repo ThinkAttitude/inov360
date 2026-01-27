@@ -2,6 +2,8 @@ import {getSelfRecord, createRecordRequest} from '../../app/api.js';
 import {FICHA_SECTIONS} from './ficha_collab_fields.js';
 import {initEditToggle} from './edit_toggle.js';
 
+import './styles.css'
+
 let fichaBaseState = null;
 let fichaToggle = null;
 
