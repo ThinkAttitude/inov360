@@ -1,5 +1,6 @@
 import {getCalendarTimeframe} from '../../app/api.js';
 import {computeCalRange, getInitialOpMonthDate, navigateOpMonth} from './horarios_window.js';
+import {createOverlays} from "../../app/overlays.js";
 
 import './styles.css'
 
@@ -139,6 +140,47 @@ function indexDaysByDate(days) {
     return map;
 }
 
+/**
+ * Builds the day details form for the schedule dropdown.
+ * @returns {HTMLFormElement}
+ */
+function buildWorkForm() {
+    const form = document.createElement('form')
+    form.className = 'horarios-day-form'
+
+    const row = (labelText, inputEl) => {
+        const label = document.createElement('label')
+        label.className = 'horarios-day-form-row'
+
+        const t = document.createElement('span')
+        t.className = 'field-label'
+        t.textContent = labelText
+
+        label.appendChild(t)
+        label.appendChild(inputEl)
+        return label
+    }
+
+    const work = document.createElement('input')
+    work.type = 'number'
+    work.min = '0'
+    work.step = '1'
+    work.inputMode = 'numeric'
+    work.name = 'workHours'
+
+    const km = document.createElement('input')
+    km.type = 'number'
+    km.min = '0'
+    km.step = '0.1'
+    km.inputMode = 'decimal'
+    km.name = 'travelKm'
+
+    form.appendChild(row('Work hours', work))
+    form.appendChild(row('Travel km', km))
+
+    return form
+}
+
 function buildBackgroundEvents(days, windowStartStr, windowEndStr) {
     const events = [];
 
@@ -173,21 +215,29 @@ function buildBackgroundEvents(days, windowStartStr, windowEndStr) {
 }
 
 function renderWorkBadges() {
-    const cal = horariosState.calendar;
+    const cal = horariosState.view.calendar;
     if (!cal || cal.view.type !== 'opMonth') return;
 
-    cal.el.querySelectorAll('.horarios-work-badge').forEach(el => el.remove());
+    const root = cal.el;
+    if (!root) return;
+
+    root.querySelectorAll('.horarios-work-badge').forEach(el => el.remove());
+
+    const daysByDate = horariosState.view.daysByDate;
+    if (!daysByDate || daysByDate.size === 0) return;
 
     const startStr = ymd(cal.view.currentStart);
     const endStr = ymd(cal.view.currentEnd);
 
-    cal.el.querySelectorAll('.fc-daygrid-day[data-date]').forEach(cell => {
+    root.querySelectorAll('.fc-daygrid-day[data-date]').forEach(cell => {
         const dateStr = cell.dataset.date;
-        if (dateStr < startStr || dateStr >= endStr) return;
+        if (!dateStr || dateStr < startStr || dateStr >= endStr) return;
 
-        const day = horariosState.daysByDate.get(dateStr);
-        const leaves = Array.isArray(day?.leaves) ? day.leaves : [];
-        if (!day || leaves.length) return;
+        const day = daysByDate.get(dateStr);
+        if (!day) return;
+
+        const leaves = Array.isArray(day.leaves) ? day.leaves : [];
+        if (leaves.length) return;
 
         const label = formatWorkTime(day.workMin);
         if (!label) return;
@@ -236,6 +286,8 @@ export async function mountCalendar() {
     const ctrl = new AbortController();
     v.ctrl = ctrl;
 
+    const overlays = createOverlays(ctrl.signal)
+
     await loadFullCalendar();
 
     if (v.ctrl !== ctrl || ctrl.signal.aborted) return destroyCalendar;
@@ -272,6 +324,11 @@ export async function mountCalendar() {
         height: 'auto',
         datesSet: renderWorkBadges,
         dayCellClassNames,
+        dateClick: (info) => {
+            if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return
+            if (!info.dayEl) return
+            overlays.openDropdown(info.dayEl, buildWorkForm(), {className: 'horarios-dropdown'})
+        },
         events: async (fetchInfo, success, fail) => {
             try {
                 if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return;

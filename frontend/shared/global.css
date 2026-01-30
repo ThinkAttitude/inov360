@@ -1,4 +1,9 @@
 :root {
+    --surface: var(--white);
+    --surface-2: #f8fafc;
+    --surface-border: rgba(0, 0, 0, 0.12);
+    --surface-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+
     --navy-blue: #0A2240;
     --light-blue: #3E84F2;
     --white: #FFFFFF;
@@ -6,7 +11,6 @@
     --border-gray: #E0E0E0;
     --text-dark: #333333;
     --text-light: #777777;
-    --font-family: 'Roboto', sans-serif;
     /* Gradiente padrão (substituir em temas) */
     --gradient-1: var(--light-blue);
     --gradient-2: #5a9ff7;
@@ -88,6 +92,14 @@ body {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+/* Forms */
+.field-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+}
 
 
 /* Estilos para toasts */

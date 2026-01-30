@@ -1,6 +1,6 @@
 <?php
 session_start();
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     echo json_encode(['success' => false, 'message' => 'Método não permitido.']);
@@ -22,7 +22,7 @@ try {
     $conn = db_connect();
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $stmt = $conn->prepare("SELECT id, name, email, password FROM user WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, name, email, password, company_id FROM user WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -31,7 +31,18 @@ try {
         exit;
     }
 
+    $stmtPerm = $conn->prepare("SELECT permission_id FROM user_permission WHERE user_id = ?");
+    $stmtPerm->execute([(int)$user["id"]]);
+    $permissions = array_map('intval', $stmtPerm->fetchAll(PDO::FETCH_COLUMN, 0));
+
+    session_regenerate_id(true);
+
     $_SESSION["is_login"] = true;
+    $_SESSION["user"] = [
+        "id" => (int)$user["id"],
+        "company_id" => isset($user["company_id"]) ? (int)$user["company_id"] : null,
+        "permissions" => $permissions
+    ];
     $_SESSION["user_id"] = (int)$user["id"];
 
     echo json_encode([
