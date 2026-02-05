@@ -92,6 +92,13 @@ body {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+/* Small */
+.btn-sm {
+    padding: 0.45rem 0.9rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+}
+
 /* Forms */
 .field-label {
     display: block;

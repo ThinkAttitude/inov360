@@ -1,5 +1,4 @@
 <?php
-// api/calendar/batch_apply.php  (placeholders corrigidos)
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');

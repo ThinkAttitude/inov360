@@ -1,8 +1,9 @@
-import {getCalendarTimeframe} from '../../app/api.js';
+import {createEventByDay, getCalendarTimeframe} from '../../app/api.js';
 import {computeCalRange, getInitialOpMonthDate, navigateOpMonth} from './horarios_window.js';
 import {createOverlays} from "../../app/overlays.js";
 
 import './styles.css'
+import './popover-styles.css'
 
 const DAY_KIND = Object.freeze({
     TRABALHO: 'trabalho',
@@ -141,10 +142,10 @@ function indexDaysByDate(days) {
 }
 
 /**
- * Builds the day details form for the schedule dropdown.
+ * Builds the day details form for the schedule popover.
  * @returns {HTMLFormElement}
  */
-function buildWorkForm() {
+function buildWorkForm(dateStr, onSubmit) {
     const form = document.createElement('form')
     form.className = 'horarios-day-form'
 
@@ -175,8 +176,23 @@ function buildWorkForm() {
     km.inputMode = 'decimal'
     km.name = 'travelKm'
 
-    form.appendChild(row('Work hours', work))
-    form.appendChild(row('Travel km', km))
+    form.appendChild(row('Horas de trabalho', work))
+    form.appendChild(row('Quilometragem', km))
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const fd = new FormData(form)
+        const workHours = Number(fd.get('workHours') || 0)
+        const travelKm = Number(fd.get('travelKm') || 0)
+
+        await createEventByDay(dateStr, {
+            workMin: Math.max(0, Math.trunc(workHours)) * 60,
+            km: Math.max(0, travelKm),
+            overwrite: true,
+        })
+
+        onSubmit()
+    })
 
     return form
 }
@@ -327,7 +343,11 @@ export async function mountCalendar() {
         dateClick: (info) => {
             if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return
             if (!info.dayEl) return
-            overlays.openDropdown(info.dayEl, buildWorkForm(), {className: 'horarios-dropdown'})
+
+            const dateStr = info.dateStr
+            const form = buildWorkForm(dateStr, () => overlays.closeActive())
+
+            overlays.openPopover(info.dayEl, form, {className: 'horarios-popover'})
         },
         events: async (fetchInfo, success, fail) => {
             try {

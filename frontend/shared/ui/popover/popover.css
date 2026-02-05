@@ -26,29 +26,8 @@
     background: transparent;
 }
 
-.horarios-popover .ui-popover-panel {
-    width: 260px;
-    border: 1px solid color-mix(in srgb, var(--navy-blue) 12%, transparent);
-    border-radius: 12px;
-    padding: 12px;
-}
-
-.horarios-day-form {
-    display: grid;
-    gap: 12px;
-}
-
-.horarios-day-form-row input {
-    width: 100%;
-    border: 1px solid var(--border-gray);
-    border-radius: 10px;
-    padding: 10px 12px;
-    background: var(--white);
-    color: var(--text-dark);
-    font: inherit;
-    outline: none;
-}
-
-.horarios-day-form-row input:focus {
-    border-color: var(--light-blue);
+.ui-popover-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
 }

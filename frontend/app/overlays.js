@@ -1,9 +1,9 @@
-import {openDropdown as openDropdownPrimitive} from '../shared/ui/dropdown/dropdown.js'
+import {openPopover as openPopoverPrimitive} from '../shared/ui/popover/popover.js'
 
 /**
  * Creates an overlay controller bound to an optional lifecycle signal.
  * @param {AbortSignal} [signal]
- * @returns {{openDropdown:(anchorEl:HTMLElement, contentEl:HTMLElement, opts?:{offset?:number,className?:string})=>any, closeActive:()=>void}}
+ * @returns {{openPopover:(anchorEl:HTMLElement, contentEl:HTMLElement, opts?:{offset?:number,className?:string})=>any, closeActive:()=>void}}
  */
 export function createOverlays(signal) {
     let active = null
@@ -14,9 +14,9 @@ export function createOverlays(signal) {
         active = null
     }
 
-    const openDropdown = (anchorEl, contentEl, opts = {}) => {
+    const openPopover = (anchorEl, contentEl, opts = {}) => {
         closeActive()
-        const dd = openDropdownPrimitive(anchorEl, contentEl, {...opts, signal})
+        const dd = openPopoverPrimitive(anchorEl, contentEl, {...opts, signal})
         const baseClose = dd.close
         dd.close = () => {
             baseClose()
@@ -28,7 +28,7 @@ export function createOverlays(signal) {
 
     if (signal) signal.addEventListener('abort', closeActive, {once: true})
 
-    return {openDropdown, closeActive}
+    return {openPopover, closeActive}
 }
 
 export const overlays = createOverlays()
