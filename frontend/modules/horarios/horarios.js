@@ -1,4 +1,4 @@
-import {createEventByDay, getCalendarTimeframe} from '../../app/api.js';
+import {createEventBatch, createEventByDay, getCalendarTimeframe} from '../../app/api.js';
 import {computeCalRange, getInitialOpMonthDate, navigateOpMonth} from './horarios_window.js';
 import {createOverlays} from "../../app/overlays.js";
 
@@ -16,6 +16,7 @@ const DAY_KIND = Object.freeze({
  * @typedef {Object} CalendarDay
  * @property {string} date
  * @property {number} [workMin]
+ * @property {number} [km]
  * @property {Array<any>} [leaves]
  */
 
@@ -48,12 +49,56 @@ function toInclusiveYmd(exclusiveEnd) {
     return ymd(new Date(exclusiveEnd.getTime() - 1));
 }
 
+function addDays(d, n) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
+}
+
+function weekRangeFrom(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const dow = d.getDay()
+    const back = (dow + 6) % 7
+    const start = addDays(d, -back)
+    const end = addDays(start, 6)
+    return {start, end}
+}
+
+function periodRangeFrom(date) {
+    const r = computeCalRange(date)
+    return {startStr: ymd(r.start), endStr: toInclusiveYmd(r.end)}
+}
+
+function presetRange(preset, baseDateStr, form) {
+    const base = new Date(`${baseDateStr}T00:00:00`)
+    if (preset === 'day') return {startStr: baseDateStr, endStr: baseDateStr}
+    if (preset === 'week') {
+        const r = weekRangeFrom(base)
+        return {startStr: ymd(r.start), endStr: ymd(r.end)}
+    }
+    if (preset === 'period') return periodRangeFrom(base)
+    return {startStr: form.elements.rangeStart.value || baseDateStr, endStr: form.elements.rangeEnd.value || baseDateStr}
+}
+
+/**
+ * Formats minutes into a compact label like "8h" or "8h30".
+ * @param {number} mins
+ * @returns {string}
+ */
 function formatWorkTime(mins) {
-    const m = typeof mins === 'number' ? mins : 0;
-    if (m <= 0) return '';
-    const h = Math.floor(m / 60);
-    const r = m % 60;
-    return r === 0 ? `${h}h` : `${h}h${pad2(r)}`;
+    if (mins <= 0) return ''
+    const h = Math.floor(mins / 60)
+    const r = mins % 60
+    return r === 0 ? `${h}h` : `${h}h${pad2(r)}`
+}
+
+/**
+ * Formats kilometers into a compact label like "12km" or "12.5km".
+ * @param {number} km
+ * @returns {string}
+ */
+function formatKm(km) {
+    if (km <= 0) return ''
+    const r = Math.round(km * 10) / 10
+    return `${String(r).replace(/\.0$/, '')}km`
 }
 
 function loadFullCalendar() {
@@ -145,22 +190,25 @@ function indexDaysByDate(days) {
  * Builds the day details form for the schedule popover.
  * @returns {HTMLFormElement}
  */
-function buildWorkForm(dateStr, onSubmit) {
+function buildWorkForm(dateStr, onDone) {
     const form = document.createElement('form')
     form.className = 'horarios-day-form'
 
-    const row = (labelText, inputEl) => {
+    const row = (labelText, el) => {
         const label = document.createElement('label')
-        label.className = 'horarios-day-form-row'
+        label.className = 'field-row'
 
         const t = document.createElement('span')
         t.className = 'field-label'
         t.textContent = labelText
 
+        el.classList.add('field-input')
+
         label.appendChild(t)
-        label.appendChild(inputEl)
+        label.appendChild(el)
         return label
     }
+
 
     const work = document.createElement('input')
     work.type = 'number'
@@ -176,22 +224,68 @@ function buildWorkForm(dateStr, onSubmit) {
     km.inputMode = 'decimal'
     km.name = 'travelKm'
 
+    const preset = document.createElement('select')
+    preset.name = 'rangePreset'
+
+    const opt = (v, t) => {
+        const o = document.createElement('option')
+        o.value = v
+        o.textContent = t
+        return o
+    }
+
+    preset.appendChild(opt('day', 'Apenas este dia'))
+    preset.appendChild(opt('week', 'Esta semana'))
+    preset.appendChild(opt('period', 'Este período'))
+    preset.appendChild(opt('custom', 'Custom…'))
+
+    const customWrap = document.createElement('div')
+    customWrap.style.display = 'none'
+
+    const rangeStart = document.createElement('input')
+    rangeStart.type = 'date'
+    rangeStart.name = 'rangeStart'
+    rangeStart.value = dateStr
+
+    const rangeEnd = document.createElement('input')
+    rangeEnd.type = 'date'
+    rangeEnd.name = 'rangeEnd'
+    rangeEnd.value = dateStr
+
+    customWrap.appendChild(row('Desde', rangeStart))
+    customWrap.appendChild(row('Até', rangeEnd))
+
+    preset.addEventListener('change', () => {
+        customWrap.style.display = preset.value === 'custom' ? '' : 'none'
+        if (preset.value !== 'custom') {
+            rangeStart.value = dateStr
+            rangeEnd.value = dateStr
+        }
+    })
+
     form.appendChild(row('Horas de trabalho', work))
     form.appendChild(row('Quilometragem', km))
+    form.appendChild(row('Aplicar a', preset))
+    form.appendChild(customWrap)
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault()
-        const fd = new FormData(form)
-        const workHours = Number(fd.get('workHours') || 0)
-        const travelKm = Number(fd.get('travelKm') || 0)
 
-        await createEventByDay(dateStr, {
-            workMin: Math.max(0, Math.trunc(workHours)) * 60,
-            km: Math.max(0, travelKm),
-            overwrite: true,
-        })
+        const workHours = Number(form.elements.workHours.value || 0)
+        const travelKm = Number(form.elements.travelKm.value || 0)
+        const workMin = Math.max(0, Math.trunc(workHours)) * 60
+        const kmVal = Math.max(0, travelKm)
 
-        onSubmit()
+        const p = form.elements.rangePreset.value || 'day'
+        const r = presetRange(p, dateStr, form)
+
+        if (p === 'day') {
+            await createEventByDay(dateStr, {workMin, km: kmVal, overwrite: true})
+        } else {
+            await createEventBatch(r.startStr, r.endStr, {workMin, km: kmVal, overwrite: true})
+        }
+
+        onDone()
     })
 
     return form
@@ -231,41 +325,49 @@ function buildBackgroundEvents(days, windowStartStr, windowEndStr) {
 }
 
 function renderWorkBadges() {
-    const cal = horariosState.view.calendar;
-    if (!cal || cal.view.type !== 'opMonth') return;
+    const cal = horariosState.view.calendar
+    if (!cal || cal.view.type !== 'opMonth') return
 
-    const root = cal.el;
-    if (!root) return;
+    const root = cal.el
+    if (!root) return
 
-    root.querySelectorAll('.horarios-work-badge').forEach(el => el.remove());
+    root.querySelectorAll('.horarios-work-badge, .horarios-km-badge').forEach(el => el.remove())
 
-    const daysByDate = horariosState.view.daysByDate;
-    if (!daysByDate || daysByDate.size === 0) return;
+    const daysByDate = horariosState.view.daysByDate
+    if (!daysByDate || daysByDate.size === 0) return
 
-    const startStr = ymd(cal.view.currentStart);
-    const endStr = ymd(cal.view.currentEnd);
+    const startStr = ymd(cal.view.currentStart)
+    const endStr = ymd(cal.view.currentEnd)
 
     root.querySelectorAll('.fc-daygrid-day[data-date]').forEach(cell => {
-        const dateStr = cell.dataset.date;
-        if (!dateStr || dateStr < startStr || dateStr >= endStr) return;
+        const dateStr = cell.dataset.date
+        if (!dateStr || dateStr < startStr || dateStr >= endStr) return
 
-        const day = daysByDate.get(dateStr);
-        if (!day) return;
+        const day = daysByDate.get(dateStr)
+        if (!day) return
 
-        const leaves = Array.isArray(day.leaves) ? day.leaves : [];
-        if (leaves.length) return;
+        const leaves = Array.isArray(day.leaves) ? day.leaves : []
+        if (leaves.length) return
 
-        const label = formatWorkTime(day.workMin);
-        if (!label) return;
+        const top = cell.querySelector('.fc-daygrid-day-top')
+        if (!top) return
 
-        const top = cell.querySelector('.fc-daygrid-day-top');
-        if (!top) return;
+        const workLabel = formatWorkTime(day.workMin)
+        if (workLabel) {
+            const badge = document.createElement('span')
+            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO}`
+            badge.textContent = workLabel
+            top.appendChild(badge)
+        }
 
-        const badge = document.createElement('span');
-        badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO}`;
-        badge.textContent = label;
-        top.appendChild(badge);
-    });
+        const kmLabel = formatKm(day.km)
+        if (kmLabel) {
+            const badge = document.createElement('span')
+            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO}`
+            badge.textContent = kmLabel
+            top.appendChild(badge)
+        }
+    })
 }
 
 function dayCellClassNames(arg) {

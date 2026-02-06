@@ -100,12 +100,32 @@ body {
 }
 
 /* Forms */
+.field-row {
+    display: block;
+}
+
 .field-label {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-light);
     margin-bottom: 0.5rem;
+}
+
+.field-input {
+    width: 100%;
+    border: 1px solid var(--border-gray);
+    border-radius: 10px;
+    padding: 7px 10px;
+    background: var(--white);
+    color: var(--text-dark);
+    font: inherit;
+    outline: none;
+    line-height: 1.2;
+}
+
+.field-input:focus {
+    border-color: var(--light-blue);
 }
 
 
