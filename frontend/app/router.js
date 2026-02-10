@@ -39,7 +39,7 @@ export const Routes = Object.freeze({
     [Path.HORARIOS]: {html: Route(`${MODULES_BASE}/horarios/view.html`), mount: mountSchedule},
     [Path.APROVACAO_HORARIOS]: {html: Route(`${MODULES_BASE}/aprovacao_horarios/aprovacao_horarios.php`), mount: null},
     [Path.MAPAS_HORARIOS]: {html: Route(`${MODULES_BASE}/mapas_horarios/mapas_horarios.php`), mount: null},
-    [Path.PEDIDOS_FERIAS]: {html: Route(`${MODULES_BASE}/pedidos_ferias/pedidos_ferias.php`), mount: null},
+    [Path.PEDIDOS_FERIAS]: {html: Route(`${MODULES_BASE}/pedidos_ferias/view.html`), mount: null},
     [Path.APROVACAO_FERIAS]: {html: Route(`${MODULES_BASE}/aprovacao_ferias/aprovacao_ferias.php`), mount: null},
     [Path.CONSULTA_PEDIDOS]: {html: Route(`${MODULES_BASE}/consulta_pedidos/consulta_pedidos.html`), mount: null},
     [Path.LISTA_INTERMEDIOS]: {html: Route(`${MODULES_BASE}/lista_intermedios/lista_intermedios.php`), mount: null},
