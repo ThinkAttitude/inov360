@@ -1,340 +1,17 @@
-import {createEventBatch, createEventByDay, getCalendarTimeframe} from '../../app/api.js';
-import {computeCalRange, getInitialOpMonthDate, navigateOpMonth} from './horarios_window.js';
-import {createOverlays} from "../../app/overlays.js";
+import {computeCalRange, getInitialOpMonthDate, navigateOpMonth} from './horarios_window.js'
+import {DAY_KIND, buildBackgroundEvents, indexDaysByDate, formatWorkTime, formatKm, ymd} from './horarios_utils.js'
 
-import './styles.css'
-import './popover-styles.css'
-
-const DAY_KIND = Object.freeze({
-    TRABALHO: 'trabalho',
-    FERIAS: 'ferias',
-    AUSENCIA: 'ausencia',
-});
-
-/**
- * CalendarDay entry
- * @typedef {Object} CalendarDay
- * @property {string} date
- * @property {number} [workMin]
- * @property {number} [km]
- * @property {Array<any>} [leaves]
- */
-
-/**
- * Horários calendar state
- * @type {{
- *   calendar: FullCalendar.Calendar|null,
- *   libPromise: Promise<void>|null,
- *   daysByDate: Map<string, CalendarDay>
- * }}
- */
-const horariosState = {
-    libPromise: null,
-    view: {
-        calendar: null,
-        ctrl: null,
-        daysByDate: new Map(),
-    },
-};
-
-function pad2(n) {
-    return String(n).padStart(2, '0');
+function dayCellClassNames(arg) {
+    const inWindow = arg.date >= arg.view.currentStart && arg.date < arg.view.currentEnd
+    return inWindow ? [] : ['horarios-outside']
 }
 
-function ymd(date) {
-    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
-}
-
-function toInclusiveYmd(exclusiveEnd) {
-    return ymd(new Date(exclusiveEnd.getTime() - 1));
-}
-
-function addDays(d, n) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
-}
-
-function weekRangeFrom(date) {
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-    const dow = d.getDay()
-    const back = (dow + 6) % 7
-    const start = addDays(d, -back)
-    const end = addDays(start, 6)
-    return {start, end}
-}
-
-function periodRangeFrom(date) {
-    const r = computeCalRange(date)
-    return {startStr: ymd(r.start), endStr: toInclusiveYmd(r.end)}
-}
-
-function presetRange(preset, baseDateStr, form) {
-    const base = new Date(`${baseDateStr}T00:00:00`)
-    if (preset === 'day') return {startStr: baseDateStr, endStr: baseDateStr}
-    if (preset === 'week') {
-        const r = weekRangeFrom(base)
-        return {startStr: ymd(r.start), endStr: ymd(r.end)}
-    }
-    if (preset === 'period') return periodRangeFrom(base)
-    return {startStr: form.elements.rangeStart.value || baseDateStr, endStr: form.elements.rangeEnd.value || baseDateStr}
-}
-
-/**
- * Formats minutes into a compact label like "8h" or "8h30".
- * @param {number} mins
- * @returns {string}
- */
-function formatWorkTime(mins) {
-    if (mins <= 0) return ''
-    const h = Math.floor(mins / 60)
-    const r = mins % 60
-    return r === 0 ? `${h}h` : `${h}h${pad2(r)}`
-}
-
-/**
- * Formats kilometers into a compact label like "12km" or "12.5km".
- * @param {number} km
- * @returns {string}
- */
-function formatKm(km) {
-    if (km <= 0) return ''
-    const r = Math.round(km * 10) / 10
-    return `${String(r).replace(/\.0$/, '')}km`
-}
-
-function loadFullCalendar() {
-    if (window.FullCalendar?.Internal?.globalLocales) return Promise.resolve();
-    if (horariosState.libPromise) return horariosState.libPromise;
-
-    horariosState.libPromise = new Promise((resolve, reject) => {
-        const loadLocales = () => {
-            if (window.FullCalendar?.Internal?.globalLocales) {
-                resolve();
-                return;
-            }
-
-            let s = document.querySelector('script[data-fullcalendar-locales]');
-            if (s) {
-                s.addEventListener('load', resolve, {once: true});
-                s.addEventListener('error', reject, {once: true});
-                return;
-            }
-
-            s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales-all.global.min.js';
-            s.setAttribute('data-fullcalendar-locales', 'true');
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        };
-
-        if (!document.querySelector('link[data-fullcalendar-css]')) {
-            const css = document.createElement('link');
-            css.rel = 'stylesheet';
-            css.href = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css';
-            css.setAttribute('data-fullcalendar-css', 'true');
-            document.head.appendChild(css);
-        }
-
-        if (window.FullCalendar) {
-            loadLocales();
-            return;
-        }
-
-        let main = document.querySelector('script[data-fullcalendar-js]');
-        if (main) {
-            main.addEventListener('load', loadLocales, {once: true});
-            main.addEventListener('error', reject, {once: true});
-            return;
-        }
-
-        main = document.createElement('script');
-        main.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js';
-        main.setAttribute('data-fullcalendar-js', 'true');
-        main.onload = loadLocales;
-        main.onerror = reject;
-        document.head.appendChild(main);
-    });
-
-    return horariosState.libPromise;
-}
-
-async function fetchDays(fetchInfo) {
-    const from = ymd(fetchInfo.start);
-    const to = toInclusiveYmd(fetchInfo.end);
-    const res = await getCalendarTimeframe(from, to);
-    return res.days;
-}
-
-// TODO: improve classification logic and use API-provided standardized types
-function classifyLeave(leave) {
-    const raw = String(
-        leave?.tipo || leave?.type || leave?.label || leave?.titulo || leave?.title || ''
-    ).toLowerCase();
-
-    if (raw.includes('féri') || raw.includes('feri') || raw.includes('vac')) return DAY_KIND.FERIAS;
-    return DAY_KIND.AUSENCIA;
-}
-
-// Converts the API days array into a Map keyed by YYYY-MM-DD so
-// UI rendering can do O(1) lookups per cell
-function indexDaysByDate(days) {
-    const map = new Map();
-    for (let i = 0; i < days.length; i++) {
-        const d = days[i];
-        if (d && d.date) map.set(d.date, d);
-    }
-    return map;
-}
-
-/**
- * Builds the day details form for the schedule popover.
- * @returns {HTMLFormElement}
- */
-function buildWorkForm(dateStr, onDone) {
-    const form = document.createElement('form')
-    form.className = 'horarios-day-form'
-
-    const row = (labelText, el) => {
-        const label = document.createElement('label')
-        label.className = 'field-row'
-
-        const t = document.createElement('span')
-        t.className = 'field-label'
-        t.textContent = labelText
-
-        el.classList.add('field-input')
-
-        label.appendChild(t)
-        label.appendChild(el)
-        return label
-    }
-
-
-    const work = document.createElement('input')
-    work.type = 'number'
-    work.min = '0'
-    work.step = '1'
-    work.inputMode = 'numeric'
-    work.name = 'workHours'
-
-    const km = document.createElement('input')
-    km.type = 'number'
-    km.min = '0'
-    km.step = '0.1'
-    km.inputMode = 'decimal'
-    km.name = 'travelKm'
-
-    const preset = document.createElement('select')
-    preset.name = 'rangePreset'
-
-    const opt = (v, t) => {
-        const o = document.createElement('option')
-        o.value = v
-        o.textContent = t
-        return o
-    }
-
-    preset.appendChild(opt('day', 'Apenas este dia'))
-    preset.appendChild(opt('week', 'Esta semana'))
-    preset.appendChild(opt('period', 'Este período'))
-    preset.appendChild(opt('custom', 'Custom…'))
-
-    const customWrap = document.createElement('div')
-    customWrap.style.display = 'none'
-
-    const rangeStart = document.createElement('input')
-    rangeStart.type = 'date'
-    rangeStart.name = 'rangeStart'
-    rangeStart.value = dateStr
-
-    const rangeEnd = document.createElement('input')
-    rangeEnd.type = 'date'
-    rangeEnd.name = 'rangeEnd'
-    rangeEnd.value = dateStr
-
-    customWrap.appendChild(row('Desde', rangeStart))
-    customWrap.appendChild(row('Até', rangeEnd))
-
-    preset.addEventListener('change', () => {
-        customWrap.style.display = preset.value === 'custom' ? '' : 'none'
-        if (preset.value !== 'custom') {
-            rangeStart.value = dateStr
-            rangeEnd.value = dateStr
-        }
-    })
-
-    form.appendChild(row('Horas de trabalho', work))
-    form.appendChild(row('Quilometragem', km))
-    form.appendChild(row('Aplicar a', preset))
-    form.appendChild(customWrap)
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault()
-
-        const workHours = Number(form.elements.workHours.value || 0)
-        const travelKm = Number(form.elements.travelKm.value || 0)
-        const workMin = Math.max(0, Math.trunc(workHours)) * 60
-        const kmVal = Math.max(0, travelKm)
-
-        const p = form.elements.rangePreset.value || 'day'
-        const r = presetRange(p, dateStr, form)
-
-        if (p === 'day') {
-            await createEventByDay(dateStr, {workMin, km: kmVal, overwrite: true})
-        } else {
-            await createEventBatch(r.startStr, r.endStr, {workMin, km: kmVal, overwrite: true})
-        }
-
-        onDone()
-    })
-
-    return form
-}
-
-function buildBackgroundEvents(days, windowStartStr, windowEndStr) {
-    const events = [];
-
-    for (let i = 0; i < days.length; i++) {
-        const day = days[i];
-        if (!day || !day.date) continue;
-
-        const dateStr = day.date;
-        if (dateStr < windowStartStr || dateStr >= windowEndStr) continue;
-
-        const leaves = Array.isArray(day.leaves) ? day.leaves : [];
-        const hasLeave = leaves.length > 0;
-
-        const workMin = day.workMin;
-        const hasWork = !hasLeave && workMin > 0;
-
-        let kind = null;
-        if (hasLeave) kind = classifyLeave(leaves[0]);
-        else if (hasWork) kind = DAY_KIND.TRABALHO;
-
-        if (!kind) continue;
-
-        events.push({
-            start: dateStr,
-            allDay: true,
-            display: 'background',
-            classNames: ['legend-dot', kind],
-        });
-    }
-
-    return events;
-}
-
-function renderWorkBadges() {
-    const cal = horariosState.view.calendar
+function renderBadges(cal, daysByDate) {
     if (!cal || cal.view.type !== 'opMonth') return
-
     const root = cal.el
     if (!root) return
 
     root.querySelectorAll('.horarios-work-badge, .horarios-km-badge').forEach(el => el.remove())
-
-    const daysByDate = horariosState.view.daysByDate
-    if (!daysByDate || daysByDate.size === 0) return
 
     const startStr = ymd(cal.view.currentStart)
     const endStr = ymd(cal.view.currentEnd)
@@ -370,53 +47,21 @@ function renderWorkBadges() {
     })
 }
 
-function dayCellClassNames(arg) {
-    const inWindow = arg.date >= arg.view.currentStart && arg.date < arg.view.currentEnd;
-    return inWindow ? [] : ['horarios-outside'];
-}
+export function renderHorariosCalendar(calRoot, fc, viewState, deps) {
+    let windowStartStr = null
+    let windowEndStr = null
 
-function destroyCalendar() {
-    const v = horariosState.view;
+    const initialRange = computeCalRange(getInitialOpMonthDate())
+    windowStartStr = ymd(initialRange.start)
+    windowEndStr = ymd(initialRange.end)
 
-    if (v.ctrl) v.ctrl.abort();
-    v.ctrl = null;
+    let cal = null
 
-    if (v.calendar) v.calendar.destroy();
-    v.calendar = null;
-
-    v.daysByDate.clear();
-}
-
-
-export async function mountCalendar() {
-    const calRoot = document.getElementById('calendar');
-    if (!calRoot) return destroyCalendar;
-
-    const v = horariosState.view;
-
-    if (v.calendar) {
-        const sameEl = v.calendar.el === calRoot;
-        const inDom = document.contains(v.calendar.el);
-        if (sameEl && inDom) return destroyCalendar;
-        destroyCalendar();
-    }
-
-    const ctrl = new AbortController();
-    v.ctrl = ctrl;
-
-    const overlays = createOverlays(ctrl.signal)
-
-    await loadFullCalendar();
-
-    if (v.ctrl !== ctrl || ctrl.signal.aborted) return destroyCalendar;
-    if (!document.contains(calRoot)) return destroyCalendar;
-
-    let cal = null;
-
-    cal = new FullCalendar.Calendar(calRoot, {
+    cal = new fc.Calendar(calRoot, {
+        plugins: fc.plugins,
         initialView: 'opMonth',
         initialDate: getInitialOpMonthDate(),
-        locale: 'pt',
+        locale: fc.locale,
         headerToolbar: {
             left: 'opPrev,opNext today',
             center: 'title',
@@ -430,59 +75,38 @@ export async function mountCalendar() {
             },
         },
         customButtons: {
-            opPrev: {
-                icon: 'chevron-left',
-                click: () => navigateOpMonth(cal, 'left', 'opMonth'),
-            },
-            opNext: {
-                icon: 'chevron-right',
-                click: () => navigateOpMonth(cal, 'right', 'opMonth'),
-            },
+            opPrev: {icon: 'chevron-left', click: () => navigateOpMonth(cal, 'left', 'opMonth')},
+            opNext: {icon: 'chevron-right', click: () => navigateOpMonth(cal, 'right', 'opMonth')},
         },
         height: 'auto',
-        datesSet: renderWorkBadges,
-        dayCellClassNames,
-        dateClick: (info) => {
-            if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return
-            if (!info.dayEl) return
-
-            const dateStr = info.dateStr
-            const form = buildWorkForm(dateStr, () => overlays.closeActive())
-
-            overlays.openPopover(info.dayEl, form, {className: 'horarios-popover'})
+        datesSet: (arg) => {
+            windowStartStr = ymd(arg.view.currentStart)
+            windowEndStr = ymd(arg.view.currentEnd)
+            renderBadges(cal, viewState.daysByDate)
         },
+        dayCellClassNames,
+        dateClick: deps.onDateClick,
         events: async (fetchInfo, success, fail) => {
             try {
-                if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return;
+                if (deps.signal.aborted) return
 
-                const days = await fetchDays(fetchInfo);
+                const days = await deps.fetchDays(fetchInfo)
 
-                if (ctrl.signal.aborted || horariosState.view.calendar !== cal) return;
+                if (deps.signal.aborted) return
 
-                horariosState.view.daysByDate = indexDaysByDate(days);
+                viewState.daysByDate = indexDaysByDate(days)
 
-                const view = cal.view;
-                const windowStartStr = ymd(view.currentStart);
-                const windowEndStr = ymd(view.currentEnd);
-
-                success(buildBackgroundEvents(days, windowStartStr, windowEndStr));
+                success(buildBackgroundEvents(days, windowStartStr, windowEndStr))
 
                 requestAnimationFrame(() => {
-                    if (!ctrl.signal.aborted && horariosState.view.calendar === cal) renderWorkBadges();
-                });
+                    if (!deps.signal.aborted) renderBadges(cal, viewState.daysByDate)
+                })
             } catch (err) {
-                if (!ctrl.signal.aborted && horariosState.view.calendar === cal) fail(err);
+                if (!deps.signal.aborted) fail(err)
             }
         },
-    });
+    })
 
-    v.calendar = cal;
-    cal.render();
-
-    return destroyCalendar;
-}
-
-export function mountSchedule() {
-    mountCalendar();
-    return destroyCalendar;
+    cal.render()
+    return cal
 }

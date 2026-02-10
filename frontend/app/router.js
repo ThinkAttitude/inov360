@@ -1,7 +1,7 @@
 import {CARD_TYPES, mountDashboardShell, mountInicio} from "../modules/dashboard/dashboard.js"
 import {initForm} from "../modules/marcacao_direta/marcacao_direta.js"
 import {mountClbMngmt} from "../modules/controlo_colabs/controlo_colabs.js"
-import {mountSchedule} from "../modules/horarios/horarios.js"
+import {mountSchedule} from "../modules/horarios"
 import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
 
