@@ -30,5 +30,3 @@ export function createOverlays(signal) {
 
     return {openPopover, closeActive}
 }
-
-export const overlays = createOverlays()
