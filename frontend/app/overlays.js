@@ -1,4 +1,5 @@
 import {openPopover as openPopoverPrimitive} from '../shared/ui/popover/popover.js'
+import {openModal as openModalPrimitive} from '../shared/ui/modal/modal.js'
 
 /**
  * Creates an overlay controller bound to an optional lifecycle signal.
@@ -26,7 +27,19 @@ export function createOverlays(signal) {
         return dd
     }
 
+    const openModal = (contentEl, opts = {}) => {
+        closeActive()
+        const dd = openModalPrimitive(contentEl, { ...opts, signal })
+        const baseClose = dd.close
+        dd.close = () => {
+            baseClose()
+            if (active === dd) active = null
+        }
+        active = dd
+        return dd
+    }
+
     if (signal) signal.addEventListener('abort', closeActive, {once: true})
 
-    return {openPopover, closeActive}
+    return {openPopover, openModal, closeActive}
 }

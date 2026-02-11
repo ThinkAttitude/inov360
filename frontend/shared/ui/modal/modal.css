@@ -1,0 +1,83 @@
+.ui-modal-dialog {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    max-width: none;
+    max-height: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+.ui-modal-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+.ui-modal-panel {
+    width: min(620px, calc(100vw - 2rem));
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 18px;
+    box-shadow: var(--surface-shadow);
+    overflow: hidden;
+    margin: auto;
+}
+
+.ui-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.ui-modal-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--navy-blue);
+}
+
+.ui-modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--border-gray);
+    background: var(--white);
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+.ui-modal-close:hover {
+    color: var(--navy-blue);
+    border-color: var(--light-blue);
+}
+
+.ui-modal-body {
+    padding: 1.25rem;
+    max-height: calc(100vh - 6rem);
+    overflow: auto;
+}
+
+.ui-modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ui-modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding-top: 1rem;
+}

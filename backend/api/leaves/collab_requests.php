@@ -10,7 +10,6 @@ if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     exit;
 }
 
-
 $userId = (int)($_SESSION['user']['id'] ?? 0);
 
 require_once __DIR__ . '/../includes/db.php';
@@ -23,8 +22,8 @@ $hasResp = $pdo->prepare("
   FROM colaborador_responsaveis
   WHERE colaborador_id = ?
     AND ativo = 1
-    AND (valido_desde IS NULL OR valido_desde <= NOW())
-    AND (valido_ate   IS NULL OR valido_ate   >= NOW())
+    /*AND (valido_desde IS NULL OR valido_desde <= NOW())
+    AND (valido_ate   IS NULL OR valido_ate   >= NOW())*/
   LIMIT 1
 ");
 $hasResp->execute([$userId]);
@@ -58,7 +57,7 @@ while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
         "fim"           => $r['data_fim'],
         "justificacao"  => $r['justificacao'],
         "responsavel_id"=> $r['responsavel_id'] ? (int)$r['responsavel_id'] : null,
-        "comprovativo"  => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
+        "comprovativo" => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
         "estado"        => $r['estado'],
         "criado_em"     => $r['criado_em'],
         "decidido_por"  => $r['decidido_por'] ? (int)$r['decidido_por'] : null

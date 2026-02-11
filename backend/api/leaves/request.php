@@ -85,8 +85,8 @@ if (isset($_FILES['ficheiro']) && $_FILES['ficheiro']['error'] === UPLOAD_ERR_OK
         http_response_code(400); echo json_encode(["ok"=>false,"code"=>"FILE_TOO_LARGE"]); exit;
     }
 
-    $uploads = __DIR__ . '/../../uploads';
-    if (!is_dir($uploads)) { @mkdir($uploads, 0777, true); }
+    $uploads = dirname(__DIR__, 3) . '/uploads';
+    if (!is_dir($uploads)) { mkdir($uploads, 0775, true); }
     $ficheiro_nome = 'comprovativo_' . time() . '_' . mt_rand(1000,9999) . '.' . $ext;
     if (!move_uploaded_file($tmp, $uploads . '/' . $ficheiro_nome)) {
         http_response_code(500); echo json_encode(["ok"=>false,"code"=>"FILE_MOVE_ERROR"]); exit;

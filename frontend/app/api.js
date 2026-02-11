@@ -250,7 +250,7 @@ export async function createEventByDay(date, opts) {
 
 /* Vacation Requests (pedidos_ferias) */
 export async function getCollabRequests() {
-    return apiFetch("leaves/colab_requests.php", {
+    return apiFetch("leaves/collab_requests.php", {
         method: "GET"
     })
 }
