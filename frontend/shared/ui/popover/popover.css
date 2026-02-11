@@ -1,0 +1,33 @@
+.ui-popover-dialog,
+.ui-popover-dialog:modal {
+    outline: none;
+    border: none;
+    overflow: visible;
+    max-width: none;
+    max-height: none;
+    border-radius: 12px;
+    overflow: clip;
+    /* anchor positioning */
+    position: fixed;
+    inset: auto;
+    position-anchor: --ui-popover-anchor;
+    position-area: block-start center;
+    transform: translateY(-8px);
+
+    filter: drop-shadow(0 18px 60px rgba(0, 0, 0, 0.28));
+}
+
+.ui-popover-dialog:focus,
+.ui-popover-dialog:focus-visible {
+    outline: none;
+}
+
+.ui-popover-dialog::backdrop {
+    background: transparent;
+}
+
+.ui-popover-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}

@@ -1,0 +1,455 @@
+<link rel="stylesheet" href="styles.css">
+
+<div class="controlo-page">
+    <header class="controlo-header">
+        <div class="header-left">
+            <div class="page-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+
+            <div class="header-text">
+                <h2 class="controlo-title">Controlo de Colaboradores</h2>
+                <p class="controlo-desc">
+                    Monitore e gerencie a presença e responsabilidades de cada colaborador.
+                </p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button
+                    type="button"
+                    class="btn-primary"
+                    id="controlo-add"
+                    style="background:linear-gradient(135deg,#10b981,#059669);"
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Adicionar
+            </button>
+        </div>
+    </header>
+
+    <section class="controlo-content">
+        <!-- Escolher colaborador -->
+        <div class="controlo-card">
+            <div class="controlo-card-header">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <h3>Escolher colaborador</h3>
+                    <p>Selecione a pessoa para ver os poderes e a hierarquia no sistema.</p>
+                </div>
+            </div>
+            <div class="controlo-card-body">
+                <label class="field-label" for="controlo-user-select">Colaborador</label>
+                <select id="controlo-user-select" class="field-select">
+                    <option value="">-- Selecione um colaborador --</option>
+                </select>
+                <p class="helper-text">
+                    Após escolher, abaixo aparecem as permissões e quem responde a quem.
+                </p>
+            </div>
+        </div>
+
+        <div class="controlo-grid">
+            <!-- Permissões -->
+            <div class="controlo-card">
+                <div class="controlo-card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Permissões no sistema</h3>
+                        <p>O que esta pessoa pode fazer dentro do RH360.</p>
+                    </div>
+                </div>
+                <div class="controlo-card-body">
+                    <p class="empty-state" id="perm-empty">
+                        Selecione um colaborador para ver as permissões.
+                    </p>
+
+                    <ul class="perm-list" id="perm-list">
+                        <li class="perm-item" data-perm="1">
+                            <div class="perm-text">
+                                <div class="perm-name">Controlo de Colaboradores</div>
+                                <div class="perm-desc">
+                                    Pode ver e gerir colaboradores da organização.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="2">
+                            <div class="perm-text">
+                                <div class="perm-name">Marcação Direta de Férias/Ausências</div>
+                                <div class="perm-desc">
+                                    Pode registar férias e ausências diretamente para outros colaboradores.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="3">
+                            <div class="perm-text">
+                                <div class="perm-name">Mapas de Horários</div>
+                                <div class="perm-desc">
+                                    Pode consultar mapas de horas e períodos de trabalho.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="4">
+                            <div class="perm-text">
+                                <div class="perm-name">Pedidos de Horas Extra</div>
+                                <div class="perm-desc">
+                                    Pode propor e registar pedidos de horas extra.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="5">
+                            <div class="perm-text">
+                                <div class="perm-name">Aprovação de Horas Extra</div>
+                                <div class="perm-desc">
+                                    Pode aprovar ou recusar pedidos de horas extra.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="6">
+                            <div class="perm-text">
+                                <div class="perm-name">Gestão de Fichas</div>
+                                <div class="perm-desc">
+                                    Pode gerir fichas pessoais e dados dos colaboradores.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+
+                        <li class="perm-item" data-perm="7">
+                            <div class="perm-text">
+                                <div class="perm-name">Financeira</div>
+                                <div class="perm-desc">
+                                    Pode aceder e gerir informações financeiras dos colaboradores.
+                                </div>
+                            </div>
+                            <button type="button" class="chip chip-status chip-off" aria-pressed="false">
+                                <span class="chip-track">
+                                    <span class="chip-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 2v10"></path>
+                                            <path d="M7.5 4.21A8 8 0 1 0 12 22"></path>
+                                        </svg>
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Hierarquia -->
+            <div class="controlo-card">
+                <div class="controlo-card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v4"></path>
+                            <path d="M6 7v4"></path>
+                            <path d="M18 7v4"></path>
+                            <rect x="9" y="7" width="6" height="4" rx="1"></rect>
+                            <rect x="3" y="11" width="6" height="4" rx="1"></rect>
+                            <rect x="15" y="11" width="6" height="4" rx="1"></rect>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3>Hierarquia</h3>
+                        <p>Quem é responsável por quem.</p>
+                    </div>
+                </div>
+                <div class="controlo-card-body controlo-card-body--hierarchy">
+                    <p class="empty-state" id="hier-empty">
+                        Nenhum colaborador selecionado.
+                    </p>
+
+                    <button
+                            type="button"
+                            class="hier-preview"
+                            id="hier-preview"
+                            disabled
+                    >
+                        <div class="hier-preview-header">
+                            <div>
+                                <div class="hier-preview-title">Mapa de hierarquia</div>
+                                <div class="hier-preview-meta" id="hier-preview-meta">
+                                    Selecione um colaborador para ver o mapa.
+                                </div>
+                            </div>
+                            <div class="hier-preview-cta">
+                                <span>Ver em detalhe</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="hier-preview-canvas">
+                            <div class="hier-preview-badge" id="hier-preview-counts">
+                                0 responsáveis · 0 subordinados
+                            </div>
+
+                            <div class="hier-preview-diagram" id="hier-preview-diagram">
+                                <!-- Diagram preview to be rendered dynamically -->
+                            </div>
+                        </div>
+                    </button>
+
+                    <p class="helper-text">
+                        Clique no mapa para abrir a visão completa e gerir quem responde a quem.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Diagrama de Hierarquia -->
+        <div id="hierarchy-modal" class="controlo-modal-overlay" style="display:none;">
+            <div class="controlo-modal controlo-modal--wide" role="dialog" aria-modal="true" aria-labelledby="hierarchy-modal-title">
+                <div class="controlo-modal-header">
+                    <div>
+                        <h3 id="hierarchy-modal-title">Mapa de hierarquia</h3>
+                        <p class="hier-modal-subtitle" id="hierarchy-modal-subtitle">
+                            Visualize e ajuste quem responde a quem para este colaborador.
+                        </p>
+                    </div>
+                    <button type="button" class="modal-close-btn" id="hierarchy-modal-close" aria-label="Fechar">
+                        ×
+                    </button>
+                </div>
+
+                <div class="controlo-modal-body hier-modal-body">
+                    <div class="hier-diagram-container">
+                        <div class="hier-diagram-inner" id="hier-diagram-inner">
+                            <!-- Responsibles line (top) -->
+                            <div class="hier-diagram-row hier-diagram-row--top">
+                                <div class="hier-diagram-area hier-diagram-area--top">
+                                    <div class="hier-diagram-row-label">Responde a</div>
+                                    <div class="hier-diagram-row-nodes" id="hier-super-list">
+                                        <!-- Responsibles are dynamically rendered -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Central node (selected collaborator) -->
+                            <div class="hier-diagram-row hier-diagram-row--center">
+                                <div class="hier-diagram-row-nodes">
+                                    <div class="hierarchy-item hierarchy-item--current" id="hier-node-current">
+                                        <div class="avatar-wrapper">
+                                            <div class="avatar-small" id="hier-node-current-avatar">
+                                                CL
+                                            </div>
+                                        </div>
+                                        <div class="hierarchy-text">
+                                            <div class="h-name" id="hier-node-current-name">Nome do colaborador</div>
+                                            <div class="h-sub" id="hier-node-current-email">email@empresa.com</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subordinates line (bottom) -->
+                            <div class="hier-diagram-row hier-diagram-row--bottom">
+                                <div class="hier-diagram-area hier-diagram-area--bottom">
+                                    <div class="hier-diagram-row-label">Tem sob a sua responsabilidade</div>
+                                    <div class="hier-diagram-row-nodes" id="hier-subs-list">
+                                        <!-- Subordinates are dynamically rendered -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controlo-modal-footer hier-modal-footer">
+                    <button type="button" class="btn-secondary" id="hierarchy-modal-close-footer">
+                        Fechar
+                    </button>
+                    <button type="button" class="btn-primary" id="hierarchy-modal-save" disabled>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Criar Colaborador -->
+        <div id="controlo-create-modal" class="controlo-modal-overlay" style="display:none;">
+            <div class="controlo-modal" role="dialog" aria-modal="true" aria-labelledby="controlo-create-title">
+                <div class="controlo-modal-header">
+                    <h3 id="controlo-create-title">Criar colaborador</h3>
+                    <button type="button" class="modal-close-btn" id="controlo-create-close" aria-label="Fechar">
+                        ×
+                    </button>
+                </div>
+
+                <form id="controlo-create-form" method="post">
+                    <div class="controlo-modal-body">
+                        <div class="controlo-modal-grid">
+                            <!-- Nome Completo -->
+                            <label class="field-label">
+                                Nome completo
+                                <input
+                                        type="text"
+                                        class="field-input"
+                                        id="create-nome"
+                                        name="nome"
+                                        placeholder="Digite o nome completo"
+                                        required
+                                />
+                            </label>
+
+                            <!-- Email -->
+                            <label class="field-label">
+                                E-mail
+                                <input
+                                        type="email"
+                                        class="field-input"
+                                        id="create-email"
+                                        name="email"
+                                        placeholder="exemplo@empresa.com"
+                                        required
+                                />
+                            </label>
+
+                            <!-- Empresa -->
+                            <label class="field-label">
+                                Empresa
+                                <select
+                                        id="create-company"
+                                        name="company_id"
+                                        class="field-select"
+                                        required
+                                >
+                                    <option value="">Selecione uma empresa</option>
+                                    <option value="7">Almalusa</option>
+                                    <option value="4">AutoBuild</option>
+                                    <option value="8">Drawline I</option>
+                                    <option value="9">Drawline II</option>
+                                    <option value="2">Ferrobuild</option>
+                                    <option value="5">FitOut</option>
+                                    <option value="11">GrupoInov</option>
+                                    <option value="1">Inovbuild</option>
+                                    <option value="6">StratGate</option>
+                                    <option value="10">Think Attitude</option>
+                                    <option value="3">WoodBuild</option>
+                                </select>
+                            </label>
+
+                            <!-- Palavra-passe -->
+                            <label class="field-label">
+                                Palavra-passe
+                                <input
+                                        type="password"
+                                        class="field-input"
+                                        id="create-password"
+                                        name="password"
+                                        placeholder="Digite a senha"
+                                        required
+                                />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="controlo-modal-footer">
+                        <button type="button" class="btn-secondary" id="controlo-create-cancel">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn-primary" id="controlo-create-submit">
+                            Criar colaborador
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>

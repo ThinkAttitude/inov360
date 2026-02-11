@@ -1,0 +1,11 @@
+.horarios-popover .ui-popover-panel {
+    width: 260px;
+    border: 1px solid color-mix(in srgb, var(--navy-blue) 12%, transparent);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.horarios-day-form {
+    display: grid;
+    gap: 12px;
+}

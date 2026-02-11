@@ -1,0 +1,225 @@
+.horarios-page {
+    padding: 0;
+    background: #f8fafc;
+    min-height: 100vh;
+}
+
+.horarios-header {
+    background: #fff;
+    padding: 2rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.horarios-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.horarios-header .page-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(62, 132, 242, 0.25);
+    flex: 0 0 56px;
+}
+
+.horarios-header .header-text {
+    min-width: 0;
+}
+
+.horarios-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.5px;
+}
+
+.horarios-desc {
+    color: var(--text-light);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.horarios-content {
+    padding: 2rem 2.5rem;
+    display: grid;
+    gap: 2rem;
+}
+
+.horarios-page .horarios-outside {
+    pointer-events: none;
+    opacity: 0.35;
+}
+
+.horarios-page .calendar-section {
+    background: #fff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.horarios-page .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.horarios-page .section-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.horarios-page .section-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex: 0 0 40px;
+}
+
+.horarios-page .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+    margin: 0;
+}
+
+.horarios-page .calendar-legend {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.horarios-page .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-dark);
+    white-space: nowrap;
+}
+
+.horarios-page .calendar-legend .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+
+.horarios-page .legend-dot.trabalho { background-color: #3788d8; }
+.horarios-page .legend-dot.ferias { background-color: #10b981; }
+.horarios-page .legend-dot.ausencia { background-color: #f59e0b; }
+
+.horarios-page .calendar-container {
+    padding: 2rem;
+}
+
+/* FullCalendar Customizations especially for */
+.horarios-page .fc .fc-bg-event.legend-dot {
+    opacity: 0.12;
+}
+
+.horarios-page .fc .horarios-outside {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.horarios-page .fc .horarios-outside .fc-daygrid-day-number {
+    visibility: hidden;
+}
+
+
+.horarios-page .fc .fc-daygrid-day.horarios-outside .fc-daygrid-day-number {
+    visibility: hidden;
+}
+
+/* force the flex aligment for the day headers so badge keeps its height */
+.horarios-page .fc .fc-daygrid-day-top {
+    align-items: flex-start;
+    gap: 0.35rem;
+}
+
+.horarios-page .fc .horarios-work-badge {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    line-height: 1;
+}
+
+
+.horarios-page .fc .horarios-work-badge {
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    margin-left: 0.35rem;
+    white-space: nowrap;
+}
+
+#calendar {
+    min-height: 400px;
+}
+
+@media (max-width: 900px) {
+    .horarios-header {
+        padding: 1.5rem;
+    }
+
+    .horarios-content {
+        padding: 1.5rem;
+    }
+
+    .horarios-page .section-header {
+        padding: 1.25rem 1.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .horarios-page .calendar-container {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .horarios-header .header-left {
+        gap: 1rem;
+    }
+
+    .horarios-header .page-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        flex-basis: 48px;
+    }
+
+    .horarios-title {
+        font-size: 1.5rem;
+    }
+}
