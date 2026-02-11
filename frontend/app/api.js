@@ -218,9 +218,8 @@ export async function createRecordRequest(payload) {
 /* Schedule Management (horarios) */
 export async function getCalendarTimeframe(from, to) {
     const params = new URLSearchParams();
-
-    if (from) params.append('from', String(from)); // YYYY-MM-DD
-    if (to) params.append('to', String(to));       // YYYY-MM-DD
+    params.append('from', String(from)); // YYYY-MM-DD
+    params.append('to', String(to));       // YYYY-MM-DD
 
     const qs = params.toString();
     return apiFetch(`calendar/get_month.php${qs ? `?${qs}` : ''}`, {
@@ -247,3 +246,26 @@ export async function createEventByDay(date, opts) {
     const d = String(date);
     return createEventBatch(d, d, opts);
 }
+
+
+/* Vacation Requests (pedidos_ferias) */
+export async function getCollabRequests() {
+    return apiFetch("leaves/colab_requests.php", {
+        method: "GET"
+    })
+}
+
+export async function createLeaveRequest({ tipo, data_inicio, data_fim, justificacao, ficheiro }) {
+    const form = new FormData()
+    form.append("tipo", tipo)
+    form.append("data_inicio", data_inicio)
+    form.append("data_fim", data_fim)
+    form.append("justificacao", justificacao)
+    if (ficheiro) form.append("ficheiro", ficheiro)
+
+    return apiFetch("leaves/request.php", {
+        method: "POST",
+        body: form
+    })
+}
+
