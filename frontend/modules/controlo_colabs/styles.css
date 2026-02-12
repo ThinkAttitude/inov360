@@ -153,7 +153,7 @@
 .helper-text {
     margin-top: 0.5rem;
     font-size: 0.85rem;
-    color: var(--muted-color);
+    color: var(--background-muted);
 }
 
 /* Permissions list */
@@ -196,7 +196,7 @@
 
 .empty-state {
     font-size: 0.9rem;
-    color: var(--muted-color);
+    color: var(--background-muted);
 }
 
 /* Chip (permission toggle) */
@@ -469,6 +469,7 @@
 
 /* --------- Pré-visualização de hierarquia (card body) --------- */
 .controlo-card-body--hierarchy {
+    height: 100%;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -476,7 +477,6 @@
 
 /* Preview */
 .hier-preview {
-    width: 464px;
     max-width: 100%;
     flex: 1 1 auto;
     margin-top: 0.25rem;
@@ -521,7 +521,7 @@
 .hier-preview-meta {
     margin-top: 0.1rem;
     font-size: 0.8rem;
-    color: var(--muted-color);
+    color: var(--background-muted);
 }
 
 .hier-preview-cta {
@@ -545,8 +545,8 @@
     background: #ffffff;
     border: 1px dashed rgba(148, 163, 184, 0.7);
     padding: 0.6rem 0.75rem;
-    min-height: 80px;
-    flex: 1;
+    min-height: 140px;
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -773,7 +773,7 @@
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--muted-color);
+    color: var(--background-muted);
 }
 
 .hier-diagram-row-nodes {

@@ -8,6 +8,7 @@
     --light-blue: #3E84F2;
     --white: #FFFFFF;
     --background-gray: #F4F7FA;
+    --background-muted: var(--text-light);
     --border-gray: #E0E0E0;
     --text-dark: #333333;
     --text-light: #777777;

@@ -167,6 +167,30 @@
     color: #fecaca;
 }
 
+.main-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.main-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--navy-blue), var(--light-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.main-header p {
+    font-size: 1.125rem;
+    color: var(--text-light);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
 .welcome-content {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
