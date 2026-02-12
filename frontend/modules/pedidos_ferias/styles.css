@@ -215,6 +215,19 @@
     max-width: 640px;
 }
 
+.ferias-empty {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.ferias-empty-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
 .ferias-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;

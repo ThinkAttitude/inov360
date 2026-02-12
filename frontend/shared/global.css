@@ -19,6 +19,8 @@
     --hier-card-height: 64px;
     --hier-row-gap: 3.5rem;
     --hier-line-length: var(--hier-row-gap);
+    --max-page-width: 1300px;
+    --shadow-1: 0 6px 18px rgba(14, 30, 37, 0.06);
 }
 
 
