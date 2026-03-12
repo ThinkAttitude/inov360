@@ -34,19 +34,19 @@
 - [ ] Obter o número de registos aprovados e já extraídos **[~2 horas]**
 
 ## Propor horas extra
-- [ ] Apresentar painel de horas extra **[~1,5 dias]**
-- [ ] Obter e listar todos os colaboradores **[~4 horas]**
-- [ ] Submeter e registar o pedido **[~4 horas]**
+- [x] Apresentar painel de horas extra **[~1,5 dias]**
+- [x] Obter e listar todos os colaboradores **[~4 horas]**
+- [x] Submeter e registar o pedido **[~4 horas]**
 
 ## Horas extra
-- [ ] Apresentar painel de listagem, aprovação e rejeição dos pedidos de horas extra **[~1,5 dias]**
-- [ ] Obter e listar todos os pedidos **[~4 horas]**
-- [ ] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~1 dia]**
-- [ ] Apresentar painel do histórico de pedidos **[~4 horas]**
-- [ ] Obter e listar todos os pedidos anteriores (aprovados ou recusados) **[~4 horas]**
-- [ ] Apresentar painel de visualização de cada pedido aprovado **[~4 horas]**
-- [ ] Permitir seleção dos pedidos aprovados **[~2 horas]**
-- [ ] Converter e exportar os pedidos selecionados para formato .xlsx (Excel) **[~2 horas]**
+- [x] Apresentar painel de listagem, aprovação e rejeição dos pedidos de horas extra **[~1,5 dias]**
+- [x] Obter e listar todos os pedidos **[~4 horas]**
+- [x] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~1 dia]**
+- [x] Apresentar painel do histórico de pedidos **[~4 horas]**
+- [x] Obter e listar todos os pedidos anteriores (aprovados ou recusados) **[~4 horas]**
+- [x] Apresentar painel de visualização de cada pedido aprovado **[~4 horas]**
+- [x] Permitir seleção dos pedidos aprovados **[~2 horas]**
+- [x] Converter e exportar os pedidos selecionados para formato .xlsx (Excel) **[~2 horas]**
 
 ## Férias / ausências diretas
 - [x] Apresentar formulário com os respetivos campos obrigatórios
@@ -62,11 +62,6 @@
 - [ ] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~4 horas]**
 - [ ] Edição Direta de todos os campos de cada ficha.
 
-## Financeira
-- [ ] Apresentar painel de finanças **[~1 dia]**
-- [ ] Obter e listar todas as fichas financeiras dos colaboradores **[~1 dia]**
-- [ ] Alterar qualquer campo das fichas financeiras e registar na base de dados **[~1 dia]**
-- [ ] Exportar a ficha para formato .xlsx (Excel) **[~4 horas]**
 
 ## Controlo de colaboradores **[Prioritário]**
 - [ ] Apresentar painel de controlo de colaboradores **[~1 dia]**
