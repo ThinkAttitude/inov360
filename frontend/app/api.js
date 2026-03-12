@@ -1,4 +1,4 @@
-const API_BASE_URL = '/../../backend/api/';
+const API_BASE_URL = '/backend/api/';
 
 /**
  * Generic function to make API requests
@@ -42,8 +42,9 @@ export async function login(email, password) {
     });
 }
 
-export function logout() {
-    window.location.href = '../../backend/api/auth/logout.php';
+export async function logout() {
+    const res = await fetch('/backend/api/auth/logout.php', { method: 'POST' });
+    window.location.href = res.headers.get('X-Redirect');
 }
 
 export async function register(userData) {
@@ -213,6 +214,50 @@ export async function createRecordRequest(payload) {
         method: 'POST',
         body: payload
     });
+}
+
+/* Overtime (horas extra) */
+export async function requestOvertime({ user_id, dia, hora_inicio, hora_fim, justificacao }) {
+    return apiFetch('overtime/request_overtime.php', {
+        method: 'POST',
+        body: { user_id, dia, hora_inicio, hora_fim, justificacao }
+    });
+}
+
+export async function getOvertimeRequests({ state = 'all', month, user_id, q, limit, offset } = {}) {
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (month) params.append('month', month);
+    if (user_id) params.append('user_id', String(user_id));
+    if (q) params.append('q', q);
+    if (limit) params.append('limit', String(limit));
+    if (offset) params.append('offset', String(offset));
+    return apiFetch(`overtime/request_list.php?${params.toString()}`, { method: 'GET' });
+}
+
+export async function approveOvertime({ request_id, decision, comentario }) {
+    return apiFetch('overtime/approve_overtime.php', {
+        method: 'POST',
+        body: { request_id, decision, comentario }
+    });
+}
+
+export async function getOvertimeHistory({ month, state = 'both', q, user_id, limit, offset } = {}) {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (state) params.append('state', state);
+    if (q) params.append('q', q);
+    if (user_id) params.append('user_id', String(user_id));
+    if (limit) params.append('limit', String(limit));
+    if (offset) params.append('offset', String(offset));
+    return apiFetch(`overtime/sheets_review.php?${params.toString()}`, { method: 'GET' });
+}
+
+export async function exportOvertimeSheets(month, userIds = []) {
+    const params = new URLSearchParams();
+    params.append('month', month);
+    if (userIds.length) params.append('user_ids', userIds.join(','));
+    return apiFetch(`overtime/sheets_export.php?${params.toString()}`, { method: 'GET' });
 }
 
 /* Schedule Management (horarios) */
