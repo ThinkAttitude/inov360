@@ -4,6 +4,8 @@ import {mountClbMngmt} from "../modules/controlo_colabs/controlo_colabs.js"
 import {mountSchedule} from "../modules/horarios"
 import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
+import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_horas_extras.js"
+import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
 
 export const MODULES_BASE = "/frontend/modules"
 
@@ -45,12 +47,12 @@ export const Routes = Object.freeze({
     [Path.LISTA_INTERMEDIOS]: {html: Route(`${MODULES_BASE}/lista_intermedios/lista_intermedios.php`), mount: null},
     [Path.CONTROLO_COLABS]: {html: Route(`${MODULES_BASE}/controlo_colabs/view.html`), mount: mountClbMngmt},
     [Path.PEDIDOS_HORAS_EXTRA]: {
-        html: Route(`${MODULES_BASE}/pedidos_horas_extras/pedidos_horas_extras.php`),
-        mount: null
+        html: Route(`${MODULES_BASE}/pedidos_horas_extras/view.html`),
+        mount: mountPedidosHorasExtra
     },
     [Path.APROVACAO_HORAS_EXTRA]: {
-        html: Route(`${MODULES_BASE}/aprovacao_horas_extras/aprovacao_horas_extras.php`),
-        mount: null
+        html: Route(`${MODULES_BASE}/horas_extra/view.html`),
+        mount: mountHorasExtra
     },
     [Path.MARCACAO_DIRETA]: {html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`), mount: initForm},
     [Path.GESTAO_FICHAS]: {html: Route(`${MODULES_BASE}/gestao_fichas/view.html`), mount: mountGstFchs},
