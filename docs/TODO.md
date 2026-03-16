@@ -11,23 +11,23 @@
 
 ## Consulta de horários
 - [x] Apresentar o calendário por dia, semana e mês
-- [ ] Visualizar os dias de trabalho, ausência e férias **[~1 dia]**
-- [ ] Marcar um horário com as horas trabalhadas e os quilómetros (km) da viatura **[~4 horas]**
-- [ ] Marcar um horário em múltiplos dias, dado um período, com horas trabalhadas e quilómetros (km) da viatura **[~4 horas]**
-- [ ] Limpar um horário com as horas trabalhadas e os quilómetros (km) da viatura **[~4 horas]**
-- [ ] Limpar um horário em múltiplos dias, dado um período, com horas trabalhadas e quilómetros (km) da viatura **[~4 horas]**
+- [x] Visualizar os dias de trabalho, ausência e férias **[~1 dia]**
+- [x] Marcar um horário com as horas trabalhadas e os quilómetros (km) da viatura **[~4 horas]**
+- [x] Marcar um horário em múltiplos dias, dado um período, com horas trabalhadas e quilómetros (km) da viatura **[~4 horas]**
+- [x] Limpar um horário com as horas trabalhadas e os quilómetros (km) da viatura **[~4 horas]**
+- [x] Limpar um horário em múltiplos dias, dado um período, com horas trabalhadas e quilómetros (km) da viatura **[~4 horas]**
 
 ## Pedidos de férias / ausências
 - [x] Apresentar painel de pedidos e estatísticas relacionadas
-- [ ] Obter estatísticas (número de pedidos totais e por estado) **[~4 horas]**
-- [ ] Obter e apresentar os pedidos detalhadamente efetuados pelo utilizador **[~4 horas]**
-- [ ] Apresentar formulário de criação de pedido de férias / ausências **[~4 horas]**
-- [ ] Criar um pedido de férias / ausências com os respetivos campos **[~1 dia]**
-- [ ] Permitir anexar um ficheiro de comprovativo apenas com os formatos aceites **[~4 horas]**
-- [ ] Filtrar pedidos por estado e apresentar **[~4 horas]**
+- [x] Obter estatísticas (número de pedidos totais e por estado) **[~4 horas]**
+- [x] Obter e apresentar os pedidos detalhadamente efetuados pelo utilizador **[~4 horas]**
+- [x] Apresentar formulário de criação de pedido de férias / ausências **[~4 horas]**
+- [x] Criar um pedido de férias / ausências com os respetivos campos **[~1 dia]**
+- [x] Permitir anexar um ficheiro de comprovativo apenas com os formatos aceites **[~4 horas]**
+- [x] Filtrar pedidos por estado e apresentar **[~4 horas]**
 
 ## Mapas de horas
-- [x] Apresentar painel de extração de horários aprovados
+- [ ] Apresentar painel de extração de horários aprovados
 - [ ] Pesquisar por nome do colaborador e mês e obter os horários resultantes da filtragem **[~4 horas]**
 - [ ] Converter os horários selecionados para formato .xlsx (Excel) **[~4 horas]**
 - [ ] Exportar os ficheiros Excel resultantes para descarregar **[~2 horas]**
@@ -56,20 +56,20 @@
 
 ## Gestão de fichas **[Prioritário]**
 - [x] Apresentar painel para gestão de fichas e tabela de colaboradores
-- [ ] Obter e listar todos os colaboradores **[~4 horas]**
+- [x] Obter e listar todos os colaboradores **[~4 horas]**
 - [ ] Exportar a lista para formato .xlsx (Excel) **[~4 horas]**
-- [ ] Obter e apresentar lista detalhada de todos os pedidos pendentes **[~1 dia]**
-- [ ] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~4 horas]**
-- [ ] Edição Direta de todos os campos de cada ficha.
+- [x] Obter e apresentar lista detalhada de todos os pedidos pendentes **[~1 dia]**
+- [x] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~4 horas]**
+- [x] Edição Direta de todos os campos de cada ficha.
 
 
 ## Controlo de colaboradores **[Prioritário]**
-- [ ] Apresentar painel de controlo de colaboradores **[~1 dia]**
-- [ ] Criar colaboradores e apresentar o respetivo formulário **[~1 dia]**
-- [ ] Alterar permissões de um utilizador específico com caixa de seleção **[~1 dia]**
-- [ ] Alterar hierarquia de um utilizador específico com caixa de seleção **[~1 dia]**
-- [ ] Apresentar painel de diagrama hierárquico **[~1 dia]**
-- [ ] Montar e registar a árvore hierárquica através do painel do diagrama **[~1 dia]**
+- [x] Apresentar painel de controlo de colaboradores **[~1 dia]**
+- [x] Criar colaboradores e apresentar o respetivo formulário **[~1 dia]**
+- [x] Alterar permissões de um utilizador específico com caixa de seleção **[~1 dia]**
+- [x] Alterar hierarquia de um utilizador específico com caixa de seleção **[~1 dia]**
+- [x] Apresentar painel de diagrama hierárquico **[~1 dia]**
+- [x] Montar e registar a árvore hierárquica através do painel do diagrama **[~1 dia]**
 
 ## Aprovação de horários
 - [ ] Apresentar painel de aprovação de horários **[~1,5 dias]**
@@ -82,12 +82,12 @@
 - [ ] Permitir efetuar uma ação (aprovar ou recusar) em cada pedido **[~1 dia]**
 
 ## Consulta de pedidos
-- [x] Apresentar painel do histórico de pedidos
+- [ ] Apresentar painel do histórico de pedidos
 - [ ] Listar detalhadamente todos os pedidos já processados (nome do colaborador, comprovativo, estado, data de início e fim, descrição, responsável que processou, data do pedido) **[~1 dia]**
 - [ ] Apresentar painel de visualização do comprovativo **[~4 horas]**
 - [ ] Apresentar o número de pedidos processados **[~4 horas]**
 
 ## A minha ficha
 - [x] Apresentar painéis separados para dados pessoais, informação familiar e identificação, dados fiscais, dados contratuais e contactos de emergência
-- [ ] Obter e listar a informação para todos os campos de dados pessoais, informação familiar e identificação, dados fiscais, dados contratuais e contactos de emergência **[~1 dia]**
-- [ ] Permitir alterar certos dados especificos e registar as alterações na base de dados **[~1 dia]**
+- [x] Obter e listar a informação para todos os campos de dados pessoais, informação familiar e identificação, dados fiscais, dados contratuais e contactos de emergência **[~1 dia]**
+- [x] Permitir alterar certos dados especificos e registar as alterações na base de dados **[~1 dia]**
