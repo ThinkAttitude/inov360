@@ -106,6 +106,7 @@ function renderPending(items) {
             <td>${esc(item.hora_fim)}</td>
             <td>${formatMinutes(item.minutos)}</td>
             <td>${esc(item.criado_por.nome)}</td>
+            <td class="he-col-justif">${item.justificacao ? `<span class="he-justif-icon" data-tooltip="${esc(item.justificacao)}">i</span>` : '<span class="he-no-data">-</span>'}</td>
             <td>
                 <div class="he-action-group">
                     <button type="button" class="he-action-btn he-action-btn--approve" data-action="approve" data-id="${item.id}">Aprovar</button>
@@ -113,6 +114,7 @@ function renderPending(items) {
                 </div>
             </td>
         `;
+
         tbody.appendChild(tr);
     });
 }
@@ -181,6 +183,11 @@ function openDecisionModal(item, action) {
                 <span class="he-detail-label">Proposto por</span>
                 <span class="he-detail-value">${esc(item.criado_por.nome)}</span>
             </div>
+            ${item.justificacao ? `
+            <div class="he-detail-field full-width">
+                <span class="he-detail-label">Justificação</span>
+                <span class="he-detail-value">${esc(item.justificacao)}</span>
+            </div>` : ''}
         </div>
         <textarea id="he-modal-comment" placeholder="Comentário (opcional)..."></textarea>
     `;
@@ -300,8 +307,11 @@ function renderHistory(items) {
             <td>${formatMinutes(item.req_minutos)}</td>
             <td><span class="he-badge he-badge--${item.estado}">${item.estado === 'approved' ? 'Aprovado' : 'Recusado'}</span></td>
             <td>${item.decidido_por ? esc(item.decidido_por.nome) : '-'}</td>
+            <td class="he-col-justif">${item.justificacao ? `<span class="he-justif-icon" data-tooltip="${esc(item.justificacao)}">i</span>` : '<span class="he-no-data">-</span>'}</td>
+            <td class="he-col-justif">${item.comentario ? `<span class="he-justif-icon" data-tooltip="${esc(item.comentario)}">i</span>` : '<span class="he-no-data">-</span>'}</td>
             <td><button type="button" class="he-action-btn he-action-btn--detail" data-detail-id="${item.id}">Ver</button></td>
         `;
+
         tbody.appendChild(tr);
     });
 }
@@ -385,6 +395,11 @@ function openDetailModal(item) {
                 <span class="he-detail-label">Data da decisão</span>
                 <span class="he-detail-value">${item.decidido_em || '-'}</span>
             </div>
+            ${item.justificacao ? `
+            <div class="he-detail-field full-width">
+                <span class="he-detail-label">Justificação</span>
+                <span class="he-detail-value">${esc(item.justificacao)}</span>
+            </div>` : ''}
             ${item.comentario ? `
             <div class="he-detail-field full-width">
                 <span class="he-detail-label">Comentário</span>
