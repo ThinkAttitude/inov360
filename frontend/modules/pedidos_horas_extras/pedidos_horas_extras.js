@@ -23,9 +23,9 @@ async function fillCollaborators() {
         if (res.items.length === 0 && feedbackDiv) {
             feedbackDiv.innerHTML = '<div class="feedback-message error">Nenhum colaborador encontrado.</div>';
         }
-    } catch (err) {
+    } catch {
         if (feedbackDiv) {
-            feedbackDiv.innerHTML = `<div class="feedback-message error">Erro ao carregar colaboradores: ${err.message}</div>`;
+            feedbackDiv.innerHTML = '<div class="feedback-message error">Erro ao carregar colaboradores</div>';
         }
     }
 }
@@ -42,12 +42,12 @@ function setupForm() {
 
         const userId = document.getElementById('colaborador')?.value;
         const dia = document.getElementById('dia')?.value;
-        const hInicioH = document.getElementById('hora_inicio_h')?.value;
-        const hInicioM = document.getElementById('hora_inicio_m')?.value;
-        const hFimH = document.getElementById('hora_fim_h')?.value;
-        const hFimM = document.getElementById('hora_fim_m')?.value;
-        const horaInicio = (hInicioH && hInicioM !== '') ? `${hInicioH}:${hInicioM}` : '';
-        const horaFim = (hFimH && hFimM !== '') ? `${hFimH}:${hFimM}` : '';
+        const hInicioH = document.getElementById('hora_inicio_h')?.value ?? '';
+        const hInicioM = document.getElementById('hora_inicio_m')?.value ?? '';
+        const hFimH = document.getElementById('hora_fim_h')?.value ?? '';
+        const hFimM = document.getElementById('hora_fim_m')?.value ?? '';
+        const horaInicio = (hInicioH !== '' && hInicioM !== '') ? `${hInicioH}:${hInicioM}` : '';
+        const horaFim = (hFimH !== '' && hFimM !== '') ? `${hFimH}:${hFimM}` : '';
         const justificacao = document.getElementById('justificacao')?.value?.trim();
 
         if (!userId || !dia || !horaInicio || !horaFim || !justificacao) {
@@ -74,7 +74,7 @@ function setupForm() {
             });
 
             if (res?.ok) {
-                feedbackDiv.innerHTML = `<div class="feedback-message success">Pedido de horas extra criado com sucesso (ID ${res.request.id}).</div>`;
+                feedbackDiv.innerHTML = '<div class="feedback-message success">Pedido de horas extra criado com sucesso.</div>';
                 form.reset();
             } else {
                 const msgs = {
@@ -89,7 +89,7 @@ function setupForm() {
                     ALREADY_HAS_APPROVED_OVERTIME: 'Já existem horas extra aprovadas nesse período.',
                     OVERTIME_CLOSED: 'O período de horas extra está encerrado para este dia.',
                 };
-                const msg = msgs[res?.code] || res?.code || 'Erro ao submeter o pedido.';
+                const msg = msgs[res?.code] || 'Erro ao submeter o pedido.';
                 feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
             }
         } catch {

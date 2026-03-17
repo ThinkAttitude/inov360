@@ -43,8 +43,14 @@ export async function login(email, password) {
 }
 
 export async function logout() {
-    const res = await fetch('/backend/api/auth/logout.php', { method: 'POST' });
-    window.location.href = res.headers.get('X-Redirect');
+    const fallback = '/frontend/modules/login/view.html';
+    try {
+        const res = await fetch('/backend/api/auth/logout.php', { method: 'POST' });
+        const redirect = res.ok && res.headers.get('X-Redirect');
+        window.location.replace(redirect || fallback);
+    } catch {
+        window.location.replace(fallback);
+    }
 }
 
 export async function register(userData) {
