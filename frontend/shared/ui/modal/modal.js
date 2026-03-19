@@ -14,6 +14,7 @@ export function openModal(opts = {}) {
     dialog.className = 'ui-modal'
     dialog.setAttribute('role', 'dialog')
     dialog.setAttribute('aria-modal', 'true')
+    dialog.setAttribute('tabindex', '-1')
 
     const header = document.createElement('div')
     header.className = 'ui-modal-header'
@@ -50,7 +51,34 @@ export function openModal(opts = {}) {
     closeBtn.addEventListener('click', close)
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close() })
 
-    if (opts.signal) opts.signal.addEventListener('abort', close, { once: true })
+    // Close with Escape key, similar to popover behavior
+    overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' || e.key === 'Esc') {
+            e.preventDefault()
+            e.stopPropagation()
+            close()
+        }
+    })
+
+    // If an AbortSignal is provided, close immediately if already aborted,
+    // otherwise close when the abort event fires.
+    if (opts.signal) {
+        if (opts.signal.aborted) {
+            close()
+        } else {
+            opts.signal.addEventListener('abort', close, { once: true })
+        }
+    }
+
+    // Focus the first focusable element inside the dialog, or the dialog itself
+    const autofocusTarget = dialog.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (autofocusTarget && autofocusTarget instanceof HTMLElement) {
+        autofocusTarget.focus()
+    } else {
+        dialog.focus()
+    }
 
     requestAnimationFrame(() => overlay.classList.add('ui-modal-overlay--active'))
 
