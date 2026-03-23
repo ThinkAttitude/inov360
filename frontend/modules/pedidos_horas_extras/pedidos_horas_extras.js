@@ -77,20 +77,7 @@ function setupForm() {
                 feedbackDiv.innerHTML = '<div class="feedback-message success">Pedido de horas extra criado com sucesso.</div>';
                 form.reset();
             } else {
-                const msgs = {
-                    MISSING_FIELDS: 'Campos obrigatórios em falta.',
-                    INVALID_DATE: 'Data inválida.',
-                    INVALID_TIME_FORMAT: 'Formato de hora inválido.',
-                    INVALID_TIME_RANGE: 'Intervalo de horas inválido.',
-                    INVALID_GRANULARITY_15MIN: 'O intervalo deve ser em blocos de 15 minutos.',
-                    MAX_HOURS_EXCEEDED: 'Máximo de 12 horas excedido.',
-                    USER_NOT_FOUND: 'Colaborador não encontrado.',
-                    DUPLICATE_REQUEST_OVERLAP: 'Já existe um pedido pendente nesse período.',
-                    ALREADY_HAS_APPROVED_OVERTIME: 'Já existem horas extra aprovadas nesse período.',
-                    OVERTIME_CLOSED: 'O período de horas extra está encerrado para este dia.',
-                };
-                const msg = msgs[res?.code] || 'Erro ao submeter o pedido.';
-                feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
+                feedbackDiv.innerHTML = '<div class="feedback-message error">Erro ao submeter o pedido.</div>';
             }
         } catch {
             feedbackDiv.innerHTML = '<div class="feedback-message error">Falha na comunicação com o servidor.</div>';

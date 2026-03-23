@@ -22,10 +22,14 @@ export function openModal(opts = {}) {
     const titleEl = document.createElement('h3')
     titleEl.className = 'ui-modal-title'
     titleEl.textContent = opts.title || ''
+    const titleId = `ui-modal-title-${Math.random().toString(36).slice(2)}`
+    titleEl.id = titleId
+    dialog.setAttribute('aria-labelledby', titleId)
 
     const closeBtn = document.createElement('button')
     closeBtn.type = 'button'
     closeBtn.className = 'ui-modal-close'
+    closeBtn.setAttribute('aria-label', 'Fechar')
     closeBtn.textContent = '\u00d7'
 
     header.append(titleEl, closeBtn)

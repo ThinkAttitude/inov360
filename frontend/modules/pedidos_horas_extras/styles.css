@@ -15,13 +15,13 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.header-left {
+.phe-header .header-left {
     display: flex;
     align-items: center;
     gap: 1.5rem;
 }
 
-.page-icon {
+.phe-header .page-icon {
     width: 56px;
     height: 56px;
     background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
@@ -33,7 +33,7 @@
     box-shadow: 0 8px 24px rgba(62, 132, 242, 0.25);
 }
 
-.header-text h2 {
+.phe-header .header-text h2 {
     font-size: 1.75rem;
     font-weight: 700;
     color: var(--navy-blue);
@@ -41,7 +41,7 @@
     letter-spacing: -0.5px;
 }
 
-.header-text p {
+.phe-header .header-text p {
     color: var(--text-light);
     font-size: 1rem;
     margin: 0;

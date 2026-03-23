@@ -5,7 +5,7 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function initHistory({ horasState, esc, formatDate, formatMinutes, openModal }) {
+export function mountHistory({ horasState, esc, formatDate, formatMinutes, openModal }) {
 
     async function loadHistory() {
         const monthInput = document.getElementById('he-hist-month');

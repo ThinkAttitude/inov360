@@ -3,8 +3,8 @@ import {
     approveOvertime,
 } from '../../app/api.js';
 import { createOverlays } from '../../app/overlays.js';
-import { initHistory } from './horas_extra_history.js';
-import { initExport } from './horas_extra_export.js';
+import { mountHistory } from './horas_extra_history.js';
+import { mountExport } from './horas_extra_export.js';
 import './styles.css';
 
 const horasState = { pending: null, history: null, export: null };
@@ -207,13 +207,7 @@ function openDecisionModal(item, action, openModal) {
             loadPending();
         } catch {
             if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = isApprove ? 'Aprovar' : 'Recusar'; }
-            const errMap = {
-                REQUEST_NOT_FOUND: 'Pedido não encontrado.',
-                ALREADY_DECIDED: 'Este pedido já foi decidido.',
-                OVERTIME_CLOSED: 'O período está encerrado.',
-                OVERTIME_CONFLICT: 'Conflito com horas extra já existentes.',
-            };
-            alert(errMap[res?.code] || 'Erro ao processar a decisão.');
+            alert('Erro ao processar a decisão.');
         }
     });
 }
@@ -222,8 +216,8 @@ export function mountHorasExtra() {
     const ol = createOverlays();
     const deps = { horasState, esc, formatDate, formatMinutes, openModal: ol.openModal };
 
-    const { loadHistory } = initHistory(deps);
-    initExport(deps);
+    const { loadHistory } = mountHistory(deps);
+    mountExport(deps);
 
     bindTabs(loadHistory);
     bindPendingActions(ol.openModal);

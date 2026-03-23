@@ -1,6 +1,6 @@
 import { getOvertimeHistory, exportOvertimeSheets } from '../../app/api.js';
 
-export function initExport({ horasState, esc, formatDate, formatMinutes }) {
+export function mountExport({ horasState, esc, formatDate, formatMinutes }) {
 
     async function loadExportPreview() {
         const monthInput = document.getElementById('he-export-month');
