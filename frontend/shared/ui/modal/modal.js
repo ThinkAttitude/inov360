@@ -22,6 +22,7 @@ export function openModal(opts = {}) {
     const titleEl = document.createElement('h3')
     titleEl.className = 'ui-modal-title'
     titleEl.textContent = opts.title || ''
+
     const titleId = `ui-modal-title-${Math.random().toString(36).slice(2)}`
     titleEl.id = titleId
     dialog.setAttribute('aria-labelledby', titleId)

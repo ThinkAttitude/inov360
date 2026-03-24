@@ -1,5 +1,32 @@
 const API_BASE_URL = '/backend/api/';
 
+async function getErrorMessage(response) {
+    const contentType = response.headers.get('Content-Type') || '';
+    const bodyText = await response.text();
+
+    if (contentType.includes('application/json')) {
+        try {
+            const data = JSON.parse(bodyText);
+            return data?.message || data?.error || bodyText?.trim() || 'Ocorreu um erro.';
+        } catch {}
+    }
+
+    return bodyText?.trim() || 'Ocorreu um erro.';
+}
+
+async function parseResponse(response, responseType) {
+    if (responseType === 'blob') return response.blob();
+    if (responseType === 'text') return response.text();
+    if (responseType === 'response') return response;
+
+    const contentType = response.headers.get('Content-Type') || '';
+
+    if (responseType === 'json') return response.json();
+    if (contentType.includes('application/json')) return response.json();
+
+    return response;
+}
+
 /**
  * Generic function to make API requests
  * @param endpoint - The API endpoint to call, e.g., 'login.php'
@@ -7,32 +34,28 @@ const API_BASE_URL = '/backend/api/';
  * @returns {Promise<any>} The response Promise
  */
 async function apiFetch(endpoint, options = {}) {
-    const { body, headers, ...rest } = options;
+    const { body, headers, responseType = 'auto', ...rest } = options;
     const h = new Headers(headers || {});
-    const isPlainObject = (v) => {
-        return v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
-    };
+    const isPlainObject = (v) => v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
+
+    let requestBody = body;
 
     if (isPlainObject(body)) {
         h.set('Content-Type', 'application/json');
-        options.body = JSON.stringify(body);
+        requestBody = JSON.stringify(body);
     }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...rest,
-            headers: h,
-            body: options.body,
-        });
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...rest,
+        headers: h,
+        body: requestBody,
+    });
 
-        const ct = response.headers.get('Content-Type') || '';
-        if (ct.includes('application/json')) return await response.json();
-
-        return response;
-    } catch (error) {
-        console.error(`API Error (${endpoint}):`, error);
-        throw error;
+    if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
     }
+
+    return parseResponse(response, responseType);
 }
 
 export async function login(email, password) {
