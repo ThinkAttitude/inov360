@@ -46,10 +46,15 @@ export function openModal(opts = {}) {
     document.body.appendChild(overlay)
 
     let closed = false
+    let abortHandler = null
 
     const close = () => {
         if (closed) return
         closed = true
+        if (opts.signal && abortHandler) {
+            opts.signal.removeEventListener('abort', abortHandler)
+            abortHandler = null
+        }
         overlay.remove()
     }
 
@@ -71,7 +76,8 @@ export function openModal(opts = {}) {
         if (opts.signal.aborted) {
             close()
         } else {
-            opts.signal.addEventListener('abort', close, { once: true })
+            abortHandler = close
+            opts.signal.addEventListener('abort', abortHandler)
         }
     }
 
