@@ -282,7 +282,10 @@ export async function exportOvertimeSheets(month, userIds = []) {
     const params = new URLSearchParams();
     params.append('month', month);
     if (userIds.length) params.append('user_ids', userIds.join(','));
-    return apiFetch(`overtime/sheets_export.php?${params.toString()}`, { method: 'GET' });
+    return apiFetch(`overtime/sheets_export.php?${params.toString()}`, {
+        method: 'GET',
+        responseType: 'blob',
+    });
 }
 
 /* Schedule Management (horarios) */
