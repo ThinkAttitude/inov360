@@ -75,17 +75,19 @@ export function openModal(opts = {}) {
         }
     }
 
-    // Focus the first focusable element inside the dialog, or the dialog itself
-    const autofocusTarget = dialog.querySelector(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    )
-    if (autofocusTarget && autofocusTarget instanceof HTMLElement) {
-        autofocusTarget.focus()
-    } else {
-        dialog.focus()
-    }
+    requestAnimationFrame(() => {
+        overlay.classList.add('ui-modal-overlay--active')
 
-    requestAnimationFrame(() => overlay.classList.add('ui-modal-overlay--active'))
+        // Focus the first focusable element inside the dialog, or the dialog itself
+        const autofocusTarget = dialog.querySelector(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (autofocusTarget && autofocusTarget instanceof HTMLElement) {
+            autofocusTarget.focus()
+        } else {
+            dialog.focus()
+        }
+    })
 
     return { overlay, body, footer, titleEl, close }
 }
