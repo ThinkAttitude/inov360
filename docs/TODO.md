@@ -27,7 +27,7 @@
 - [x] Filtrar pedidos por estado e apresentar **[~4 horas]**
 
 ## Mapas de horas
-- [ ] Apresentar painel de extração de horários aprovados
+- [x] Apresentar painel de extração de horários aprovados
 - [ ] Pesquisar por nome do colaborador e mês e obter os horários resultantes da filtragem **[~4 horas]**
 - [ ] Converter os horários selecionados para formato .xlsx (Excel) **[~4 horas]**
 - [ ] Exportar os ficheiros Excel resultantes para descarregar **[~2 horas]**
