@@ -47,37 +47,41 @@
                         </div>
 
                         <div class="field-row">
-                            <label class="field-label">Hora de Início</label>
-                            <div class="time-select-group">
-                                <select id="hora_inicio_h" class="field-select" required>
-                                    <option value="">HH</option>
-                                </select>
-                                <span class="time-sep">:</span>
-                                <select id="hora_inicio_m" class="field-select" required>
-                                    <option value="">MM</option>
-                                    <option value="00">00</option>
-                                    <option value="15">15</option>
-                                    <option value="30">30</option>
-                                    <option value="45">45</option>
-                                </select>
-                            </div>
+                            <fieldset class="time-fieldset">
+                                <legend class="field-label">Hora de Início</legend>
+                                <div class="time-select-group">
+                                    <select id="hora_inicio_h" class="field-select" required aria-label="Hora de início - horas">
+                                        <option value="">HH</option>
+                                    </select>
+                                    <span class="time-sep">:</span>
+                                    <select id="hora_inicio_m" class="field-select" required aria-label="Hora de início - minutos">
+                                        <option value="">MM</option>
+                                        <option value="00">00</option>
+                                        <option value="15">15</option>
+                                        <option value="30">30</option>
+                                        <option value="45">45</option>
+                                    </select>
+                                </div>
+                            </fieldset>
                         </div>
 
                         <div class="field-row">
-                            <label class="field-label">Hora de Fim</label>
-                            <div class="time-select-group">
-                                <select id="hora_fim_h" class="field-select" required>
-                                    <option value="">HH</option>
-                                </select>
-                                <span class="time-sep">:</span>
-                                <select id="hora_fim_m" class="field-select" required>
-                                    <option value="">MM</option>
-                                    <option value="00">00</option>
-                                    <option value="15">15</option>
-                                    <option value="30">30</option>
-                                    <option value="45">45</option>
-                                </select>
-                            </div>
+                            <fieldset class="time-fieldset">
+                                <legend class="field-label">Hora de Fim</legend>
+                                <div class="time-select-group">
+                                    <select id="hora_fim_h" class="field-select" required aria-label="Hora de fim - horas">
+                                        <option value="">HH</option>
+                                    </select>
+                                    <span class="time-sep">:</span>
+                                    <select id="hora_fim_m" class="field-select" required aria-label="Hora de fim - minutos">
+                                        <option value="">MM</option>
+                                        <option value="00">00</option>
+                                        <option value="15">15</option>
+                                        <option value="30">30</option>
+                                        <option value="45">45</option>
+                                    </select>
+                                </div>
+                            </fieldset>
                         </div>
                     </div>
 
