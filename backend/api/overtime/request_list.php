@@ -84,6 +84,7 @@ SELECT
   DATE(ro.data_inicio) AS dia,
   TIMESTAMPDIFF(MINUTE, ro.data_inicio, ro.data_fim) AS minutos,
   ro.estado,
+  ro.justificacao,
   ro.criado_em,
   ro.criado_por,
   cb.$nameCol          AS criado_por_nome,
@@ -143,6 +144,7 @@ foreach ($rows as $r) {
         'criado_por'   => ['id'=>(int)$r['criado_por'], 'nome'=>$r['criado_por_nome']],
         'decidido_por' => $r['decidido_por'] ? ['id'=>(int)$r['decidido_por'], 'nome'=>$r['decidido_por_nome']] : null,
         'decidido_em'  => $r['decidido_em'],
+        'justificacao' => $r['justificacao'] ?? null,
         'comentario'   => $r['comentario'],
         'ficheiro'     => $r['ficheiro'],
     ];

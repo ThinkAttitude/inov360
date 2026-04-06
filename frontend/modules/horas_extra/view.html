@@ -1,0 +1,173 @@
+<div class="he-page">
+    <header class="he-header">
+        <div class="header-left">
+            <div class="page-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12,6 12,12 16,14"></polyline>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h2>Horas Extra</h2>
+                <p>Gerir pedidos de horas extra: aprovar, rejeitar, consultar histórico e exportar.</p>
+            </div>
+        </div>
+    </header>
+
+    <section class="he-content">
+        <div class="he-shell">
+            <!-- Tab strip -->
+            <div class="he-tabs">
+                <button type="button" class="he-tab he-tab--active" id="he-tab-pendentes">Pendentes</button>
+                <button type="button" class="he-tab" id="he-tab-historico">Histórico</button>
+                <button type="button" class="he-tab" id="he-tab-exportar">Exportar</button>
+            </div>
+
+            <div class="he-tab-content">
+
+                <!-- ====== Pendentes ====== -->
+                <div id="he-view-pendentes" class="he-view he-view--active">
+                    <div class="he-section-header">
+                        <h3>Pedidos pendentes de aprovação</h3>
+                        <p>Reveja cada pedido e tome uma decisão.</p>
+                    </div>
+
+                    <div class="he-filters">
+                        <input type="text" id="he-pend-search" class="field-input" placeholder="Pesquisar por nome ou email...">
+                    </div>
+
+                    <div class="he-table-wrapper">
+                        <table class="he-table" id="he-pend-table">
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Dia</th>
+                                    <th>Início</th>
+                                    <th>Fim</th>
+                                    <th>Minutos</th>
+                                    <th>Proposto por</th>
+                                    <th class="he-col-justif">Justificação</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="he-pend-tbody"></tbody>
+                        </table>
+                        <p class="he-empty" id="he-pend-empty">Não existem pedidos pendentes.</p>
+                    </div>
+                </div>
+
+                <!-- ====== Histórico ====== -->
+                <div id="he-view-historico" class="he-view">
+                    <div class="he-section-header">
+                        <h3>Histórico de pedidos</h3>
+                        <p>Pedidos anteriores já aprovados ou recusados.</p>
+                    </div>
+
+                    <div class="he-filters">
+                        <div class="he-filter-row">
+                            <input type="month" id="he-hist-month" class="field-input">
+                            <select id="he-hist-state" class="field-select">
+                                <option value="both">Todos</option>
+                                <option value="approved">Aprovados</option>
+                                <option value="rejected">Recusados</option>
+                            </select>
+                            <input type="text" id="he-hist-search" class="field-input" placeholder="Pesquisar...">
+                            <button type="button" class="btn-primary btn-sm" id="he-hist-filter-btn">Filtrar</button>
+                        </div>
+                    </div>
+
+                    <div class="he-stats" id="he-hist-stats"></div>
+
+                    <div class="he-table-wrapper">
+                        <table class="he-table" id="he-hist-table">
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Dia</th>
+                                    <th>Início</th>
+                                    <th>Fim</th>
+                                    <th>Tempo</th>
+                                    <th>Estado</th>
+                                    <th>Decidido por</th>
+                                    <th class="he-col-justif">Justificação</th>
+                                    <th class="he-col-justif">Comentário</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="he-hist-tbody"></tbody>
+                        </table>
+                        <p class="he-empty" id="he-hist-empty">Nenhum pedido encontrado para os filtros selecionados.</p>
+                    </div>
+                </div>
+
+                <!-- ====== Exportar ====== -->
+                <div id="he-view-exportar" class="he-view">
+                    <div class="he-section-header">
+                        <h3>Exportar horas extra aprovadas</h3>
+                        <p>Selecione o mês e exporte os registos aprovados para Excel.</p>
+                    </div>
+
+                    <div class="he-export-controls">
+                        <div class="he-filter-row">
+                            <div class="field-row">
+                                <label class="field-label" for="he-export-month">Mês</label>
+                                <input type="month" id="he-export-month" class="field-input" required>
+                            </div>
+                            <button type="button" class="btn-primary btn-sm" id="he-export-preview-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                Pré-visualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="he-export-preview" id="he-export-preview" style="display:none;">
+                        <div class="he-section-header">
+                            <h3 id="he-export-preview-title">Pedidos aprovados</h3>
+                            <p id="he-export-preview-subtitle"></p>
+                        </div>
+
+                        <div class="he-table-wrapper">
+                            <table class="he-table" id="he-export-table">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <label class="he-checkbox-label">
+                                                <input type="checkbox" id="he-export-select-all">
+                                                Todos
+                                            </label>
+                                        </th>
+                                        <th>Colaborador</th>
+                                        <th>Dia</th>
+                                        <th>Início</th>
+                                        <th>Fim</th>
+                                        <th>Minutos</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="he-export-tbody"></tbody>
+                            </table>
+                            <p class="he-empty" id="he-export-empty">Nenhum pedido aprovado encontrado para este mês.</p>
+                        </div>
+
+                        <div class="he-export-actions">
+                            <button type="button" class="btn-primary" id="he-export-xlsx-btn" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Exportar Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</div>

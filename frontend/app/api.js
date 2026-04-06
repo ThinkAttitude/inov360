@@ -1,4 +1,31 @@
-const API_BASE_URL = '/../../backend/api/';
+const API_BASE_URL = '/backend/api/';
+
+async function getErrorMessage(response) {
+    const contentType = response.headers.get('Content-Type') || '';
+    const bodyText = await response.text();
+
+    if (contentType.includes('application/json')) {
+        try {
+            const data = JSON.parse(bodyText);
+            return data?.message || data?.error || bodyText?.trim() || 'Ocorreu um erro.';
+        } catch {}
+    }
+
+    return bodyText?.trim() || 'Ocorreu um erro.';
+}
+
+async function parseResponse(response, responseType) {
+    if (responseType === 'blob') return response.blob();
+    if (responseType === 'text') return response.text();
+    if (responseType === 'response') return response;
+
+    const contentType = response.headers.get('Content-Type') || '';
+
+    if (responseType === 'json') return response.json();
+    if (contentType.includes('application/json')) return response.json();
+
+    return response;
+}
 
 /**
  * Generic function to make API requests
@@ -7,32 +34,28 @@ const API_BASE_URL = '/../../backend/api/';
  * @returns {Promise<any>} The response Promise
  */
 async function apiFetch(endpoint, options = {}) {
-    const { body, headers, ...rest } = options;
+    const { body, headers, responseType = 'auto', ...rest } = options;
     const h = new Headers(headers || {});
-    const isPlainObject = (v) => {
-        return v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
-    };
+    const isPlainObject = (v) => v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
+
+    let requestBody = body;
 
     if (isPlainObject(body)) {
         h.set('Content-Type', 'application/json');
-        options.body = JSON.stringify(body);
+        requestBody = JSON.stringify(body);
     }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...rest,
-            headers: h,
-            body: options.body,
-        });
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...rest,
+        headers: h,
+        body: requestBody,
+    });
 
-        const ct = response.headers.get('Content-Type') || '';
-        if (ct.includes('application/json')) return await response.json();
-
-        return response;
-    } catch (error) {
-        console.error(`API Error (${endpoint}):`, error);
-        throw error;
+    if (!response.ok) {
+        throw new Error(await getErrorMessage(response));
     }
+
+    return parseResponse(response, responseType);
 }
 
 export async function login(email, password) {
@@ -42,8 +65,11 @@ export async function login(email, password) {
     });
 }
 
-export function logout() {
-    window.location.href = '../../backend/api/auth/logout.php';
+export async function logout() {
+    try {
+        await fetch('/backend/api/auth/logout.php', { method: 'POST' });
+    } catch { /* session destroyed server-side */ }
+    window.location.replace('/frontend/modules/login/view.html');
 }
 
 export async function register(userData) {
@@ -212,6 +238,53 @@ export async function createRecordRequest(payload) {
     return apiFetch('employee_info/record/collab_request.php', {
         method: 'POST',
         body: payload
+    });
+}
+
+/* Overtime (horas extra) */
+export async function requestOvertime({ user_id, dia, hora_inicio, hora_fim, justificacao }) {
+    return apiFetch('overtime/request_overtime.php', {
+        method: 'POST',
+        body: { user_id, dia, hora_inicio, hora_fim, justificacao }
+    });
+}
+
+export async function getOvertimeRequests({ state = 'all', month, user_id, q, limit, offset } = {}) {
+    const params = new URLSearchParams();
+    if (state) params.append('state', state);
+    if (month) params.append('month', month);
+    if (user_id) params.append('user_id', String(user_id));
+    if (q) params.append('q', q);
+    if (limit) params.append('limit', String(limit));
+    if (offset) params.append('offset', String(offset));
+    return apiFetch(`overtime/request_list.php?${params.toString()}`, { method: 'GET' });
+}
+
+export async function approveOvertime({ request_id, decision, comentario }) {
+    return apiFetch('overtime/approve_overtime.php', {
+        method: 'POST',
+        body: { request_id, decision, comentario }
+    });
+}
+
+export async function getOvertimeHistory({ month, state = 'both', q, user_id, limit, offset } = {}) {
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (state) params.append('state', state);
+    if (q) params.append('q', q);
+    if (user_id) params.append('user_id', String(user_id));
+    if (limit) params.append('limit', String(limit));
+    if (offset) params.append('offset', String(offset));
+    return apiFetch(`overtime/sheets_review.php?${params.toString()}`, { method: 'GET' });
+}
+
+export async function exportOvertimeSheets(month, userIds = []) {
+    const params = new URLSearchParams();
+    params.append('month', month);
+    if (userIds.length) params.append('user_ids', userIds.join(','));
+    return apiFetch(`overtime/sheets_export.php?${params.toString()}`, {
+        method: 'GET',
+        responseType: 'blob',
     });
 }
 

@@ -1,0 +1,109 @@
+<div class="phe-page">
+    <header class="phe-header">
+        <div class="header-left">
+            <div class="page-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12,6 12,12 16,14"></polyline>
+                </svg>
+            </div>
+            <div class="header-text">
+                <h2>Propor Horas Extra</h2>
+                <p>Submeta pedidos de horas extra para colaboradores.</p>
+            </div>
+        </div>
+    </header>
+
+    <section class="phe-content">
+        <div class="phe-card">
+            <div class="phe-card-header">
+                <div class="card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3>Novo pedido de horas extra</h3>
+                    <p>Preencha os campos abaixo para submeter o pedido.</p>
+                </div>
+            </div>
+
+            <div class="phe-card-body">
+                <form id="form-horas-extra">
+                    <div class="phe-form-grid">
+                        <div class="field-row">
+                            <label class="field-label" for="colaborador">Colaborador</label>
+                            <select id="colaborador" class="field-select" required>
+                                <option value="">-- Selecione o colaborador --</option>
+                            </select>
+                        </div>
+
+                        <div class="field-row">
+                            <label class="field-label" for="dia">Dia</label>
+                            <input type="date" id="dia" class="field-input" required>
+                        </div>
+
+                        <div class="field-row">
+                            <fieldset class="time-fieldset">
+                                <legend class="field-label">Hora de Início</legend>
+                                <div class="time-select-group">
+                                    <select id="hora_inicio_h" class="field-select" required aria-label="Hora de início - horas">
+                                        <option value="">HH</option>
+                                    </select>
+                                    <span class="time-sep">:</span>
+                                    <select id="hora_inicio_m" class="field-select" required aria-label="Hora de início - minutos">
+                                        <option value="">MM</option>
+                                        <option value="00">00</option>
+                                        <option value="15">15</option>
+                                        <option value="30">30</option>
+                                        <option value="45">45</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div class="field-row">
+                            <fieldset class="time-fieldset">
+                                <legend class="field-label">Hora de Fim</legend>
+                                <div class="time-select-group">
+                                    <select id="hora_fim_h" class="field-select" required aria-label="Hora de fim - horas">
+                                        <option value="">HH</option>
+                                    </select>
+                                    <span class="time-sep">:</span>
+                                    <select id="hora_fim_m" class="field-select" required aria-label="Hora de fim - minutos">
+                                        <option value="">MM</option>
+                                        <option value="00">00</option>
+                                        <option value="15">15</option>
+                                        <option value="30">30</option>
+                                        <option value="45">45</option>
+                                    </select>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="field-row" style="margin-top: 1.25rem;">
+                        <label class="field-label" for="justificacao">Justificação</label>
+                        <textarea id="justificacao" class="field-input" rows="3" placeholder="Descreva a justificação para as horas extra..." required></textarea>
+                    </div>
+
+                    <div class="phe-form-actions">
+                        <button type="submit" class="btn-primary" id="phe-submit-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                            <span class="btn-text">Submeter Pedido</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div id="feedback-message"></div>
+            </div>
+        </div>
+    </section>
+</div>

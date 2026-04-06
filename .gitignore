@@ -2,3 +2,6 @@
 /.vscode/
 node_modules/
 frontend/dist/
+docker-compose.yml
+Dockerfile
+/inov360_private/

@@ -5,5 +5,5 @@ $_SESSION = [];
 
 session_destroy();
 
-header("Location: ../../../frontend/page/login.html");
+header('X-Redirect: /frontend/modules/login/view.html');
 exit;

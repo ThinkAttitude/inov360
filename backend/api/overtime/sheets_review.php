@@ -64,6 +64,7 @@ SELECT
   ro.data_fim,
   TIMESTAMPDIFF(MINUTE, ro.data_inicio, ro.data_fim) AS req_minutos,
   ro.estado,
+  ro.justificacao,
   ro.decidido_por,
   db.$nameCol                AS decidido_por_nome,
   ro.decidido_em,
@@ -122,6 +123,7 @@ foreach ($rows as $r) {
         'hora_fim'     => substr($r['data_fim'], 11, 5),
         'req_minutos'  => (int)$r['req_minutos'],
         'estado'       => $r['estado'], // approved|rejected
+        'justificacao' => $r['justificacao'] ?? null,
         'decidido_por' => $r['decidido_por'] ? [
             'id'   => (int)$r['decidido_por'],
             'nome' => $r['decidido_por_nome']
