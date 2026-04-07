@@ -679,6 +679,9 @@ function renderHierarchyModal() {
                 .map(s => (s.user ? s.user.id : null))
                 .filter(id => id != null);
 
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'A guardar...';
+
             updateHierarchy(hierarchyState.userId, respIds, subsIds)
                 .then(res => {
                     if (!res || res.ok !== true) {
@@ -689,9 +692,14 @@ function renderHierarchyModal() {
                         baseSubCount: hierarchyState.subs.length,
                     });
                     updateHierarchyControls();
+                    saveBtn.textContent = 'Guardado!';
+                    setTimeout(() => { saveBtn.textContent = 'Guardar'; }, 2000);
                 })
                 .catch(err => {
                     console.error('Falha ao guardar hierarquia:', err);
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Guardar';
+                    alert('Erro ao guardar hierarquia: ' + (err.message || 'Erro desconhecido'));
                 });
         });
     }

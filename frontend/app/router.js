@@ -6,6 +6,7 @@ import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
 import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_horas_extras.js"
 import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
+import {mountPedidosFerias} from "../modules/pedidos_ferias/pedidos_ferias.js"
 
 export const MODULES_BASE = "/frontend/modules"
 
@@ -41,7 +42,7 @@ export const Routes = Object.freeze({
     [Path.HORARIOS]: {html: Route(`${MODULES_BASE}/horarios/view.html`), mount: mountSchedule},
     [Path.APROVACAO_HORARIOS]: {html: Route(`${MODULES_BASE}/aprovacao_horarios/aprovacao_horarios.php`), mount: null},
     [Path.MAPAS_HORARIOS]: {html: Route(`${MODULES_BASE}/mapas_horarios/mapas_horarios.php`), mount: null},
-    [Path.PEDIDOS_FERIAS]: {html: Route(`${MODULES_BASE}/pedidos_ferias/view.html`), mount: null},
+    [Path.PEDIDOS_FERIAS]: {html: Route(`${MODULES_BASE}/pedidos_ferias/view.html`), mount: mountPedidosFerias},
     [Path.APROVACAO_FERIAS]: {html: Route(`${MODULES_BASE}/aprovacao_ferias/aprovacao_ferias.php`), mount: null},
     [Path.CONSULTA_PEDIDOS]: {html: Route(`${MODULES_BASE}/consulta_pedidos/consulta_pedidos.html`), mount: null},
     [Path.LISTA_INTERMEDIOS]: {html: Route(`${MODULES_BASE}/lista_intermedios/lista_intermedios.php`), mount: null},

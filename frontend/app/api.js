@@ -66,10 +66,8 @@ export async function login(email, password) {
 }
 
 export async function logout() {
-    try {
-        await fetch('/backend/api/auth/logout.php', { method: 'POST' });
-    } catch { /* session destroyed server-side */ }
-    window.location.replace('/frontend/modules/login/view.html');
+    const res = await fetch('/backend/api/auth/logout.php', { method: 'POST' });
+    window.location.href = res.headers.get('X-Redirect');
 }
 
 export async function register(userData) {
@@ -125,6 +123,22 @@ export async function createDirectLeave(formData) {
         method: 'POST',
         body: formData
     });
+}
+
+/* Leave Requests (pedidos_ferias) */
+export async function submitLeaveRequest(formData) {
+    return apiFetch('leaves/request.php', {
+        method: 'POST',
+        body: formData
+    });
+}
+
+export async function getMyLeaveRequests() {
+    return apiFetch('leaves/collab_requests.php', { method: 'GET' });
+}
+
+export async function getMyLeaveSummary() {
+    return apiFetch('leaves/collab_summary.php', { method: 'GET' });
 }
 
 export async function getHierarchyByUser(userId = null) {

@@ -429,3 +429,88 @@
     color: var(--navy-blue);
     font-weight: 800;
 }
+
+/* Empty state */
+.ferias-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3.5rem 2rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    color: var(--text-light);
+    max-width: 640px;
+}
+
+.ferias-empty-state svg {
+    opacity: 0.35;
+}
+
+.ferias-empty-text {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Modal form */
+.ferias-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ferias-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.ferias-form-full {
+    grid-column: 1 / -1;
+}
+
+.ferias-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ferias-form-field label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--navy-blue);
+}
+
+.ferias-required {
+    color: #ef4444;
+}
+
+.ferias-form-field select,
+.ferias-form-field input[type="date"],
+.ferias-form-field input[type="file"],
+.ferias-form-field textarea {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    background: #f8fafc;
+    color: var(--navy-blue);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ferias-form-field select:focus,
+.ferias-form-field input:focus,
+.ferias-form-field textarea:focus {
+    outline: none;
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.ferias-form-hint {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    font-weight: 600;
+}
