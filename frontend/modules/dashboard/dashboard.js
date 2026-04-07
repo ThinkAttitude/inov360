@@ -135,13 +135,6 @@ const CARD_DEFS = {
         permission: PERMISSIONS.GESTAO_FICHAS,
         ctaText: 'Gerir Fichas'
     },
-    [CARD_TYPES.FINANCEIRA]: {
-        title: 'Financeira',
-        description: 'Acesse e gerencie informações financeiras relacionadas aos colaboradores',
-        icon: SVG_ICONS.COIN,
-        permission: PERMISSIONS.FINANCEIRA,
-        ctaText: 'Ver Área'
-    },
     [CARD_TYPES.FICHA_COLLAB]: {
         title: 'A Minha Ficha',
         description: 'Visualize e edite a sua própria ficha pessoal de colaborador',
