@@ -44,7 +44,7 @@
                     </svg>
                 </div>
                 <div class="ferias-stat-meta">
-                    <div class="ferias-stat-value" id="ferias-total-value">1</div>
+                    <div class="ferias-stat-value" id="ferias-total-value">0</div>
                     <div class="ferias-stat-label">Total Pedidos</div>
                 </div>
             </div>
@@ -69,7 +69,7 @@
                     </svg>
                 </div>
                 <div class="ferias-stat-meta">
-                    <div class="ferias-stat-value" id="ferias-aprovados-value">1</div>
+                    <div class="ferias-stat-value" id="ferias-aprovados-value">0</div>
                     <div class="ferias-stat-label">Aprovados</div>
                 </div>
             </div>
@@ -96,7 +96,7 @@
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <path d="M14 2v6h6"></path>
                     </svg>
-                    <span>Todos (<span id="ferias-count-all">1</span>)</span>
+                    <span>Todos (<span id="ferias-count-all">0</span>)</span>
                 </button>
 
                 <button type="button" class="ferias-tab" role="tab" aria-selected="false" data-filter="pending" id="ferias-tab-pending">
@@ -111,7 +111,7 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M20 6 9 17l-5-5"></path>
                     </svg>
-                    <span>Aprovados (<span id="ferias-count-approved">1</span>)</span>
+                    <span>Aprovados (<span id="ferias-count-approved">0</span>)</span>
                 </button>
 
                 <button type="button" class="ferias-tab" role="tab" aria-selected="false" data-filter="rejected" id="ferias-tab-rejected">
@@ -126,78 +126,16 @@
         </div>
 
         <div class="ferias-list" id="ferias-pedidos-list" aria-label="Lista de pedidos">
-            <article class="ferias-card" data-status="approved" data-id="sample-1">
-                <div class="ferias-card-topline" aria-hidden="true"></div>
+        </div>
 
-                <div class="ferias-card-header">
-                    <div class="ferias-card-title-wrap">
-                        <div class="ferias-card-type-icon" aria-hidden="true">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M8 2v4"></path>
-                                <path d="M16 2v4"></path>
-                                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                                <path d="M3 10h18"></path>
-                            </svg>
-                        </div>
-                        <div class="ferias-card-title-text">
-                            <h3 class="ferias-card-title" id="ferias-card-title-sample-1">Pessoal</h3>
-                            <p class="ferias-card-subtitle">Pedido em <span id="ferias-card-created-sample-1">29/07/2025</span></p>
-                        </div>
-                    </div>
-
-                    <div class="ferias-card-status ferias-status-approved" id="ferias-card-status-sample-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M20 6 9 17l-5-5"></path>
-                        </svg>
-                        <span>APROVADO</span>
-                    </div>
-                </div>
-
-                <div class="ferias-card-body">
-                    <div class="ferias-date-range" aria-label="Período">
-                        <div class="ferias-date-box">
-                            <div class="ferias-date-label">INÍCIO</div>
-                            <div class="ferias-date-value" id="ferias-card-start-sample-1">04/07/2025</div>
-                        </div>
-
-                        <div class="ferias-date-sep" aria-hidden="true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 18l6-6-6-6"></path>
-                            </svg>
-                        </div>
-
-                        <div class="ferias-date-box">
-                            <div class="ferias-date-label">FIM</div>
-                            <div class="ferias-date-value" id="ferias-card-end-sample-1">24/07/2025</div>
-                        </div>
-                    </div>
-
-                    <div class="ferias-field">
-                        <div class="ferias-field-label">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <path d="M14 2v6h6"></path>
-                                <path d="M8 13h8"></path>
-                                <path d="M8 17h8"></path>
-                            </svg>
-                            <span>Justificação</span>
-                        </div>
-
-                        <div class="ferias-field-value" id="ferias-card-justification-sample-1">yeyeye</div>
-                    </div>
-                </div>
-
-                <div class="ferias-card-footer">
-                    <div class="ferias-card-decider">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        <span>Decidido por:</span>
-                        <strong id="ferias-card-decider-sample-1">Miguel Estrela</strong>
-                    </div>
-                </div>
-            </article>
+        <div class="ferias-empty-state" id="ferias-empty-state" style="display:none;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 2v4"></path>
+                <path d="M16 2v4"></path>
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <path d="M3 10h18"></path>
+            </svg>
+            <span class="ferias-empty-text">Sem pedidos registados.</span>
         </div>
 
         <template id="ferias-pedido-template">

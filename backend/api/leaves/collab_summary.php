@@ -15,20 +15,23 @@ $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* ===== Confirmar que o colaborador tem responsáveis ativos/válidos ===== */
-$hasResp = $pdo->prepare("
-  SELECT 1
-  FROM colaborador_responsaveis
-  WHERE colaborador_id = ?
-    AND ativo = 1
-    AND (valido_desde IS NULL OR valido_desde <= NOW())
-    AND (valido_ate   IS NULL OR valido_ate   >= NOW())
-  LIMIT 1
-");
-$hasResp->execute([$userId]);
-if (!$hasResp->fetchColumn()) {
-    http_response_code(400);
-    echo json_encode(["ok"=>false,"code"=>"NO_RESPONSAVEIS"]);
-    exit;
+$userRole = $_SESSION['user']['role'] ?? '';
+if ($userRole !== 'admin_rh') {
+    $hasResp = $pdo->prepare("
+      SELECT 1
+      FROM colaborador_responsaveis
+      WHERE colaborador_id = ?
+        AND ativo = 1
+        AND (valido_desde IS NULL OR valido_desde <= NOW())
+        AND (valido_ate   IS NULL OR valido_ate   >= NOW())
+      LIMIT 1
+    ");
+    $hasResp->execute([$userId]);
+    if (!$hasResp->fetchColumn()) {
+        http_response_code(400);
+        echo json_encode(["ok"=>false,"code"=>"NO_RESPONSAVEIS"]);
+        exit;
+    }
 }
 
 $sql = "SELECT estado, COUNT(*) cnt FROM pedidos_ferias WHERE user_id = :u GROUP BY estado";
