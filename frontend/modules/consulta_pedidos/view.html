@@ -1,0 +1,86 @@
+<div class="consulta-page">
+    <header class="consulta-header">
+        <div class="consulta-header-left">
+            <div class="consulta-page-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14,2 14,8 20,8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </div>
+
+            <div class="consulta-header-text">
+                <h2 class="consulta-title">Consulta de Pedidos</h2>
+                <p class="consulta-description">Visualize o histórico de pedidos processados dos Intermédios da sua equipa.</p>
+            </div>
+        </div>
+
+        <div class="consulta-header-stats">
+            <div class="consulta-stat-card">
+                <div class="consulta-stat-number">4</div>
+                <div class="consulta-stat-label">Pedidos Processados</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="consulta-content">
+        <section class="consulta-section">
+            <div class="consulta-section-header">
+                <div class="consulta-section-info">
+                    <div class="consulta-section-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M3 12h18"></path>
+                            <path d="M3 18h18"></path>
+                        </svg>
+                    </div>
+
+                    <div class="consulta-section-text">
+                        <h3 class="consulta-section-title">Pedidos Processados</h3>
+                        <p class="consulta-section-description">Consulte os pedidos já analisados da sua equipa.</p>
+                    </div>
+                </div>
+
+                <div class="consulta-filters">
+                    <div class="consulta-field">
+                        <label class="consulta-label" for="consulta-colaborador">Colaborador</label>
+                        <select class="consulta-select" id="consulta-colaborador" name="colaborador">
+                            <option value=""></option>
+                        </select>
+                    </div>
+
+                    <div class="consulta-field">
+                        <label class="consulta-label" for="consulta-tipo">Tipo de Pedido</label>
+                        <select class="consulta-select" id="consulta-tipo" name="tipo">
+                            <option value=""></option>
+                        </select>
+                    </div>
+
+                    <div class="consulta-field">
+                        <label class="consulta-label" for="consulta-estado">Estado</label>
+                        <select class="consulta-select" id="consulta-estado" name="estado">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="consulta-table-wrapper">
+                <table class="consulta-table">
+                    <thead>
+                    <tr>
+                        <th scope="col">Colaborador</th>
+                        <th scope="col">Tipo de Pedido</th>
+                        <th scope="col">Data do Pedido</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Data de Decisão</th>
+                        <th scope="col">Observações</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
