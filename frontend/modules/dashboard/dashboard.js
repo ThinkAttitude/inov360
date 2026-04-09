@@ -17,7 +17,6 @@ export const CARD_TYPES = Object.freeze({
     APROVACAO_HORAS_EXTRA: 'aprov_horas_extras',
     MARCACAO_DIRETA: 'marcacao_direta',
     GESTAO_FICHAS: 'gestao_fichas',
-    FINANCEIRA: 'financeira',
     FICHA_COLLAB: 'ficha_collab',
 });
 
@@ -28,7 +27,6 @@ export const PERMISSIONS = Object.freeze({
     PEDIDOS_HORAS_EXTRA: 4,
     APROVACAO_HORAS_EXTRA: 5,
     GESTAO_FICHAS: 6,
-    FINANCEIRA: 7,
 });
 
 const SVG_ICONS = {
@@ -42,7 +40,6 @@ const SVG_ICONS = {
     PEOPLE: `<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>`,
     DOCUMENT: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline>`,
     BOOKING: `<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M21 10H3"></path><path d="M12 14l2 2 4-4"></path>`,
-    COIN: `<circle cx="12" cy="12" r="9"></circle><path d="M8 10c1.5-1 4-1 6 0s1.5 3 0 4c-1.5 1-4 1-6 0" /><path d="M12 7v2" /><path d="M12 15v2" />`,
     CLIPBOARD: `<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>`,
 };
 
@@ -134,13 +131,6 @@ const CARD_DEFS = {
         icon: SVG_ICONS.CLIPBOARD,
         permission: PERMISSIONS.GESTAO_FICHAS,
         ctaText: 'Gerir Fichas'
-    },
-    [CARD_TYPES.FINANCEIRA]: {
-        title: 'Financeira',
-        description: 'Acesse e gerencie informações financeiras relacionadas aos colaboradores',
-        icon: SVG_ICONS.COIN,
-        permission: PERMISSIONS.FINANCEIRA,
-        ctaText: 'Ver Área'
     },
     [CARD_TYPES.FICHA_COLLAB]: {
         title: 'A Minha Ficha',

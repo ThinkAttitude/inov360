@@ -183,6 +183,14 @@
     white-space: nowrap;
 }
 
+.horarios-page .fc .fc-bg-event.legend-dot.is-draft {
+    opacity: 0.05;
+}
+
+.horarios-work-badge.is-draft {
+    opacity: 0.2;
+}
+
 #calendar {
     min-height: 400px;
 }

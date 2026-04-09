@@ -154,11 +154,13 @@ export function buildBackgroundEvents(days, windowStartStr, windowEndStr) {
 
         if (!kind) continue
 
+        const statusClass = day.status === 'approved' ? 'is-approved' : 'is-draft'
+
         events.push({
             start: dateStr,
             allDay: true,
             display: 'background',
-            classNames: ['legend-dot', kind],
+            classNames: ['legend-dot', kind, statusClass],
         })
     }
 
