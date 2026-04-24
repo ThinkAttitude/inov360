@@ -1,4 +1,4 @@
-import {CARD_TYPES, mountDashboardShell, mountInicio} from "../modules/dashboard/dashboard.js"
+import {mountDashboardShell, mountInicio} from "../modules/dashboard/dashboard.js"
 import {initForm} from "../modules/marcacao_direta/marcacao_direta.js"
 import {mountClbMngmt} from "../modules/controlo_colabs/controlo_colabs.js"
 import {mountSchedule} from "../modules/horarios"
@@ -6,35 +6,56 @@ import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
 import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_horas_extras.js"
 import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
+import {setApiAuthHandlers} from "./api";
+import {User} from "../shared/user_store";
+import {CARD_TYPES, guardDashboardRoute} from "../modules/dashboard/dashboard_access.js";
 
-export const MODULES_BASE = "/frontend/modules"
+export const MODULES_BASE = "/frontend/modules";
 
-export const Path = Object.freeze({...CARD_TYPES, INICIO: ""})
-const Paths = new Set(Object.values(Path))
+export const Path = Object.freeze({...CARD_TYPES, INICIO: ""});
+const Paths = new Set(Object.values(Path));
 
 export function isPath(value) {
-    return Paths.has(value)
+    return Paths.has(value);
 }
 
 export function Route(href) {
-    const url = new URL(href, window.location.href)
+    const url = new URL(href, window.location.href);
     return Object.freeze({
         href: url.href,
         get pathname() {
-            return url.pathname
+            return url.pathname;
         },
         get filename() {
-            return url.pathname.split("/").pop()
+            return url.pathname.split("/").pop();
         }
-    })
+    });
 }
 
-const container = document.getElementById("main-content")
-const inSpa = () => !!container
+const container = document.getElementById("main-content");
+const inSpa = () => !!container;
 
 export const ShellRoutes = Object.freeze({
     DASHBOARD: Route(`${MODULES_BASE}/dashboard/dashboard.html`)
-})
+});
+export const SharedRoutes = Object.freeze({
+    WIP: {html: Route(`/frontend/shared/ui/pages/wip/view.html`), mount: null}
+});
+
+export const MaintenanceRoutes = Object.freeze({
+    [Path.HORARIOS]: true,
+    [Path.APROVACAO_HORARIOS]: true,
+    [Path.MAPAS_HORARIOS]: true,
+    [Path.PEDIDOS_FERIAS]: true,
+    [Path.APROVACAO_FERIAS]: true,
+    [Path.CONSULTA_PEDIDOS]: true,
+    [Path.LISTA_INTERMEDIOS]: true,
+    [Path.PEDIDOS_HORAS_EXTRA]: true,
+    [Path.APROVACAO_HORAS_EXTRA]: true,
+    [Path.MARCACAO_DIRETA]: true,
+    [Path.GESTAO_FICHAS]: true,
+    [Path.FICHA_COLLAB]: true,
+});
 
 export const Routes = Object.freeze({
     [Path.INICIO]: {html: Route(`${MODULES_BASE}/dashboard/inicio.html`), mount: mountInicio},
@@ -56,59 +77,94 @@ export const Routes = Object.freeze({
     },
     [Path.MARCACAO_DIRETA]: {html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`), mount: initForm},
     [Path.GESTAO_FICHAS]: {html: Route(`${MODULES_BASE}/gestao_fichas/view.html`), mount: mountGstFchs},
-    [Path.FINANCEIRA]: {html: Route(`${MODULES_BASE}/financeira/financeira.html`), mount: null},
     [Path.FICHA_COLLAB]: {html: Route(`${MODULES_BASE}/ficha_collab/view.html`), mount: mountFichaCollab}
-})
+});
 
 export function navigate(path) {
-    if (!isPath(path)) throw new Error("Invalid path")
-    const nextHash = path ? `#${path}` : ""
+    if (!isPath(path)) throw new Error("Invalid path");
+
+    const nextHash = path ? `#${path}` : "";
+
     if (!inSpa()) {
-        window.location.href = `${ShellRoutes.DASHBOARD.href}${nextHash}`
-        return
+        window.location.href = `${ShellRoutes.DASHBOARD.href}${nextHash}`;
+        return;
     }
+
     if (window.location.hash === nextHash) {
-        window.dispatchEvent(new HashChangeEvent("hashchange"))
-        return
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+        return;
     }
-    window.location.hash = nextHash
+
+    window.location.hash = nextHash;
 }
 
-let cleanupView = null
-let cleanupShell = null
+let cleanupView = null;
+let cleanupShell = null;
+let renderVersion = 0;
+let started = false;
 
 async function render() {
-    if (!inSpa()) return
+    if (!inSpa()) return;
 
-    if (typeof cleanupView === "function") cleanupView()
-    cleanupView = null
+    const currentRender = ++renderVersion;
 
-    const raw = window.location.hash.replace(/^#/, "").trim()
-    const path = raw === "" ? Path.INICIO : raw
-    const route = isPath(path) ? Routes[path] : Routes[Path.INICIO]
+    if (typeof cleanupView === "function") cleanupView();
+    cleanupView = null;
+
+    const raw = window.location.hash.replace(/^#/, "").trim();
+    const requestedPath = raw === "" ? Path.INICIO : raw;
+    const normalizedPath = isPath(requestedPath) ? requestedPath : Path.INICIO;
+    const guardedPath = await guardDashboardRoute(normalizedPath);
+
+    if (guardedPath === null) return;
+
+    const route = MaintenanceRoutes[guardedPath]
+        ? SharedRoutes.WIP
+        : Routes[guardedPath] || Routes[Path.INICIO];
 
     try {
-        const res = await fetch(route.html.href, {credentials: "same-origin"})
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${route.html.href}`)
-        container.innerHTML = await res.text()
-        const maybeCleanup = route.mount?.()
-        cleanupView = typeof maybeCleanup === "function" ? maybeCleanup : null
+        const res = await fetch(route.html.href.toString(), {credentials: "same-origin"});
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${route.html.href}`);
+
+        const html = await res.text();
+
+        if (currentRender !== renderVersion) return;
+
+        container.innerHTML = html;
+
+        const maybeCleanup = route.mount?.();
+        cleanupView = typeof maybeCleanup === "function" ? maybeCleanup : null;
     } catch (err) {
-        console.error("Falha ao carregar vista:", err)
-        container.innerHTML = `<div style="padding:1rem;"><p class="error">Não foi possível carregar esta secção.</p></div>`
+        if (currentRender !== renderVersion) return;
+
+        console.error("Falha ao carregar vista:", err);
+        container.innerHTML = `<div style="padding:1rem;"><p class="error">Não foi possível carregar esta secção.</p></div>`;
     }
 
-    window.dispatchEvent(new CustomEvent("view:loaded"))
+    window.dispatchEvent(new CustomEvent("view:loaded"));
 }
 
-function start() {
-    if (!inSpa()) return
+async function start() {
+    if (!inSpa() || started) return;
+    started = true;
+
     if (!cleanupShell) {
-        const maybeCleanup = mountDashboardShell()
-        cleanupShell = typeof maybeCleanup === "function" ? maybeCleanup : null
+        const maybeCleanup = mountDashboardShell();
+        cleanupShell = typeof maybeCleanup === "function" ? maybeCleanup : null;
     }
-    window.addEventListener("hashchange", render)
-    render()
+
+    window.addEventListener("hashchange", render);
+    await render();
 }
 
-start()
+setApiAuthHandlers({
+    unauthorized() {
+        User.clear();
+        window.location.replace("/login.html");
+    },
+    forbidden() {
+        navigate(Path.INICIO);
+    },
+});
+
+start();

@@ -1,41 +1,71 @@
-import { me } from "../app/api.js";
+import {me} from "../app/api.js";
 
-const KEY = "rh360:user";
+const listeners = new Set();
 
-function get() {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) return null;
-    try {
-        return JSON.parse(raw);
-    } catch {
-        sessionStorage.removeItem(KEY);
-        return null;
-    }
+let currentAuth = null;
+let pendingAuth = null;
+
+function emit(auth = currentAuth) {
+    listeners.forEach(listener => listener(auth));
+    return auth;
 }
 
-function set(user) {
-    if (!user) {
-        sessionStorage.removeItem(KEY);
-        return null;
-    }
-    sessionStorage.setItem(KEY, JSON.stringify(user));
-    return user;
+function get() {
+    return currentAuth;
+}
+
+function set(auth) {
+    currentAuth = auth || null;
+    return emit(currentAuth);
 }
 
 function clear() {
-    sessionStorage.removeItem(KEY);
+    currentAuth = null;
+    pendingAuth = null;
+    return emit(null);
+}
+
+function subscribe(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+}
+
+async function refresh() {
+    if (pendingAuth) return pendingAuth;
+
+    pendingAuth = me()
+        .then(res => {
+            if (!res?.success || !res?.auth) return clear();
+            return set(res.auth);
+        })
+        .catch(err => {
+            clear();
+            throw err;
+        })
+        .finally(() => {
+            pendingAuth = null;
+        });
+
+    return pendingAuth;
+}
+
+async function ensure(options = {}) {
+    if (options.force || !currentAuth) return refresh();
+    return currentAuth;
 }
 
 async function getPrivileges() {
-    const res = await me();
-    if (!res?.success || !res?.auth) throw new Error('Failed to fetch user privileges');
-
-    return res.auth;
+    const auth = await ensure({force: true});
+    if (!auth) throw new Error("UNAUTHENTICATED");
+    return auth;
 }
 
 export const User = Object.freeze({
     get,
     set,
-    getPrivileges,
     clear,
+    subscribe,
+    refresh,
+    ensure,
+    getPrivileges,
 });
