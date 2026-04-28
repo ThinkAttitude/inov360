@@ -29,10 +29,12 @@ function renderBadges(cal, daysByDate) {
         const top = cell.querySelector('.fc-daygrid-day-top')
         if (!top) return
 
+        const statusClass = day.status === 'approved' ? 'is-approved' : 'is-draft'
+
         const workLabel = formatWorkTime(day.workMin)
         if (workLabel) {
             const badge = document.createElement('span')
-            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO}`
+            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO} ${statusClass}`
             badge.textContent = workLabel
             top.appendChild(badge)
         }
@@ -40,7 +42,7 @@ function renderBadges(cal, daysByDate) {
         const kmLabel = formatKm(day.km)
         if (kmLabel) {
             const badge = document.createElement('span')
-            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO}`
+            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO} ${statusClass}`
             badge.textContent = kmLabel
             top.appendChild(badge)
         }

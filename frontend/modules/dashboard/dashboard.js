@@ -1,35 +1,9 @@
 import {logout} from "../../app/api.js";
 import {User} from "../../shared/user_store.js";
+import {CARD_TYPES, PERMISSIONS, getCardsFromUser} from "./dashboard_access.js";
 
-import './styles.css';
-
-export const CARD_TYPES = Object.freeze({
-    INICIO: 'inicio',
-    HORARIOS: 'horarios',
-    APROVACAO_HORARIOS: 'aprov_horarios',
-    MAPAS_HORARIOS: 'mapas_horarios',
-    PEDIDOS_FERIAS: 'pedidos_ferias',
-    APROVACAO_FERIAS: 'aprov_ferias',
-    CONSULTA_PEDIDOS: 'consulta_pedidos',
-    LISTA_INTERMEDIOS: 'lista_intermedios',
-    CONTROLO_COLABS: 'controlo_colabs',
-    PEDIDOS_HORAS_EXTRA: 'pedidos_horas_extras',
-    APROVACAO_HORAS_EXTRA: 'aprov_horas_extras',
-    MARCACAO_DIRETA: 'marcacao_direta',
-    GESTAO_FICHAS: 'gestao_fichas',
-    FINANCEIRA: 'financeira',
-    FICHA_COLLAB: 'ficha_collab',
-});
-
-export const PERMISSIONS = Object.freeze({
-    CONTROLO_COLABS: 1,
-    MARCACAO_DIRETA: 2,
-    MAPAS_HORARIOS: 3,
-    PEDIDOS_HORAS_EXTRA: 4,
-    APROVACAO_HORAS_EXTRA: 5,
-    GESTAO_FICHAS: 6,
-    FINANCEIRA: 7,
-});
+import "./styles.css";
+import "../../shared/ui/pages/wip/styles.css";
 
 const SVG_ICONS = {
     HOME: `<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9,22 9,12 15,12 15,22"></polyline>`,
@@ -42,7 +16,6 @@ const SVG_ICONS = {
     PEOPLE: `<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>`,
     DOCUMENT: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14,2 14,8 20,8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10,9 9,9 8,9"></polyline>`,
     BOOKING: `<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M21 10H3"></path><path d="M12 14l2 2 4-4"></path>`,
-    COIN: `<circle cx="12" cy="12" r="9"></circle><path d="M8 10c1.5-1 4-1 6 0s1.5 3 0 4c-1.5 1-4 1-6 0" /><path d="M12 7v2" /><path d="M12 15v2" />`,
     CLIPBOARD: `<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>`,
 };
 
@@ -143,45 +116,10 @@ const CARD_DEFS = {
     },
 };
 
-/**
- * Mounts the dashboard *shell* (sidebar/footer/logout/user).
- * Call once at app startup.
- * @returns {() => void} cleanup
- */
-export function mountDashboardShell() {
-    const ctrl = new AbortController();
-    const {signal} = ctrl;
-
-    const footerYear = document.getElementById('yearSpan');
-    if (footerYear) footerYear.textContent = String(new Date().getFullYear());
-
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener(
-            'click',
-            (ev) => {
-                ev.preventDefault();
-                logout().finally(() => User.clear());
-            },
-            {signal}
-        );
-    }
-
-    const setActive = () => {
-        const key = window.location.hash.replace(/^#/, '').trim();
-        document.querySelectorAll('.sidebar-menu li').forEach((li) => li.classList.remove('active'));
-
-        const sel = key
-            ? `.sidebar-menu [data-content="${CSS.escape(key)}"]`
-            : `.sidebar-menu [data-content="${CARD_TYPES.INICIO}"]`;
-
-        document.querySelector(sel)?.closest('li')?.classList.add('active');
-    };
-
-    window.addEventListener('hashchange', setActive, {signal});
-    setActive();
-
-    return () => ctrl.abort();
+function applyDashboardAccess(auth) {
+    const {sideCards, welcomeCards} = getCardsFromUser(auth);
+    upsertSidebarEntries([...sideCards]);
+    upsertWelcomeCards([...welcomeCards]);
 }
 
 function createWelcomeCard(key) {
@@ -255,29 +193,76 @@ function upsertSidebarEntries(keys) {
     menu.insertBefore(frag, anchor || null);
 }
 
-function computeCardsFromUser(auth) {
-    const a = auth || {};
-    const perms = new Set(a.permissions || []);
-    const hasSubs = (a.subordinados?.length ?? 0) > 0;
-
-    const permCards = Object.entries(CARD_DEFS)
-        .filter(([_, def]) => def.permission && perms.has(def.permission))
-        .map(([key]) => key);
-
-    const sideCards = new Set(permCards);
-    const welcomeCards = new Set(permCards);
-
-    if (hasSubs) {
-        welcomeCards.add(CARD_TYPES.APROVACAO_HORARIOS);
-        welcomeCards.add(CARD_TYPES.APROVACAO_FERIAS);
-        welcomeCards.add(CARD_TYPES.CONSULTA_PEDIDOS);
-
-        sideCards.add(CARD_TYPES.APROVACAO_HORARIOS);
-        sideCards.add(CARD_TYPES.APROVACAO_FERIAS);
-        sideCards.add(CARD_TYPES.CONSULTA_PEDIDOS);
+async function handleLogout() {
+    try {
+        await logout();
+    } finally {
+        User.clear();
+        window.location.replace("/frontend/modules/login/view.html");
     }
+}
 
-    return {sideCards, welcomeCards};
+function bindDashboardLogout(signal) {
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (!logoutBtn) return;
+
+    logoutBtn.addEventListener(
+        "click",
+        (ev) => {
+            ev.preventDefault();
+            handleLogout();
+        },
+        {signal}
+    );
+}
+
+/**
+ * Mounts the dashboard *shell* (sidebar/footer/logout/user).
+ * Call once at app startup.
+ * @returns {() => void} cleanup
+ */
+export function mountDashboardShell() {
+    const ctrl = new AbortController();
+    const {signal} = ctrl;
+
+    const footerYear = document.getElementById("yearSpan");
+    if (footerYear) footerYear.textContent = String(new Date().getFullYear());
+
+    bindDashboardLogout(signal);
+
+    const setActive = () => {
+        const key = window.location.hash.replace(/^#/, "").trim();
+        document.querySelectorAll(".sidebar-menu li").forEach((li) => li.classList.remove("active"));
+
+        const sel = key
+            ? `.sidebar-menu [data-content="${CSS.escape(key)}"]`
+            : `.sidebar-menu [data-content="${CARD_TYPES.INICIO}"]`;
+
+        document.querySelector(sel)?.closest("li")?.classList.add("active");
+    };
+
+    const render = (auth) => {
+        applyDashboardAccess(auth);
+        setActive();
+    };
+
+    const unsubscribe = User.subscribe(render);
+
+    User.getPrivileges()
+        .then(render)
+        .catch((err) => {
+            console.error("Failed to bootstrap auth:", err);
+            User.clear();
+            window.location.replace("/frontend/modules/login/view.html");
+        });
+
+    window.addEventListener("hashchange", setActive, {signal});
+    setActive();
+
+    return () => {
+        unsubscribe();
+        ctrl.abort();
+    };
 }
 
 /**
@@ -286,20 +271,22 @@ function computeCardsFromUser(auth) {
  * @returns {() => void} cleanup
  */
 export function mountInicio() {
-    const ctrl = new AbortController();
+    const render = (auth) => {
+        const el = document.getElementById("userName");
+        if (el) el.textContent = auth?.name || "";
+        applyDashboardAccess(auth);
+    };
 
-    const user = User.get();
-    const el = document.getElementById("userName");
-    if (el) el.textContent = user?.name || "";
+    const unsubscribe = User.subscribe(render);
 
-    User.getPrivileges()
-        .then((userInfo) => {
-            const {sideCards, welcomeCards} = computeCardsFromUser(userInfo);
+    User.ensure()
+        .then(render)
+        .catch((err) => {
+            console.error("Failed to load auth for inicio:", err);
+            window.location.replace("/login.html");
+        });
 
-            if (welcomeCards.size) upsertWelcomeCards([...welcomeCards]);
-            if (sideCards.size) upsertSidebarEntries([...sideCards]);
-        })
-        .catch((err) => console.error('Failed to load user for inicio:', err));
-
-    return () => ctrl.abort();
+    return () => {
+        unsubscribe();
+    };
 }

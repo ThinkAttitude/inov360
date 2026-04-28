@@ -1,55 +1,8 @@
 import {updateRecord, getRecord} from '../../app/api.js';
+import {FICHA_FIELD_META as PROFILE_FIELDS} from '../ficha_collab/ficha_collab_fields.js';
 
 // TODO: Incorporate with the fields for ficha_collabs module if possible
 // TODO: Replace filtering readonly fields logic with iterating over a subset of editable fields
-const PROFILE_FIELDS = {
-    nome: {label: 'Nome', type: 'text', readonly: true},
-    email: {label: 'E-mail', type: 'text'},
-    telefone: {label: 'Telefone', type: 'text'},
-    morada: {label: 'Morada', type: 'text'},
-    codigo_postal: {label: 'Código postal', type: 'text'},
-    freguesia: {label: 'Freguesia', type: 'text'},
-    concelho: {label: 'Concelho', type: 'text'},
-    distrito: {label: 'Distrito', type: 'text'},
-    naturalidade: {label: 'Naturalidade', type: 'text'},
-    habilitacoes: {label: 'Habilitações', type: 'text'},
-    pai: {label: 'Pai', type: 'text'},
-    mae: {label: 'Mãe', type: 'text'},
-    estado_civil: {label: 'Estado civil', type: 'text'},
-    data_nascimento: {label: 'Data de nascimento', type: 'date'},
-    pais: {label: 'País', type: 'text'},
-    tipo_documento: {label: 'Tipo de documento', type: 'text'},
-    numero_documento: {label: 'Número de documento', type: 'text'},
-    emitido_em: {label: 'Emitido em', type: 'text'},
-    arquivo: {label: 'Arquivo', type: 'text'},
-    validade_documento: {label: 'Validade do documento', type: 'date'},
-    nif: {label: 'NIF', type: 'text'},
-    numero_seg_social: {label: 'Número de Segurança Social', type: 'text'},
-    descontos_fiscais: {label: 'Descontos fiscais', type: 'text'},
-    reparticao_financas: {label: 'Repartição de finanças', type: 'text'},
-    regiao: {label: 'Região', type: 'text'},
-    estado_fiscal: {label: 'Estado fiscal', type: 'text'},
-    deficiencia: {label: 'Deficiência', type: 'text'},
-    conjugue_deficiente: {label: 'Cônjuge deficiente', type: 'int'},
-    num_dependentes: {label: 'N.º de dependentes', type: 'int'},
-    num_dependentes_deficientes: {label: 'N.º de dependentes deficientes', type: 'int'},
-    pensionista: {label: 'Pensionista', type: 'int'},
-    data_admissao: {label: 'Data de admissão', type: 'date'},
-    tipo_contrato: {label: 'Tipo de contrato', type: 'text'},
-    profissao: {label: 'Profissão', type: 'text'},
-    categoria: {label: 'Categoria', type: 'text'},
-    regime: {label: 'Regime', type: 'text'},
-    horas_semana: {label: 'Horas por semana', type: 'int'},
-    salario_base: {label: 'Salário base', type: 'decimal'},
-    subsidio_alimentacao: {label: 'Subsídio de alimentação', type: 'decimal'},
-    nib: {label: 'NIB', type: 'text'},
-    ordenado_liquido: {label: 'Ordenado líquido', type: 'decimal'},
-    validacao_empresa: {label: 'Validação da empresa', type: 'text'},
-};
-
-export const PROFILE_FIELD_LABELS = Object.fromEntries(
-    Object.entries(PROFILE_FIELDS).map(([key, meta]) => [key, meta.label])
-);
 
 const recordState = {
     userId: null,
@@ -74,10 +27,13 @@ function renderRecordTable(profile, editable) {
 
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
+
     const thField = document.createElement('th');
     thField.textContent = 'Campo';
+
     const thValue = document.createElement('th');
     thValue.textContent = editable ? 'Valor (edição)' : 'Valor';
+
     headerRow.appendChild(thField);
     headerRow.appendChild(thValue);
     thead.appendChild(headerRow);
@@ -102,9 +58,7 @@ function renderRecordTable(profile, editable) {
             ? record[key]
             : null;
 
-        const isReadonly = !editable || meta.readonly;
-
-        if (isReadonly) {
+        if (!editable) {
             td.textContent = value == null ? '' : String(value);
         } else {
             const input = document.createElement('input');

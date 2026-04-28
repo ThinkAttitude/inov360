@@ -1,5 +1,5 @@
 import {createDecision, getRecord, getRecordChanges} from '../../app/api.js';
-import {PROFILE_FIELD_LABELS} from './gestao_fichas_records.js';
+import {FICHA_FIELD_LABELS as PROFILE_FIELD_LABELS} from '../ficha_collab/ficha_collab_fields.js';
 
 const diffState = {
     userId: null,

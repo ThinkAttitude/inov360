@@ -1,58 +1,91 @@
-const API_BASE_URL = '/backend/api/';
+const API_BASE_URL = "/backend/api/";
+
+let authHandlers = Object.freeze({
+    unauthorized: null,
+    forbidden: null,
+});
+
+let pendingAuthAction = null;
+
+export function setApiAuthHandlers(handlers = {}) {
+    authHandlers = Object.freeze({
+        unauthorized: typeof handlers.unauthorized === "function" ? handlers.unauthorized : null,
+        forbidden: typeof handlers.forbidden === "function" ? handlers.forbidden : null,
+    });
+}
+
+function createHttpError(message, status) {
+    const error = new Error(message || "Ocorreu um erro.");
+    error.status = status;
+    return error;
+}
+
+async function runAuthHandler(status) {
+    if (pendingAuthAction) return pendingAuthAction;
+
+    pendingAuthAction = Promise.resolve().then(() => {
+        if (status === 401) return authHandlers.unauthorized?.();
+        if (status === 403) return authHandlers.forbidden?.();
+        return null;
+    }).finally(() => {
+        pendingAuthAction = null;
+    });
+
+    return pendingAuthAction;
+}
 
 async function getErrorMessage(response) {
-    const contentType = response.headers.get('Content-Type') || '';
+    const contentType = response.headers.get("Content-Type") || "";
     const bodyText = await response.text();
 
-    if (contentType.includes('application/json')) {
+    if (contentType.includes("application/json")) {
         try {
             const data = JSON.parse(bodyText);
-            return data?.message || data?.error || bodyText?.trim() || 'Ocorreu um erro.';
+            return data?.message || data?.error || bodyText.trim() || "Ocorreu um erro.";
         } catch {}
     }
 
-    return bodyText?.trim() || 'Ocorreu um erro.';
+    return bodyText.trim() || "Ocorreu um erro.";
 }
 
 async function parseResponse(response, responseType) {
-    if (responseType === 'blob') return response.blob();
-    if (responseType === 'text') return response.text();
-    if (responseType === 'response') return response;
+    if (responseType === "blob") return response.blob();
+    if (responseType === "text") return response.text();
+    if (responseType === "response") return response;
 
-    const contentType = response.headers.get('Content-Type') || '';
+    const contentType = response.headers.get("Content-Type") || "";
 
-    if (responseType === 'json') return response.json();
-    if (contentType.includes('application/json')) return response.json();
+    if (responseType === "json") return response.json();
+    if (contentType.includes("application/json")) return response.json();
 
     return response;
 }
 
-/**
- * Generic function to make API requests
- * @param endpoint - The API endpoint to call, e.g., 'login.php'
- * @param options - Fetch options like method, headers, body, etc.
- * @returns {Promise<any>} The response Promise
- */
-async function apiFetch(endpoint, options = {}) {
-    const { body, headers, responseType = 'auto', ...rest } = options;
+export async function apiFetch(endpoint, options = {}) {
+    const {body, headers, responseType = "auto", credentials = "same-origin", ...rest} = options;
     const h = new Headers(headers || {});
-    const isPlainObject = (v) => v !== null && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype;
+    const isPlainObject = (v) => v !== null && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype;
 
     let requestBody = body;
 
     if (isPlainObject(body)) {
-        h.set('Content-Type', 'application/json');
+        h.set("Content-Type", "application/json");
         requestBody = JSON.stringify(body);
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...rest,
+        credentials,
         headers: h,
         body: requestBody,
     });
 
+    if (response.status === 401 || response.status === 403) {
+        await runAuthHandler(response.status);
+    }
+
     if (!response.ok) {
-        throw new Error(await getErrorMessage(response));
+        throw createHttpError(await getErrorMessage(response), response.status);
     }
 
     return parseResponse(response, responseType);
