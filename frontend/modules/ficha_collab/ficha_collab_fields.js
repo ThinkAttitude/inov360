@@ -1,60 +1,73 @@
+const field = (label, options = {}) => Object.freeze({
+    label,
+    type: 'text',
+    editable: false,
+    ...options,
+});
+
 export const PERSONAL_FIELDS = {
-    nome: 'Nome',
-    email: { label: 'Email', editable: true },
-    telefone: { label: 'Contacto telefone', editable: true },
-    morada: { label: 'Morada', editable: true },
-    codigo_postal: 'Código Postal',
-    freguesia: 'Freguesia',
-    concelho: 'Concelho',
-    distrito: 'Distrito',
-    naturalidade: 'Naturalidade',
-    habilitacoes: 'Habilitações'
+    nome: field('Nome'),
+    email: field('Email', {editable: true}),
+    telefone: field('Contacto telefone', {editable: true}),
+    morada: field('Morada', {editable: true}),
+    codigo_postal: field('Código Postal'),
+    concelho: field('Concelho'),
+    distrito: field('Distrito'),
+    naturalidade: field('Naturalidade'),
+    habilitacoes: field('Habilitações'),
 };
 
 export const FAMILY_FIELDS = {
-    pai: 'Pai',
-    mae: 'Mãe',
-    estado_civil: 'Estado Civil',
-    data_nascimento: 'Data Nascimento',
-    pais: 'País',
-    tipo_documento: 'Tipo Documento',
-    numero_documento: 'Número Documento',
-    emitido_em: 'Emitido em',
-    arquivo: 'Arquivo',
-    validade_documento: 'Validade Documento',
-    nif: 'NIF',
-    numero_seg_social: 'Número Segurança Social'
+    estado_civil: field('Estado Civil'),
+    data_nascimento: field('Data Nascimento', {type: 'date'}),
+    pais: field('País'),
+    tipo_documento: field('Tipo Documento'),
+    numero_documento: field('Número Documento'),
+    emitido_em: field('Emitido em (Data)', {type: 'date'}),
+    arquivo: field('Arquivo'),
+    validade_documento: field('Validade Documento', {type: 'date'}),
+    nif: field('NIF'),
+    numero_seg_social: field('Número Segurança Social'),
 };
 
 export const FISCAL_FIELDS = {
-    descontos_fiscais: 'Descontos Fiscais',
-    reparticao_financas: 'Repartição Finanças',
-    regiao: 'Região',
-    estado_fiscal: 'Estado Fiscal',
-    deficiencia: 'Deficiência',
-    conjugue_deficiente: 'Cônjuge Deficiente',
-    num_dependentes: 'Nº Dependentes',
-    num_dependentes_deficientes: 'Nº Dependentes Deficientes',
-    pensionista: 'Pensionista'
+    estado_fiscal: field('Estado Fiscal'),
+    deficiencia: field('Deficiência'),
+    conjugue_deficiente: field('Cônjuge Deficiente', {type: 'int'}),
+    num_dependentes: field('Nº Dependentes', {type: 'int'}),
+    num_dependentes_deficientes: field('Nº Dependentes Deficientes', {type: 'int'}),
+    pensionista: field('Pensionista', {type: 'int'}),
 };
 
 export const CONTRACT_FIELDS = {
-    data_admissao: 'Data Admissão',
-    tipo_contrato: 'Tipo de Contrato',
-    profissao: 'Profissão',
-    categoria: 'Categoria',
-    regime: 'Regime',
-    horas_semana: 'Horas/Semana',
-    salario_base: { label: 'Salário Base', suffix: ' €', highlight: true },
-    subsidio_alimentacao: { label: 'Sub. Alimentação', suffix: ' €' },
-    nib: { label: 'NIB', editable: true },
-    ordenado_liquido: { label: 'Ordenado Líquido', suffix: ' €', highlight: true },
-    validacao_empresa: 'Validação Empresa'
+    data_admissao: field('Data Admissão', {type: 'date'}),
+    tipo_contrato: field('Tipo de Contrato'),
+    profissao: field('Profissão'),
+    categoria: field('Categoria'),
+    regime: field('Regime'),
+    horas_semana: field('Horas/Semana', {type: 'int'}),
+    salario_base: field('Salário Base', {type: 'decimal', suffix: ' €', highlight: true}),
+    subsidio_alimentacao: field('Sub. Alimentação', {type: 'decimal', suffix: ' €'}),
+    nib: field('NIB', {editable: true}),
+    ordenado_liquido: field('Ordenado Líquido', {type: 'decimal', suffix: ' €', highlight: true}),
 };
 
 export const FICHA_SECTIONS = {
     'dados-pessoais': PERSONAL_FIELDS,
     'dados-familiares': FAMILY_FIELDS,
     'dados-fiscais': FISCAL_FIELDS,
-    'dados-contratuais': CONTRACT_FIELDS
+    'dados-contratuais': CONTRACT_FIELDS,
 };
+
+export const FICHA_FIELD_META = Object.freeze({
+    ...PERSONAL_FIELDS,
+    ...FAMILY_FIELDS,
+    ...FISCAL_FIELDS,
+    ...CONTRACT_FIELDS,
+});
+
+export const FICHA_FIELD_LABELS = Object.freeze(
+    Object.fromEntries(
+        Object.entries(FICHA_FIELD_META).map(([key, meta]) => [key, meta.label])
+    )
+);

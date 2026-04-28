@@ -34,13 +34,10 @@ CREATE TABLE `colaborador_dados` (
   `telefone` varchar(20) DEFAULT NULL,
   `morada` varchar(255) DEFAULT NULL,
   `codigo_postal` varchar(20) DEFAULT NULL,
-  `freguesia` varchar(100) DEFAULT NULL,
   `concelho` varchar(100) DEFAULT NULL,
   `distrito` varchar(100) DEFAULT NULL,
   `naturalidade` varchar(100) DEFAULT NULL,
   `habilitacoes` varchar(100) DEFAULT NULL,
-  `pai` varchar(100) DEFAULT NULL,
-  `mae` varchar(100) DEFAULT NULL,
   `estado_civil` enum('Solteiro','Casado','Viuvo','Divorciado','Uniao de Facto','Separado Judicialmente') DEFAULT NULL,
   `data_nascimento` date DEFAULT NULL,
   `pais` varchar(100) DEFAULT NULL,
@@ -51,9 +48,6 @@ CREATE TABLE `colaborador_dados` (
   `validade_documento` date DEFAULT NULL,
   `nif` varchar(20) DEFAULT NULL,
   `numero_seg_social` varchar(20) DEFAULT NULL,
-  `descontos_fiscais` varchar(100) DEFAULT NULL,
-  `reparticao_financas` varchar(100) DEFAULT NULL,
-  `regiao` varchar(100) DEFAULT NULL,
   `estado_fiscal` enum('Nao Casado','Casado 1 Titular','Casado 2 Titulares') DEFAULT NULL,
   `deficiencia` enum('Nao Deficiente','Deficiente','Defic. F.Armadas') DEFAULT NULL,
   `conjugue_deficiente` tinyint(1) DEFAULT NULL,
@@ -69,29 +63,28 @@ CREATE TABLE `colaborador_dados` (
   `salario_base` decimal(10,2) DEFAULT NULL,
   `subsidio_alimentacao` decimal(10,2) DEFAULT NULL,
   `nib` varchar(50) DEFAULT NULL,
-  `ordenado_liquido` decimal(10,2) DEFAULT NULL,
-  `validacao_empresa` varchar(100) DEFAULT NULL
+  `ordenado_liquido` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Extraindo dados da tabela `colaborador_dados`
 --
 
-INSERT INTO `colaborador_dados` (`user_id`, `nome`, `email`, `telefone`, `morada`, `codigo_postal`, `freguesia`, `concelho`, `distrito`, `naturalidade`, `habilitacoes`, `pai`, `mae`, `estado_civil`, `data_nascimento`, `pais`, `tipo_documento`, `numero_documento`, `emitido_em`, `arquivo`, `validade_documento`, `nif`, `numero_seg_social`, `descontos_fiscais`, `reparticao_financas`, `regiao`, `estado_fiscal`, `deficiencia`, `conjugue_deficiente`, `num_dependentes`, `num_dependentes_deficientes`, `pensionista`, `data_admissao`, `tipo_contrato`, `profissao`, `categoria`, `regime`, `horas_semana`, `salario_base`, `subsidio_alimentacao`, `nib`, `ordenado_liquido`, `validacao_empresa`) VALUES
-(12, 'Miguel Administrador RH', 'adminrh@gmail.com', '961234567', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Solteiro', NULL, NULL, 'CC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Nao Casado', 'Nao Deficiente', 1, NULL, NULL, 1, NULL, 'Sem termo', NULL, NULL, 'Tempo Inteiro', NULL, 8000.00, NULL, '000201231234567890154', NULL, NULL),
-(21, 'Miguel Operador', 'oper@gmail.com', '963206692', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Solteiro', NULL, NULL, 'CC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Nao Casado', 'Nao Deficiente', 1, NULL, NULL, 1, NULL, 'Sem termo', NULL, 'Categoria A', 'Tempo Inteiro', NULL, NULL, NULL, '000201231234567890154', NULL, NULL),
-(22, 'Miguel Intermedio2', 'inter2@gmail.com', '960009827', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL, NULL),
-(23, 'Miguel Intermedio', 'inter@gmail.com', '960009827', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Solteiro', NULL, NULL, 'CC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Nao Casado', 'Nao Deficiente', 1, NULL, NULL, 1, NULL, 'Sem termo', NULL, NULL, 'Tempo Inteiro', NULL, 800000.00, NULL, '000200123456789012345', NULL, NULL),
-(24, 'Miguel Admin', 'admin@gmail.com', '960009827', 'Rua do Carmo Lopes', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL, NULL),
-(25, 'Miguel Estrela', 'estrela@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(39, 'João Operador', 'joao@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(40, 'Luís Financeiro', 'finan@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(41, 'Sandra Ferreira', 'sandraferreira@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(52, NULL, 'carlos.silva@inov360.pt', '913445566', 'Rua das Flores 120, 3º Esq', '1000-001', 'Areeiro', 'Lisboa', 'Lisboa', 'Lisboa', 'Licenciatura em Engenharia Informática', 'João Silva', 'Maria Silva', 'Casado', '1990-03-15', 'Portugal', 'CC', '12345678', 'Lisboa', 'Arquivo Central', '2030-12-31', '123456789', '99988877766', 'IRS A', 'Lisboa 2', 'Lisboa', 'Casado 1 Titular', 'Nao Deficiente', NULL, 2, 0, 0, '2020-06-15', 'Sem Termo', 'Técnico de Sistemas', 'Engenheiro de Software', 'Tempo Inteiro', 40, 1800.00, 7.63, '000201231234567890154', 1450.50, 'Validação RH 2025-10-22'),
-(66, NULL, 'nuno@gmail.com', '963206692', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL, NULL),
-(67, NULL, 'miguel@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(68, NULL, 'henrique@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(69, NULL, 'luis@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `colaborador_dados` (`user_id`, `nome`, `email`, `telefone`, `morada`, `codigo_postal`, `concelho`, `distrito`, `naturalidade`, `habilitacoes`, `estado_civil`, `data_nascimento`, `pais`, `tipo_documento`, `numero_documento`, `emitido_em`, `arquivo`, `validade_documento`, `nif`, `numero_seg_social`, `estado_fiscal`, `deficiencia`, `conjugue_deficiente`, `num_dependentes`, `num_dependentes_deficientes`, `pensionista`, `data_admissao`, `tipo_contrato`, `profissao`, `categoria`, `regime`, `horas_semana`, `salario_base`, `subsidio_alimentacao`, `nib`, `ordenado_liquido`) VALUES
+(12, 'Miguel Administrador RH', 'adminrh@gmail.com', '961234567', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, 'Solteiro', NULL, NULL, 'CC', NULL, NULL, NULL, NULL, NULL, NULL, 'Nao Casado', 'Nao Deficiente', 1, NULL, NULL, 1, NULL, 'Sem termo', NULL, NULL, 'Tempo Inteiro', NULL, 8000.00, NULL, '000201231234567890154', NULL),
+(21, 'Miguel Operador', 'oper@gmail.com', '963206692', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, 'Solteiro', NULL, NULL, 'CC', NULL, NULL, NULL, NULL, NULL, NULL, 'Nao Casado', 'Nao Deficiente', 1, NULL, NULL, 1, NULL, 'Sem termo', NULL, 'Categoria A', 'Tempo Inteiro', NULL, NULL, NULL, '000201231234567890154', NULL),
+(22, 'Miguel Intermedio2', 'inter2@gmail.com', '960009827', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL),
+(23, 'Miguel Intermedio', 'inter@gmail.com', '960009827', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, 'Solteiro', NULL, NULL, 'CC', NULL, NULL, NULL, NULL, NULL, NULL, 'Nao Casado', 'Nao Deficiente', 1, NULL, NULL, 1, NULL, 'Sem termo', NULL, NULL, 'Tempo Inteiro', NULL, 800000.00, NULL, '000200123456789012345', NULL),
+(24, 'Miguel Admin', 'admin@gmail.com', '960009827', 'Rua do Carmo Lopes', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL),
+(25, 'Miguel Estrela', 'estrela@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(39, 'João Operador', 'joao@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(40, 'Luís Financeiro', 'finan@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(41, 'Sandra Ferreira', 'sandraferreira@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(52, NULL, 'carlos.silva@inov360.pt', '913445566', 'Rua das Flores 120, 3º Esq', '1000-001', 'Lisboa', 'Lisboa', 'Lisboa', 'Licenciatura em Engenharia Informática', 'Casado', '1990-03-15', 'Portugal', 'CC', '12345678', 'Lisboa', 'Arquivo Central', '2030-12-31', '123456789', '99988877766', 'Casado 1 Titular', 'Nao Deficiente', NULL, 2, 0, 0, '2020-06-15', 'Sem Termo', 'Técnico de Sistemas', 'Engenheiro de Software', 'Tempo Inteiro', 40, 1800.00, 7.63, '000201231234567890154', 1450.50),
+(66, NULL, 'nuno@gmail.com', '963206692', 'Rua Do Moinho Casais De Sao Lourenco', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '000201231234567890154', NULL),
+(67, NULL, 'miguel@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(68, NULL, 'henrique@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(69, NULL, 'luis@gmail.com', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -191,22 +184,23 @@ CREATE TABLE `contactos_emergencia` (
   `user_id` int(11) NOT NULL,
   `nome` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `parentesco` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `telefone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+  `telefone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `grupo_sanguineo` varchar(5) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Extraindo dados da tabela `contactos_emergencia`
 --
 
-INSERT INTO `contactos_emergencia` (`id`, `user_id`, `nome`, `parentesco`, `telefone`) VALUES
-(1, 40, '', '', ''),
-(3, 41, '', '', ''),
-(4, 21, 'Joao Lopes', 'Pai', '987773663'),
-(5, 66, 'Luis Camões', 'Pai', '987773663'),
-(6, 67, '', '', ''),
-(7, 68, '', '', ''),
-(8, 69, '', '', ''),
-(9, 52, 'Ana Silva', 'Esposa', '917889900');
+INSERT INTO `contactos_emergencia` (`id`, `user_id`, `nome`, `parentesco`, `telefone`, `grupo_sanguineo`) VALUES
+(1, 40, '', '', '', NULL),
+(3, 41, '', '', '', NULL),
+(4, 21, 'Joao Lopes', 'Pai', '987773663', NULL),
+(5, 66, 'Luis Camões', 'Pai', '987773663', NULL),
+(6, 67, '', '', '', NULL),
+(7, 68, '', '', '', NULL),
+(8, 69, '', '', '', NULL),
+(9, 52, 'Ana Silva', 'Esposa', '917889900', NULL);
 
 -- --------------------------------------------------------
 
@@ -220,6 +214,7 @@ CREATE TABLE `contactos_emergencia_edicoes` (
   `nome` varchar(100) DEFAULT NULL,
   `parentesco` varchar(50) DEFAULT NULL,
   `telefone` varchar(20) DEFAULT NULL,
+  `grupo_sanguineo` varchar(5) DEFAULT NULL,
   `estado` enum('pendente','aprovado','recusado') DEFAULT 'pendente',
   `criado_em` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `avaliado_por` int(11) DEFAULT NULL,
@@ -230,11 +225,11 @@ CREATE TABLE `contactos_emergencia_edicoes` (
 -- Extraindo dados da tabela `contactos_emergencia_edicoes`
 --
 
-INSERT INTO `contactos_emergencia_edicoes` (`id`, `user_id`, `nome`, `parentesco`, `telefone`, `estado`, `criado_em`, `avaliado_por`, `avaliado_em`) VALUES
-(1, 21, 'Miguel Cordeiro', 'Pai', '987773663', 'aprovado', '2025-09-10 18:50:28', 12, '2025-09-10 19:00:51'),
-(2, 21, 'Joao Lopes', 'Pai', '987773663', 'aprovado', '2025-09-11 11:18:48', 12, '2025-09-11 11:20:06'),
-(4, 66, 'Luis Camões', 'Pai', '987773663', 'aprovado', '2025-10-21 10:38:04', 68, '2025-10-22 09:02:55'),
-(5, 68, 'Luis Camões', 'Pai', '987773663', 'recusado', '2025-10-22 09:05:32', 68, '2025-10-22 09:07:40');
+INSERT INTO `contactos_emergencia_edicoes` (`id`, `user_id`, `nome`, `parentesco`, `telefone`, `estado`, `criado_em`, `avaliado_por`, `avaliado_em`, `grupo_sanguineo`) VALUES
+(1, 21, 'Miguel Cordeiro', 'Pai', '987773663', 'aprovado', '2025-09-10 18:50:28', 12, '2025-09-10 19:00:51', NULL),
+(2, 21, 'Joao Lopes', 'Pai', '987773663', 'aprovado', '2025-09-11 11:18:48', 12, '2025-09-11 11:20:06', NULL),
+(4, 66, 'Luis Camões', 'Pai', '987773663', 'aprovado', '2025-10-21 10:38:04', 68, '2025-10-22 09:02:55', NULL),
+(5, 68, 'Luis Camões', 'Pai', '987773663', 'recusado', '2025-10-22 09:05:32', 68, '2025-10-22 09:07:40', NULL);
 
 -- --------------------------------------------------------
 

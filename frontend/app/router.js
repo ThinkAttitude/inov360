@@ -42,42 +42,77 @@ export const SharedRoutes = Object.freeze({
     WIP: {html: Route(`/frontend/shared/ui/pages/wip/view.html`), mount: null}
 });
 
-export const MaintenanceRoutes = Object.freeze({
-    [Path.HORARIOS]: true,
-    [Path.APROVACAO_HORARIOS]: true,
-    [Path.MAPAS_HORARIOS]: true,
-    [Path.PEDIDOS_FERIAS]: true,
-    [Path.APROVACAO_FERIAS]: true,
-    [Path.CONSULTA_PEDIDOS]: true,
-    [Path.LISTA_INTERMEDIOS]: true,
-    [Path.PEDIDOS_HORAS_EXTRA]: true,
-    [Path.APROVACAO_HORAS_EXTRA]: true,
-    [Path.MARCACAO_DIRETA]: true,
-    [Path.GESTAO_FICHAS]: true,
-    [Path.FICHA_COLLAB]: true,
-});
-
 export const Routes = Object.freeze({
-    [Path.INICIO]: {html: Route(`${MODULES_BASE}/dashboard/inicio.html`), mount: mountInicio},
-    [Path.HORARIOS]: {html: Route(`${MODULES_BASE}/horarios/view.html`), mount: mountSchedule},
-    [Path.APROVACAO_HORARIOS]: {html: Route(`${MODULES_BASE}/aprovacao_horarios/aprovacao_horarios.php`), mount: null},
-    [Path.MAPAS_HORARIOS]: {html: Route(`${MODULES_BASE}/mapas_horarios/mapas_horarios.php`), mount: null},
-    [Path.PEDIDOS_FERIAS]: {html: Route(`${MODULES_BASE}/pedidos_ferias/view.html`), mount: null},
-    [Path.APROVACAO_FERIAS]: {html: Route(`${MODULES_BASE}/aprovacao_ferias/aprovacao_ferias.php`), mount: null},
-    [Path.CONSULTA_PEDIDOS]: {html: Route(`${MODULES_BASE}/consulta_pedidos/view.html`), mount: null},
-    [Path.LISTA_INTERMEDIOS]: {html: Route(`${MODULES_BASE}/lista_intermedios/lista_intermedios.php`), mount: null},
-    [Path.CONTROLO_COLABS]: {html: Route(`${MODULES_BASE}/controlo_colabs/view.html`), mount: mountClbMngmt},
+    [Path.INICIO]: {
+        html: Route(`${MODULES_BASE}/dashboard/inicio.html`),
+        mount: mountInicio,
+        maintenance: false,
+    },
+    [Path.HORARIOS]: {
+        html: Route(`${MODULES_BASE}/horarios/view.html`),
+        mount: mountSchedule,
+        maintenance: true,
+    },
+    [Path.APROVACAO_HORARIOS]: {
+        html: Route(`${MODULES_BASE}/aprovacao_horarios/aprovacao_horarios.php`),
+        mount: null,
+        maintenance: true,
+    },
+    [Path.MAPAS_HORARIOS]: {
+        html: Route(`${MODULES_BASE}/mapas_horarios/mapas_horarios.php`),
+        mount: null,
+        maintenance: true,
+    },
+    [Path.PEDIDOS_FERIAS]: {
+        html: Route(`${MODULES_BASE}/pedidos_ferias/view.html`),
+        mount: null,
+        maintenance: true,
+    },
+    [Path.APROVACAO_FERIAS]: {
+        html: Route(`${MODULES_BASE}/aprovacao_ferias/aprovacao_ferias.php`),
+        mount: null,
+        maintenance: true,
+    },
+    [Path.CONSULTA_PEDIDOS]: {
+        html: Route(`${MODULES_BASE}/consulta_pedidos/view.html`),
+        mount: null,
+        maintenance: true,
+    },
+    [Path.LISTA_INTERMEDIOS]: {
+        html: Route(`${MODULES_BASE}/lista_intermedios/lista_intermedios.php`),
+        mount: null,
+        maintenance: true,
+    },
+    [Path.CONTROLO_COLABS]: {
+        html: Route(`${MODULES_BASE}/controlo_colabs/view.html`),
+        mount: mountClbMngmt,
+        maintenance: false,
+    },
     [Path.PEDIDOS_HORAS_EXTRA]: {
         html: Route(`${MODULES_BASE}/pedidos_horas_extras/view.html`),
-        mount: mountPedidosHorasExtra
+        mount: mountPedidosHorasExtra,
+        maintenance: true,
     },
     [Path.APROVACAO_HORAS_EXTRA]: {
         html: Route(`${MODULES_BASE}/horas_extra/view.html`),
-        mount: mountHorasExtra
+        mount: mountHorasExtra,
+        maintenance: true,
     },
-    [Path.MARCACAO_DIRETA]: {html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`), mount: initForm},
-    [Path.GESTAO_FICHAS]: {html: Route(`${MODULES_BASE}/gestao_fichas/view.html`), mount: mountGstFchs},
-    [Path.FICHA_COLLAB]: {html: Route(`${MODULES_BASE}/ficha_collab/view.html`), mount: mountFichaCollab}
+    [Path.MARCACAO_DIRETA]: {
+        html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`),
+        mount: initForm,
+        maintenance: true,
+    },
+    [Path.GESTAO_FICHAS]: {
+        html: Route(`${MODULES_BASE}/gestao_fichas/view.html`),
+        mount: mountGstFchs,
+        maintenance: false,
+    },
+    [Path.FICHA_COLLAB]: {
+        html: Route(`${MODULES_BASE}/ficha_collab/view.html`),
+        mount: mountFichaCollab,
+        maintenance: false,
+    },
 });
 
 export function navigate(path) {
@@ -118,9 +153,8 @@ async function render() {
 
     if (guardedPath === null) return;
 
-    const route = MaintenanceRoutes[guardedPath]
-        ? SharedRoutes.WIP
-        : Routes[guardedPath] || Routes[Path.INICIO];
+    const pageRoute = Routes[guardedPath] || Routes[Path.INICIO];
+    const route = pageRoute.maintenance ? SharedRoutes.WIP : pageRoute;
 
     try {
         const res = await fetch(route.html.href.toString(), {credentials: "same-origin"});
