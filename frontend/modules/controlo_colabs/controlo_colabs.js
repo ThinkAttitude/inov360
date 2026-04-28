@@ -8,7 +8,6 @@ import {
 
 import './styles.css';
 
-let collabs = [];
 const hierarchyState = {
     userId: null,
     responsaveis: [],
@@ -19,7 +18,6 @@ const hierarchyState = {
 
 const setHierarchyState = (patch) => Object.assign(hierarchyState, patch);
 
-// Check if hierarchy has unsaved changes
 const isHierarchyDirty = () => {
     const {responsaveis, subs, baseRespCount, baseSubCount} = hierarchyState;
     return (
@@ -41,11 +39,18 @@ async function fillCollaborators() {
     const select = document.getElementById('controlo-user-select');
     if (!select) return;
 
+    const currentValue = select.value;
+
     try {
         const res = await getAllCollaborators();
         if (!res || res.ok !== true || !Array.isArray(res.items)) return;
 
-        collabs = res.items;
+        select.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Selecione um colaborador';
+        select.appendChild(placeholder);
 
         res.items.forEach(item => {
             if (!item || item.id == null || !item.nome) return;
@@ -54,6 +59,10 @@ async function fillCollaborators() {
             opt.textContent = item.email ? `${item.nome} (${item.email})` : item.nome;
             select.appendChild(opt);
         });
+
+        if (currentValue && Array.from(select.options).some(opt => opt.value === currentValue)) {
+            select.value = currentValue;
+        }
     } catch (e) {
         console.error('Erro ao carregar colaboradores:', e);
     }
@@ -87,7 +96,10 @@ function togglePermChips(ids = [], enabled = true) {
                 const userId = parseInt(select.value, 10);
                 if (!userId) return;
 
-                const collab = collabs.find(c => c.id === userId);
+                const res = await getAllCollaborators();
+                if (!res || res.ok !== true || !Array.isArray(res.items)) return;
+
+                const collab = res.items.find(c => c.id === userId);
                 if (!collab) return;
 
                 const wasOn = chip.classList.contains('chip-on');
@@ -115,9 +127,6 @@ function togglePermChips(ids = [], enabled = true) {
                     if (!resp || resp.ok !== true) {
                         throw new Error('Resposta inválida do servidor');
                     }
-                    collab.permissoes = Array.isArray(resp.permissions)
-                        ? resp.permissions
-                        : nextPerms;
                 } catch (err) {
                     console.error('Falha ao atualizar permissões:', err);
                     chip.classList.toggle('chip-on', wasOn);
@@ -303,7 +312,7 @@ function rebuildRows() {
     appendRowWithConnectors(subsList, hierarchyState.subs, 'sub');
 }
 
-function openHierarchyAddSelect(type, areaEl) {
+async function openHierarchyAddSelect(type, areaEl) {
     if (!hierarchyState.userId || !areaEl) return;
 
     const modal = document.getElementById('hierarchy-modal');
@@ -312,6 +321,9 @@ function openHierarchyAddSelect(type, areaEl) {
 
     const existing = modal.querySelector('.hier-add-overlay');
     if (existing) existing.remove();
+
+    const res = await getAllCollaborators();
+    if (!res || res.ok !== true || !Array.isArray(res.items)) return;
 
     const overlay = document.createElement('div');
     overlay.className = 'hier-add-overlay';
@@ -342,7 +354,7 @@ function openHierarchyAddSelect(type, areaEl) {
         if (s.user.id) usedIds.add(s.user.id);
     });
 
-    collabs.forEach(c => {
+    res.items.forEach(c => {
         if (!c.id || usedIds.has(c.id)) return;
         const opt = document.createElement('option');
         opt.value = String(c.id);
@@ -393,7 +405,7 @@ function openHierarchyAddSelect(type, areaEl) {
         const id = parseInt(select.value, 10);
         if (!id) return;
 
-        const chosen = collabs.find(c => c.id === id);
+        const chosen = res.items.find(c => c.id === id);
         if (!chosen) return;
 
         const entry = { user: chosen };
@@ -501,7 +513,7 @@ function renderHierarchyPreview() {
     previewRoot.innerHTML = '';
     previewRoot.appendChild(frag);
 
-    previewRoot.style.transform = 'translate(0px, 0px)';    // reset position
+    previewRoot.style.transform = 'translate(0px, 0px)';
 }
 
 function bindSelect() {
@@ -514,7 +526,7 @@ function bindSelect() {
     const currentEmailEl = document.getElementById('hier-node-current-email');
     const modalSubtitle = document.getElementById('hierarchy-modal-subtitle');
 
-    select.addEventListener('change', () => {
+    select.addEventListener('change', async () => {
         const val = select.value;
 
         if (!val) {
@@ -541,7 +553,10 @@ function bindSelect() {
         }
 
         const id = parseInt(val, 10);
-        const c = collabs.find(u => u.id === id);
+        const res = await getAllCollaborators();
+        const c = res && res.ok === true && Array.isArray(res.items)
+            ? res.items.find(u => u.id === id)
+            : null;
 
         renderPerms(c?.permissoes || [], true);
         renderDiagram(id);
