@@ -71,3 +71,9 @@ export const FICHA_FIELD_LABELS = Object.freeze(
         Object.entries(FICHA_FIELD_META).map(([key, meta]) => [key, meta.label])
     )
 );
+
+export const FICHA_EDITABLE_FIELD_META = Object.freeze(
+    Object.fromEntries(
+        Object.entries(FICHA_FIELD_META).filter(([, meta]) => meta.editable)
+    )
+);
