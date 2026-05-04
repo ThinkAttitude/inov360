@@ -949,6 +949,18 @@ ALTER TABLE `user_permission`
   ADD CONSTRAINT `fk_up_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE;
 COMMIT;
 
+CREATE INDEX idx_colaborador_edicoes_pending_user
+    ON colaborador_edicoes (estado, user_id, id, criado_em);
+
+CREATE INDEX idx_contactos_emergencia_edicoes_pending_user
+    ON contactos_emergencia_edicoes (estado, user_id, id, criado_em);
+
+CREATE INDEX idx_colaborador_dados_nome
+    ON colaborador_dados (nome);
+
+CREATE INDEX idx_colaborador_dados_email
+    ON colaborador_dados (email);
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

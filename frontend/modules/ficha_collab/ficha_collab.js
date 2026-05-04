@@ -228,10 +228,13 @@ function getInputValue(id) {
 
 function buildCollabRequestPayload() {
     const payload = {};
+    const inputs = document.querySelectorAll('[data-collab-field]');
 
-    Object.keys(FICHA_EDITABLE_FIELD_META).forEach((key) => {
-        const value = getInputValue(key);
-        if (value !== '') payload[key] = value;
+    inputs.forEach(function (input) {
+        const key = input.getAttribute('data-collab-field');
+        if (!key) return;
+
+        payload[key] = input.value == null ? '' : String(input.value);
     });
 
     return payload;
