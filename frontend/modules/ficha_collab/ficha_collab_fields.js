@@ -8,7 +8,7 @@ const field = (label, options = {}) => Object.freeze({
 export const PERSONAL_FIELDS = {
     nome: field('Nome'),
     email: field('Email', {editable: true}),
-    telefone: field('Contacto telefone', {editable: true}),
+    telefone: field('Telefone', {editable: true}),
     morada: field('Morada', {editable: true}),
     codigo_postal: field('Código Postal'),
     concelho: field('Concelho'),
@@ -52,6 +52,13 @@ export const CONTRACT_FIELDS = {
     ordenado_liquido: field('Ordenado Líquido', {type: 'decimal', suffix: ' €', highlight: true}),
 };
 
+export const EMERGENCY_FIELDS = {
+    emergency_nome: field('Nome', {editable: true}),
+    emergency_parentesco: field('Parentesco', {editable: true}),
+    emergency_telefone: field('Telefone', {editable: true}),
+    emergency_grupo_sanguineo: field('Grupo sanguíneo', {editable: true}),
+};
+
 export const FICHA_SECTIONS = {
     'dados-pessoais': PERSONAL_FIELDS,
     'dados-familiares': FAMILY_FIELDS,
@@ -66,8 +73,19 @@ export const FICHA_FIELD_META = Object.freeze({
     ...CONTRACT_FIELDS,
 });
 
+export const FICHA_RECORD_FIELD_META = Object.freeze({
+    ...FICHA_FIELD_META,
+    ...EMERGENCY_FIELDS,
+});
+
 export const FICHA_FIELD_LABELS = Object.freeze(
     Object.fromEntries(
-        Object.entries(FICHA_FIELD_META).map(([key, meta]) => [key, meta.label])
+        Object.entries(FICHA_RECORD_FIELD_META).map(([key, meta]) => [key, meta.label])
+    )
+);
+
+export const FICHA_EDITABLE_FIELD_META = Object.freeze(
+    Object.fromEntries(
+        Object.entries(FICHA_RECORD_FIELD_META).filter(([, meta]) => meta.editable)
     )
 );

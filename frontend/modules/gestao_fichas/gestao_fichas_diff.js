@@ -1,5 +1,6 @@
 import {createDecision, getRecord, getRecordChanges} from '../../app/api.js';
-import {FICHA_FIELD_LABELS as PROFILE_FIELD_LABELS} from '../ficha_collab/ficha_collab_fields.js';
+import {FICHA_FIELD_LABELS as DIFF_FIELD_LABELS} from '../ficha_collab/ficha_collab_fields.js'
+
 
 const diffState = {
     userId: null,
@@ -8,60 +9,62 @@ const diffState = {
 };
 
 function renderDiffView(oldProfile, newProfile, changed) {
-    const oldEl = document.getElementById('gestao-diff-old');
-    const newEl = document.getElementById('gestao-diff-new');
-    if (!oldEl || !newEl) return;
+    const oldEl = document.getElementById('gestao-diff-old')
+    const newEl = document.getElementById('gestao-diff-new')
+    if (!oldEl || !newEl) return
 
-    oldEl.innerHTML = '';
-    newEl.innerHTML = '';
+    oldEl.innerHTML = ''
+    newEl.innerHTML = ''
 
-    const old = oldProfile || {};
-    const neu = newProfile || {};
-
-    const keys = Object.keys(PROFILE_FIELD_LABELS);
+    const old = oldProfile || {}
+    const neu = newProfile || {}
+    const keys = Object.keys(DIFF_FIELD_LABELS)
 
     if (keys.length === 0) {
-        oldEl.textContent = 'Nenhum campo para apresentar.';
-        newEl.textContent = 'Nenhum campo para apresentar.';
-        return;
+        oldEl.textContent = 'Nenhum campo para apresentar.'
+        newEl.textContent = 'Nenhum campo para apresentar.'
+        return
     }
 
-    const oldWrapper = document.createElement('div');
-    oldWrapper.className = 'gestao-table-wrapper gestao-table-wrapper--diff';
+    const oldWrapper = document.createElement('div')
+    oldWrapper.className = 'gestao-table-wrapper gestao-table-wrapper--diff'
 
-    const newWrapper = document.createElement('div');
-    newWrapper.className = 'gestao-table-wrapper gestao-table-wrapper--diff';
+    const newWrapper = document.createElement('div')
+    newWrapper.className = 'gestao-table-wrapper gestao-table-wrapper--diff'
 
-    const oldTable = document.createElement('table');
-    oldTable.className = 'gestao-table gestao-diff-table';
-    const oldHead = document.createElement('thead');
-    oldHead.innerHTML = '<tr><th>Campo</th><th>Valor atual</th></tr>';
-    const oldBody = document.createElement('tbody');
+    const oldTable = document.createElement('table')
+    oldTable.className = 'gestao-table gestao-diff-table'
 
-    const newTable = document.createElement('table');
-    newTable.className = 'gestao-table gestao-diff-table';
-    const newHead = document.createElement('thead');
-    newHead.innerHTML = '<tr><th>Campo</th><th>Novo valor</th></tr>';
-    const newBody = document.createElement('tbody');
+    const oldHead = document.createElement('thead')
+    oldHead.innerHTML = '<tr><th>Campo</th><th>Valor atual</th></tr>'
+
+    const oldBody = document.createElement('tbody')
+
+    const newTable = document.createElement('table')
+    newTable.className = 'gestao-table gestao-diff-table'
+
+    const newHead = document.createElement('thead')
+    newHead.innerHTML = '<tr><th>Campo</th><th>Novo valor</th></tr>'
+
+    const newBody = document.createElement('tbody')
 
     keys.forEach(key => {
-        const label = PROFILE_FIELD_LABELS[key];
-        if (!label) return;
+        const label = DIFF_FIELD_LABELS[key]
+        if (!label) return
 
-        const oldValRaw = Object.prototype.hasOwnProperty.call(old, key) ? old[key] : null;
-        const newValRaw = Object.prototype.hasOwnProperty.call(neu, key) ? neu[key] : null;
+        const oldValRaw = Object.prototype.hasOwnProperty.call(old, key) ? old[key] : null
+        const newValRaw = Object.prototype.hasOwnProperty.call(neu, key) ? neu[key] : null
 
-        const oldVal = oldValRaw == null ? '' : String(oldValRaw);
-        const newVal = newValRaw == null ? '' : String(newValRaw);
+        const oldVal = oldValRaw == null ? '' : String(oldValRaw)
+        const newVal = newValRaw == null ? '' : String(newValRaw)
+        const isChanged = !!(changed && changed[key])
 
-        const isChanged = !!(changed && changed[key]);
+        const trOld = document.createElement('tr')
+        if (isChanged) trOld.classList.add('gestao-diff-row--changed-old')
 
-        const trOld = document.createElement('tr');
-        if (isChanged) trOld.classList.add('gestao-diff-row--changed-old');
-
-        const thOld = document.createElement('th');
-        thOld.scope = 'row';
-        thOld.className = 'gestao-diff-cell-label';
+        const thOld = document.createElement('th')
+        thOld.scope = 'row'
+        thOld.className = 'gestao-diff-cell-label'
 
         if (isChanged) {
             thOld.innerHTML = `
@@ -79,25 +82,25 @@ function renderDiffView(oldProfile, newProfile, changed) {
                     </span>
                     <span class="gestao-diff-label-text">${label}</span>
                 </span>
-            `;
+            `
         } else {
-            thOld.textContent = label;
+            thOld.textContent = label
         }
 
-        const tdOld = document.createElement('td');
-        tdOld.className = 'gestao-diff-cell-value';
-        tdOld.textContent = oldVal;
+        const tdOld = document.createElement('td')
+        tdOld.className = 'gestao-diff-cell-value'
+        tdOld.textContent = oldVal
 
-        trOld.appendChild(thOld);
-        trOld.appendChild(tdOld);
-        oldBody.appendChild(trOld);
+        trOld.appendChild(thOld)
+        trOld.appendChild(tdOld)
+        oldBody.appendChild(trOld)
 
-        const trNew = document.createElement('tr');
-        if (isChanged) trNew.classList.add('gestao-diff-row--changed-new');
+        const trNew = document.createElement('tr')
+        if (isChanged) trNew.classList.add('gestao-diff-row--changed-new')
 
-        const thNew = document.createElement('th');
-        thNew.scope = 'row';
-        thNew.className = 'gestao-diff-cell-label';
+        const thNew = document.createElement('th')
+        thNew.scope = 'row'
+        thNew.className = 'gestao-diff-cell-label'
 
         if (isChanged) {
             thNew.innerHTML = `
@@ -116,90 +119,96 @@ function renderDiffView(oldProfile, newProfile, changed) {
                     </span>
                     <span class="gestao-diff-label-text">${label}</span>
                 </span>
-            `;
+            `
         } else {
-            thNew.textContent = label;
+            thNew.textContent = label
         }
 
-        const tdNew = document.createElement('td');
-        tdNew.className = 'gestao-diff-cell-value';
-        tdNew.textContent = newVal;
+        const tdNew = document.createElement('td')
+        tdNew.className = 'gestao-diff-cell-value'
+        tdNew.textContent = newVal
 
-        trNew.appendChild(thNew);
-        trNew.appendChild(tdNew);
-        newBody.appendChild(trNew);
-    });
+        trNew.appendChild(thNew)
+        trNew.appendChild(tdNew)
+        newBody.appendChild(trNew)
+    })
 
-    oldTable.appendChild(oldHead);
-    oldTable.appendChild(oldBody);
-    newTable.appendChild(newHead);
-    newTable.appendChild(newBody);
+    oldTable.appendChild(oldHead)
+    oldTable.appendChild(oldBody)
+    newTable.appendChild(newHead)
+    newTable.appendChild(newBody)
 
-    oldWrapper.appendChild(oldTable);
-    newWrapper.appendChild(newTable);
+    oldWrapper.appendChild(oldTable)
+    newWrapper.appendChild(newTable)
 
-    oldEl.appendChild(oldWrapper);
-    newEl.appendChild(newWrapper);
+    oldEl.appendChild(oldWrapper)
+    newEl.appendChild(newWrapper)
 }
 
-function compare(oldProfile, row) {
-    const base = oldProfile || {};
-    const newProfile = {...base};
-    const changed = {};
+function compare(oldRecord, row) {
+    const base = oldRecord || {}
+    const newRecord = {...base}
+    const changed = {}
 
-    if (!row) return {newProfile, changed};
+    if (!row) return {newRecord, changed}
 
-    Object.keys(PROFILE_FIELD_LABELS).forEach(key => {
-        const apiKey = 'profile_' + key;
-        if (!(apiKey in row)) return;
+    Object.keys(DIFF_FIELD_LABELS).forEach(key => {
+        const apiKey = key.startsWith('emergency_') ? key : 'profile_' + key
+        if (!(apiKey in row)) return
 
-        const oldValRaw = base[key];
-        const newValRaw = row[apiKey];
+        const oldValRaw = base[key]
+        const newValRaw = row[apiKey]
 
-        const oldVal = oldValRaw == null ? '' : String(oldValRaw);
-        const newVal = newValRaw == null ? '' : String(newValRaw);
+        const oldVal = oldValRaw == null ? '' : String(oldValRaw)
+        const newVal = newValRaw == null ? '' : String(newValRaw)
 
-        newProfile[key] = newValRaw;
+        newRecord[key] = newValRaw
 
         if (oldVal !== newVal) {
-            changed[key] = true;
+            changed[key] = true
         }
-    });
+    })
 
-    return {newProfile, changed};
+    return {newRecord, changed}
 }
 
 async function loadDiffForRequest(userId) {
-    const oldEl = document.getElementById('gestao-diff-old');
-    const newEl = document.getElementById('gestao-diff-new');
+    const oldEl = document.getElementById('gestao-diff-old')
+    const newEl = document.getElementById('gestao-diff-new')
 
-    if (oldEl) oldEl.textContent = 'A carregar ficha atual...';
-    if (newEl) newEl.textContent = 'A carregar pedido de alteração...';
+    if (oldEl) oldEl.textContent = 'A carregar ficha atual...'
+    if (newEl) newEl.textContent = 'A carregar pedido de alteração...'
 
     try {
         const [oldRes, newRes] = await Promise.all([
             getRecord(userId),
             getRecordChanges(userId),
-        ]);
+        ])
 
         if (!oldRes || oldRes.success !== true) {
-            throw new Error('Resposta inválida de aval_view_record');
+            throw new Error('Resposta inválida de aval_view_record')
         }
+
         if (!newRes || newRes.success !== true) {
-            throw new Error('Resposta inválida de aval_requests');
+            throw new Error('Resposta inválida de aval_requests')
         }
 
-        const oldProfile = oldRes.profile || {};
-        const items = Array.isArray(newRes.items) ? newRes.items : [];
-        const row = items.find(r => String(r.user_id) === String(userId)) || null;
+        const oldRecord = {
+            ...(oldRes.profile || {}),
+            ...(oldRes.emergency || {}),
+        }
 
-        const {newProfile, changed} = compare(oldProfile, row);
+        const items = Array.isArray(newRes.items) ? newRes.items : []
+        const row = items.find(r => String(r.user_id) === String(userId)) || null
 
-        renderDiffView(oldProfile, newProfile, changed);
+        const {newRecord, changed} = compare(oldRecord, row)
+
+        renderDiffView(oldRecord, newRecord, changed)
     } catch (err) {
-        console.error('Falha ao carregar dados para diff:', err);
-        if (oldEl) oldEl.textContent = 'Não foi possível carregar a ficha atual.';
-        if (newEl) newEl.textContent = 'Não foi possível carregar o pedido de alteração.';
+        console.error('Falha ao carregar dados para diff:', err)
+
+        if (oldEl) oldEl.textContent = 'Não foi possível carregar a ficha atual.'
+        if (newEl) newEl.textContent = 'Não foi possível carregar o pedido de alteração.'
     }
 }
 

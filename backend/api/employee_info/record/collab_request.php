@@ -1,5 +1,4 @@
 <?php
-// api/employee_info/record/collab_request.php
 declare(strict_types=1);
 
 session_start();
@@ -8,139 +7,217 @@ require_once __DIR__ . '/../../includes/db.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-// 1) Sessão
 if (empty($_SESSION['is_login']) || empty($_SESSION['user']['id'])) {
     http_response_code(401);
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
+    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
+    exit;
 }
-$userId = (int) $_SESSION['user']['id'];
 
-// 2) Inputs (dos teus cards)
+$userId = (int)$_SESSION['user']['id'];
+
+$contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 $payload = $_POST;
-if (empty($payload) && $_SERVER['CONTENT_TYPE'] ?? '' && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
+
+if (empty($payload) && stripos($contentType, 'application/json') !== false) {
     $payload = json_decode(file_get_contents('php://input'), true) ?: [];
 }
 
-$email   = trim((string)($payload['email'] ?? ''));
-$tel     = trim((string)($payload['telefone'] ?? ''));
-$morada  = trim((string)($payload['morada'] ?? ''));
-$nib     = trim((string)($payload['nib'] ?? '')); // (legacy; se fores para IBAN, trocamos)
+$profileFields = ['email', 'telefone', 'morada', 'nib'];
 
-$emNome  = trim((string)($payload['emergencia_nome'] ?? ''));
-$emParen = trim((string)($payload['emergencia_parentesco'] ?? ''));
-$emTel   = trim((string)($payload['emergencia_telefone'] ?? ''));
+$emergencyFields = [
+    'emergencia_nome' => 'nome',
+    'emergencia_parentesco' => 'parentesco',
+    'emergencia_telefone' => 'telefone',
+    'emergencia_grupo_sanguineo' => 'grupo_sanguineo',
+];
 
-// 3) Pelo menos um campo enviado
-if ($email==='' && $tel==='' && $morada==='' && $nib==='' && $emNome==='' && $emParen==='' && $emTel==='') {
-    echo json_encode(['success'=>false,'error'=>'NO_FIELDS']); exit;
+$profileInput = [];
+$emergencyInput = [];
+
+foreach ($profileFields as $field) {
+    if (array_key_exists($field, $payload)) {
+        $value = trim((string)$payload[$field]);
+        $profileInput[$field] = $value === '' ? null : $value;
+    }
 }
 
-// 4) Validações simples
-if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['success'=>false,'error'=>'EMAIL_INVALID']); exit;
+foreach ($emergencyFields as $payloadField => $dbField) {
+    if (array_key_exists($payloadField, $payload)) {
+        $value = trim((string)$payload[$payloadField]);
+        $emergencyInput[$dbField] = $value === '' ? null : $value;
+    }
 }
-$telDigits = preg_replace('/\D+/', '', $tel);
-if ($tel !== '' && (strlen($telDigits) < 9 || strlen($telDigits) > 15)) {
-    echo json_encode(['success'=>false,'error'=>'PHONE_INVALID']); exit;
+
+if (!$profileInput && !$emergencyInput) {
+    echo json_encode(['success' => false, 'error' => 'NO_FIELDS']);
+    exit;
 }
-if ($nib !== '' && !preg_match('/^\d{21}$/', $nib)) {
-    echo json_encode(['success'=>false,'error'=>'NIB_INVALID']); exit;
+
+if (array_key_exists('email', $profileInput) && $profileInput['email'] !== null && !filter_var($profileInput['email'], FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(['success' => false, 'error' => 'EMAIL_INVALID']);
+    exit;
+}
+
+$validatePhone = function ($value): bool {
+    if ($value === null || $value === '') return true;
+
+    $digits = preg_replace('/\D+/', '', (string)$value);
+    return strlen($digits) >= 9 && strlen($digits) <= 15;
+};
+
+if (array_key_exists('telefone', $profileInput) && !$validatePhone($profileInput['telefone'])) {
+    echo json_encode(['success' => false, 'error' => 'PHONE_INVALID']);
+    exit;
+}
+
+if (array_key_exists('telefone', $emergencyInput) && !$validatePhone($emergencyInput['telefone'])) {
+    echo json_encode(['success' => false, 'error' => 'EMERGENCY_PHONE_INVALID']);
+    exit;
+}
+
+if (array_key_exists('nib', $profileInput) && $profileInput['nib'] !== null && !preg_match('/^\d{21}$/', $profileInput['nib'])) {
+    echo json_encode(['success' => false, 'error' => 'NIB_INVALID']);
+    exit;
 }
 
 try {
     $pdo = db_connect();
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // 5) Impedir pedidos pendentes existentes (um de cada vez por tipo)
-    $qPending = $pdo->prepare("SELECT COUNT(*) FROM colaborador_edicoes WHERE user_id=? AND estado='pendente'");
+    $qPending = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM colaborador_edicoes
+        WHERE user_id = ?
+          AND estado = 'pendente'
+    ");
     $qPending->execute([$userId]);
-    if ((int)$qPending->fetchColumn() > 0) {
-        echo json_encode(['success'=>false,'error'=>'PENDING_EXISTS']); exit;
+
+    if ((int)$qPending->fetchColumn() > 0 && $profileInput) {
+        echo json_encode(['success' => false, 'error' => 'PENDING_EXISTS']);
+        exit;
     }
 
-    $qPendingEm = $pdo->prepare("SELECT COUNT(*) FROM contactos_emergencia_edicoes WHERE user_id=? AND estado='pendente'");
+    $qPendingEm = $pdo->prepare("
+        SELECT COUNT(*)
+        FROM contactos_emergencia_edicoes
+        WHERE user_id = ?
+          AND estado = 'pendente'
+    ");
     $qPendingEm->execute([$userId]);
-    $hasPendingEm = ((int)$qPendingEm->fetchColumn() > 0);
 
-    // 6) Buscar atuais para comparação
+    if ((int)$qPendingEm->fetchColumn() > 0 && $emergencyInput) {
+        echo json_encode(['success' => false, 'error' => 'PENDING_EMERGENCY_EXISTS']);
+        exit;
+    }
+
     $st = $pdo->prepare("
         SELECT email, telefone, morada, nib
         FROM colaborador_dados
-        WHERE user_id=? LIMIT 1
+        WHERE user_id = ?
+        LIMIT 1
     ");
     $st->execute([$userId]);
-    $atuais = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$atuais) { http_response_code(404); echo json_encode(['success'=>false,'error'=>'PROFILE_NOT_FOUND']); exit; }
+    $currentProfile = $st->fetch(PDO::FETCH_ASSOC);
+
+    if (!$currentProfile) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'PROFILE_NOT_FOUND']);
+        exit;
+    }
 
     $st2 = $pdo->prepare("
-        SELECT nome, parentesco, telefone
+        SELECT nome, parentesco, telefone, grupo_sanguineo
         FROM contactos_emergencia
-        WHERE user_id=? LIMIT 1
+        WHERE user_id = ?
+        LIMIT 1
     ");
     $st2->execute([$userId]);
-    $atualEm = $st2->fetch(PDO::FETCH_ASSOC) ?: ['nome'=>'','parentesco'=>'','telefone'=>''];
+    $currentEmergency = $st2->fetch(PDO::FETCH_ASSOC) ?: [
+        'nome' => null,
+        'parentesco' => null,
+        'telefone' => null,
+        'grupo_sanguineo' => null,
+    ];
 
-    // 7) Detectar alterações reais
-    $chgProfile =
-        ($email  !== '' && $email  !== ($atuais['email']    ?? '')) ||
-        ($tel    !== '' && $tel    !== ($atuais['telefone'] ?? '')) ||
-        ($morada !== '' && $morada !== ($atuais['morada']   ?? '')) ||
-        ($nib    !== '' && $nib    !== ($atuais['nib']      ?? ''));
+    $isDifferent = function ($next, $current): bool {
+        return (string)($next ?? '') !== (string)($current ?? '');
+    };
 
-    $chgEmergency =
-        ($emNome  !== '' && $emNome  !== ($atualEm['nome']       ?? '')) ||
-        ($emParen !== '' && $emParen !== ($atualEm['parentesco']  ?? '')) ||
-        ($emTel   !== '' && $emTel   !== ($atualEm['telefone']    ?? ''));
+    $changedProfile = [];
 
-    if (!$chgProfile && !$chgEmergency) {
-        echo json_encode(['success'=>false,'error'=>'NO_CHANGES']); exit;
-    }
-    if ($chgEmergency && $hasPendingEm) {
-        echo json_encode(['success'=>false,'error'=>'PENDING_EMERGENCY_EXISTS']); exit;
+    foreach ($profileInput as $field => $value) {
+        if ($isDifferent($value, $currentProfile[$field] ?? null)) {
+            $changedProfile[$field] = $value;
+        }
     }
 
-    // 8) Gravar pedidos (transação)
+    $changedEmergency = [];
+
+    foreach ($emergencyInput as $field => $value) {
+        if ($isDifferent($value, $currentEmergency[$field] ?? null)) {
+            $changedEmergency[$field] = $value;
+        }
+    }
+
+    if (!$changedProfile && !$changedEmergency) {
+        echo json_encode(['success' => false, 'error' => 'NO_CHANGES']);
+        exit;
+    }
+
+    $valueFor = function (array $changes, array $current, string $field) {
+        return array_key_exists($field, $changes)
+            ? $changes[$field]
+            : ($current[$field] ?? null);
+    };
+
     $pdo->beginTransaction();
 
-    if ($chgProfile) {
-        // Tabela: colaborador_edicoes (id, user_id, email, telefone, estado, avaliado_por, avaliado_em, criado_em, morada, nib)
+    if ($changedProfile) {
         $ins = $pdo->prepare("
             INSERT INTO colaborador_edicoes
                 (user_id, email, telefone, morada, nib, estado)
             VALUES
                 (?, ?, ?, ?, ?, 'pendente')
         ");
+
         $ins->execute([
             $userId,
-            $email  !== '' ? $email  : ($atuais['email'] ?? null),
-            $tel    !== '' ? $tel    : ($atuais['telefone'] ?? null),
-            $morada !== '' ? $morada : ($atuais['morada'] ?? null),
-            $nib    !== '' ? $nib    : ($atuais['nib'] ?? null),
+            $valueFor($changedProfile, $currentProfile, 'email'),
+            $valueFor($changedProfile, $currentProfile, 'telefone'),
+            $valueFor($changedProfile, $currentProfile, 'morada'),
+            $valueFor($changedProfile, $currentProfile, 'nib'),
         ]);
     }
 
-    if ($chgEmergency) {
-        // Tabela: contactos_emergencia_edicoes (id, user_id, nome, parentesco, telefone, estado, criado_em, avaliado_por, avaliado_em)
+    if ($changedEmergency) {
         $insEm = $pdo->prepare("
             INSERT INTO contactos_emergencia_edicoes
-                (user_id, nome, parentesco, telefone, estado)
+                (user_id, nome, parentesco, telefone, grupo_sanguineo, estado)
             VALUES
-                (?, ?, ?, ?, 'pendente')
+                (?, ?, ?, ?, ?, 'pendente')
         ");
+
         $insEm->execute([
             $userId,
-            $emNome  !== '' ? $emNome  : ($atualEm['nome'] ?? null),
-            $emParen !== '' ? $emParen : ($atualEm['parentesco'] ?? null),
-            $emTel   !== '' ? $emTel   : ($atualEm['telefone'] ?? null),
+            $valueFor($changedEmergency, $currentEmergency, 'nome'),
+            $valueFor($changedEmergency, $currentEmergency, 'parentesco'),
+            $valueFor($changedEmergency, $currentEmergency, 'telefone'),
+            $valueFor($changedEmergency, $currentEmergency, 'grupo_sanguineo'),
         ]);
     }
 
     $pdo->commit();
 
-    echo json_encode(['success'=>true]); exit;
-
+    echo json_encode(['success' => true]);
+    exit;
 } catch (Throwable $e) {
-    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
+    error_log('collab_request error: ' . $e->getMessage());
+
     http_response_code(500);
-    echo json_encode(['success'=>false,'error'=>'SERVER_ERROR']);
+    echo json_encode(['success' => false, 'error' => 'SERVER_ERROR']);
+    exit;
 }

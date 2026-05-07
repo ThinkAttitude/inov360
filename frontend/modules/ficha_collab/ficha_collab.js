@@ -1,5 +1,5 @@
 import {getSelfRecord, createRecordRequest} from '../../app/api.js';
-import {FICHA_SECTIONS} from './ficha_collab_fields.js';
+import {FICHA_EDITABLE_FIELD_META, FICHA_SECTIONS} from './ficha_collab_fields.js';
 import {initEditToggle} from './edit_toggle.js';
 
 import './styles.css'
@@ -16,11 +16,6 @@ function escapeHtml(value) {
         if (c === '"') return '&quot;';
         return '&#39;';
     });
-}
-
-function renderHeader(profile) {
-    const nameEl = document.getElementById('user-name-display');
-    if (nameEl) nameEl.textContent = profile && profile.name ? profile.name : '';
 }
 
 function renderSections(mode, sectionsConfig, state, onChange) {
@@ -141,6 +136,7 @@ function renderEmergency(mode, state, onChange) {
         const nome = escapeHtml(emergency.emergencia_nome || emergency.nome || '');
         const parentesco = escapeHtml(emergency.emergencia_parentesco || emergency.parentesco || '');
         const telefone = escapeHtml(emergency.emergencia_telefone || emergency.telefone || '');
+        const grupoSanguineo = escapeHtml(emergency.emergencia_grupo_sanguineo || emergency.grupo_sanguineo || '');
 
         container.innerHTML =
             '<div class="ficha-contacts-grid">' +
@@ -160,15 +156,22 @@ function renderEmergency(mode, state, onChange) {
             '</svg>' +
             telefone +
             '</div>' +
+            '<div class="ficha-contact-phone">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>' +
+            '</svg>' +
+            grupoSanguineo +
+            '</div>' +
             '</div>' +
             '</div>' +
             '</div>';
         return;
     }
 
-    const nome = emergency.emergencia_nome || emergency.nome || '';
-    const parentesco = emergency.emergencia_parentesco || emergency.parentesco || '';
-    const telefone = emergency.emergencia_telefone || emergency.telefone || '';
+    const nome = emergency.emergencia_nome || '';
+    const parentesco = emergency.emergencia_parentesco || '';
+    const telefone = emergency.emergencia_telefone || '';
+    const grupoSanguineo = emergency.emergencia_grupo_sanguineo || '';
 
     container.innerHTML =
         '<div class="ficha-contacts-grid">' +
@@ -192,6 +195,10 @@ function renderEmergency(mode, state, onChange) {
         '<label class="ficha-info-label" for="emergencia_telefone">Telefone</label>' +
         '<input class="ficha-info-input" id="emergencia_telefone" data-section="emergency" data-field="emergencia_telefone" data-collab-field="emergencia_telefone" data-original="' + escapeHtml(telefone) + '" value="' + escapeHtml(telefone) + '">' +
         '</div>' +
+        '<div class="ficha-info-group">' +
+        '<label class="ficha-info-label" for="emergencia_grupo_sanguineo">Grupo sanguíneo</label>' +
+        '<input class="ficha-info-input" id="emergencia_grupo_sanguineo" data-section="emergency" data-field="emergencia_grupo_sanguineo" data-collab-field="emergencia_grupo_sanguineo" data-original="' + escapeHtml(grupoSanguineo) + '" value="' + escapeHtml(grupoSanguineo) + '">' +
+        '</div>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -209,8 +216,6 @@ function renderEmergency(mode, state, onChange) {
 
 function renderFicha(mode, state, onChange) {
     const viewState = mode === 'view' ? fichaBaseState : state;
-    const profile = viewState.profile || {};
-    renderHeader(profile);
     renderSections(mode, FICHA_SECTIONS, viewState, onChange);
     renderEmergency(mode, viewState, onChange);
 }
@@ -222,19 +227,14 @@ function getInputValue(id) {
 }
 
 function buildCollabRequestPayload() {
-    // TODO: stop getting values from hardcoded IDs
-    const payload = {
-        email: getInputValue('email'),
-        telefone: getInputValue('telefone'),
-        morada: getInputValue('morada'),
-        nib: getInputValue('nib'),
-        emergencia_nome: getInputValue('emergencia_nome'),
-        emergencia_parentesco: getInputValue('emergencia_parentesco'),
-        emergencia_telefone: getInputValue('emergencia_telefone')
-    };
+    const payload = {};
+    const inputs = document.querySelectorAll('[data-collab-field]');
 
-    Object.keys(payload).forEach(function (key) {
-        if (payload[key] === '') delete payload[key];
+    inputs.forEach(function (input) {
+        const key = input.getAttribute('data-collab-field');
+        if (!key) return;
+
+        payload[key] = input.value == null ? '' : String(input.value);
     });
 
     return payload;
@@ -244,10 +244,11 @@ function cloneState(obj) {
     return JSON.parse(JSON.stringify(obj || {}));
 }
 
-async function loadAndInitFicha() {
+async function loadAndInitFicha(signal) {
     try {
         const res = await getSelfRecord();
-        if (!res || res.success !== true) return;
+
+        if (signal.aborted || !res || res.success !== true) return;
 
         fichaBaseState = {
             profile: res.profile || {},
@@ -256,40 +257,54 @@ async function loadAndInitFicha() {
         };
 
         const button = document.getElementById('abrir-edicao-completa');
+
         if (!button) {
-            renderFicha('view', fichaBaseState, function () {
-            });
+            renderFicha('view', fichaBaseState, function () {});
             return;
         }
 
-        if (!fichaToggle) {
-            fichaToggle = initEditToggle(button, {
-                render: function (mode, state, onChange) {
-                    renderFicha(mode, state, onChange);
-                },
-                onSave: async function () {
-                    const payload = buildCollabRequestPayload();
-                    const keys = Object.keys(payload);
-                    if (!keys.length) return false;             // TODO: improve this section of the code
-
-                    return createRecordRequest(payload)
-                        .then( (r) => { // TODO: Remove
-                            return !(!r || r.success !== true);
-                        })
-                        .catch(function (e) {
-                            console.error('Erro ao submeter pedido:', e);
-                            return false;
-                        });
-                }
-            });
+        if (fichaToggle && typeof fichaToggle.destroy === 'function') {
+            fichaToggle.destroy();
         }
+
+        fichaToggle = initEditToggle(button, {
+            storageKey: 'ficha_collab:edit',
+            render: function (mode, state, onChange) {
+                renderFicha(mode, state, onChange);
+            },
+            onSave: async function () {
+                const payload = buildCollabRequestPayload();
+                const keys = Object.keys(payload);
+                if (!keys.length) return false;
+
+                return createRecordRequest(payload)
+                    .then(function (r) {
+                        return !(!r || r.success !== true);
+                    })
+                    .catch(function (e) {
+                        console.error('Erro ao submeter pedido:', e);
+                        return false;
+                    });
+            }
+        });
 
         fichaToggle.setState(cloneState(fichaBaseState));
     } catch (e) {
-        console.error('Erro ao carregar ficha:', e);
+        if (!signal.aborted) console.error('Erro ao carregar ficha:', e);
     }
 }
+export function mountFichaCollab() {
+    const ctrl = new AbortController();
 
-export async function mountFichaCollab() {
-    await loadAndInitFicha();
+    loadAndInitFicha(ctrl.signal);
+
+    return function () {
+        ctrl.abort();
+
+        if (fichaToggle && typeof fichaToggle.destroy === 'function') {
+            fichaToggle.destroy();
+        }
+
+        fichaToggle = null;
+    };
 }
