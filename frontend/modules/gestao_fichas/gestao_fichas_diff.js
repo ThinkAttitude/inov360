@@ -8,6 +8,10 @@ const diffState = {
     emergencyReqId: null,
 };
 
+function isEmergencyField(key) {
+    return key.startsWith('emergency_')
+}
+
 function renderDiffView(oldProfile, newProfile, changed) {
     const oldEl = document.getElementById('gestao-diff-old')
     const newEl = document.getElementById('gestao-diff-new')
@@ -19,6 +23,8 @@ function renderDiffView(oldProfile, newProfile, changed) {
     const old = oldProfile || {}
     const neu = newProfile || {}
     const keys = Object.keys(DIFF_FIELD_LABELS)
+    const firstEmergencyKey = keys.find(isEmergencyField)
+    const lastEmergencyKey = keys.findLast(isEmergencyField)
 
     if (keys.length === 0) {
         oldEl.textContent = 'Nenhum campo para apresentar.'
@@ -58,9 +64,15 @@ function renderDiffView(oldProfile, newProfile, changed) {
         const oldVal = oldValRaw == null ? '' : String(oldValRaw)
         const newVal = newValRaw == null ? '' : String(newValRaw)
         const isChanged = !!(changed && changed[key])
+        const isEmergency = isEmergencyField(key)
+        const isFirstEmergency = key === firstEmergencyKey
+        const isLastEmergency = key === lastEmergencyKey
 
         const trOld = document.createElement('tr')
         if (isChanged) trOld.classList.add('gestao-diff-row--changed-old')
+        if (isEmergency) trOld.classList.add('gestao-diff-row--emergency')
+        if (isFirstEmergency) trOld.classList.add('gestao-diff-row--emergency-first')
+        if (isLastEmergency) trOld.classList.add('gestao-diff-row--emergency-last')
 
         const thOld = document.createElement('th')
         thOld.scope = 'row'
@@ -97,6 +109,9 @@ function renderDiffView(oldProfile, newProfile, changed) {
 
         const trNew = document.createElement('tr')
         if (isChanged) trNew.classList.add('gestao-diff-row--changed-new')
+        if (isEmergency) trNew.classList.add('gestao-diff-row--emergency')
+        if (isFirstEmergency) trNew.classList.add('gestao-diff-row--emergency-first')
+        if (isLastEmergency) trNew.classList.add('gestao-diff-row--emergency-last')
 
         const thNew = document.createElement('th')
         thNew.scope = 'row'
