@@ -1,0 +1,6 @@
+RewriteEngine On
+
+RewriteRule ^frontend/modules/login/view\.html$ - [L]
+
+RewriteRule ^(frontend/modules/.+\.html)$ backend/api/guard.php?path=$1 [QSA,L]
+RewriteRule ^(frontend/shared/ui/pages/.+\.html)$ backend/api/guard.php?path=$1 [QSA,L]

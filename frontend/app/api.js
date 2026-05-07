@@ -1,87 +1,98 @@
-const API_BASE_URL = "/backend/api/";
+const API_BASE_URL = '/backend/api/';
 
-let authHandlers = Object.freeze({
-    unauthorized: null,
-    forbidden: null,
-});
+let authHandlers = null;
+let handlingAuthFailure = false;
 
-let pendingAuthAction = null;
+function assertFunction(value) {
+    if (typeof value === 'function') return value;
+    throw new Error('API auth handlers must be functions');
+}
 
-export function setApiAuthHandlers(handlers = {}) {
+export function setApiAuthHandlers(handlers) {
     authHandlers = Object.freeze({
-        unauthorized: typeof handlers.unauthorized === "function" ? handlers.unauthorized : null,
-        forbidden: typeof handlers.forbidden === "function" ? handlers.forbidden : null,
+        unauthorized: assertFunction(handlers?.unauthorized),
+        forbidden: assertFunction(handlers?.forbidden),
     });
 }
 
+export async function handleAuthStatus(status) {
+    if (status !== 401 && status !== 403) return false;
+    if (handlingAuthFailure) return true;
+    if (!authHandlers) throw new Error('API auth handlers were not configured');
+
+    handlingAuthFailure = true;
+
+    try {
+        if (status === 401) await authHandlers.unauthorized();
+        else await authHandlers.forbidden();
+    } finally {
+        handlingAuthFailure = false;
+    }
+
+    return true;
+}
+
 function createHttpError(message, status) {
-    const error = new Error(message || "Ocorreu um erro.");
+    const error = new Error(typeof message === 'string' ? message : JSON.stringify(message || 'Ocorreu um erro.'));
     error.status = status;
     return error;
 }
 
-async function runAuthHandler(status) {
-    if (pendingAuthAction) return pendingAuthAction;
-
-    pendingAuthAction = Promise.resolve().then(() => {
-        if (status === 401) return authHandlers.unauthorized?.();
-        if (status === 403) return authHandlers.forbidden?.();
-        return null;
-    }).finally(() => {
-        pendingAuthAction = null;
-    });
-
-    return pendingAuthAction;
-}
-
 async function getErrorMessage(response) {
-    const contentType = response.headers.get("Content-Type") || "";
+    const contentType = response.headers.get('Content-Type') || '';
     const bodyText = await response.text();
 
-    if (contentType.includes("application/json")) {
-        try {
-            const data = JSON.parse(bodyText);
-            return data?.message || data?.error || bodyText.trim() || "Ocorreu um erro.";
-        } catch {}
+    if (!contentType.includes('application/json')) {
+        return bodyText.trim() || 'Ocorreu um erro.';
     }
 
-    return bodyText.trim() || "Ocorreu um erro.";
+    try {
+        const data = JSON.parse(bodyText);
+        return data?.message || data?.error || bodyText.trim() || 'Ocorreu um erro.';
+    } catch {
+        return bodyText.trim() || 'Ocorreu um erro.';
+    }
 }
 
 async function parseResponse(response, responseType) {
-    if (responseType === "blob") return response.blob();
-    if (responseType === "text") return response.text();
-    if (responseType === "response") return response;
+    if (responseType === 'blob') return response.blob();
+    if (responseType === 'text') return response.text();
+    if (responseType === 'response') return response;
 
-    const contentType = response.headers.get("Content-Type") || "";
+    const contentType = response.headers.get('Content-Type') || '';
 
-    if (responseType === "json") return response.json();
-    if (contentType.includes("application/json")) return response.json();
+    if (responseType === 'json' || contentType.includes('application/json')) {
+        return response.json();
+    }
 
     return response;
 }
 
 export async function apiFetch(endpoint, options = {}) {
-    const {body, headers, responseType = "auto", credentials = "same-origin", ...rest} = options;
-    const h = new Headers(headers || {});
-    const isPlainObject = (v) => v !== null && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype;
+    const {
+        body,
+        headers,
+        responseType = 'auto',
+        credentials = 'same-origin',
+        ...rest
+    } = options;
 
-    let requestBody = body;
+    const requestHeaders = new Headers(headers || {});
+    const isJsonBody = body !== null && typeof body === 'object' && Object.getPrototypeOf(body) === Object.prototype;
+    const requestBody = isJsonBody ? JSON.stringify(body) : body;
 
-    if (isPlainObject(body)) {
-        h.set("Content-Type", "application/json");
-        requestBody = JSON.stringify(body);
-    }
+    if (isJsonBody) requestHeaders.set('Content-Type', 'application/json');
+    if (!requestHeaders.has('Accept')) requestHeaders.set('Accept', 'application/json');
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...rest,
         credentials,
-        headers: h,
+        headers: requestHeaders,
         body: requestBody,
     });
 
-    if (response.status === 401 || response.status === 403) {
-        await runAuthHandler(response.status);
+    if (await handleAuthStatus(response.status)) {
+        throw createHttpError(await getErrorMessage(response), response.status);
     }
 
     if (!response.ok) {
@@ -91,89 +102,86 @@ export async function apiFetch(endpoint, options = {}) {
     return parseResponse(response, responseType);
 }
 
-export async function login(email, password) {
+export function login(email, password) {
     return apiFetch('auth/login.php', {
         method: 'POST',
-        body: { email, password }
+        body: {email, password},
     });
 }
 
-export async function logout() {
-    try {
-        await fetch('/backend/api/auth/logout.php', { method: 'POST' });
-    } catch { /* session destroyed server-side */ }
-    window.location.replace('/frontend/modules/login/view.html');
+export function logout() {
+    return apiFetch('auth/logout.php', {
+        method: 'POST',
+    });
 }
 
-export async function register(userData) {
+export function register(userData) {
     return apiFetch('auth/register.php', {
         method: 'POST',
-        body: userData
+        body: userData,
     });
 }
 
-export async function me() {
+export function me() {
     return apiFetch('auth/me.php', {
         method: 'GET',
     });
 }
 
-/* Collaborator Management (controlo_collabs) */
-export async function getAllCollaborators() {
+export function getAllCollaborators() {
     return apiFetch('collab_management/collabs_list.php', {
         method: 'GET',
     });
 }
 
-export async function createCollaborator(formData) {
+export function createCollaborator(formData) {
     return apiFetch('collab_management/create_collabs.php', {
         method: 'POST',
         body: formData,
     });
 }
 
-export async function updatePermissions(userId, permissions = []) {
+export function updatePermissions(userId, permissions = []) {
     return apiFetch('collab_management/permissions_update.php', {
         method: 'POST',
         body: {
             user_id: userId,
-            permissions
-        }
+            permissions,
+        },
     });
 }
 
-export async function updateHierarchy(userId, responsaveis = [], subs = []) {
+export function updateHierarchy(userId, responsaveis = [], subs = []) {
     return apiFetch('collab_management/hierarchy_update.php', {
         method: 'POST',
         body: {
             user_id: userId,
             responsaveis,
             subs,
-        }
+        },
     });
 }
 
-export async function createDirectLeave(formData) {
+export function createDirectLeave(formData) {
     return apiFetch('leaves/direct_leave.php', {
         method: 'POST',
-        body: formData
+        body: formData,
     });
 }
 
-export async function getHierarchyByUser(userId = null) {
+export function getHierarchyByUser(userId = null) {
     const params = new URLSearchParams();
     if (userId) params.append('user_id', String(userId));
 
     return apiFetch(`collab_management/get_hierarchy.php?${params.toString()}`, {
-        method: 'GET'
+        method: 'GET',
     });
 }
 
-/* Record Management (gestao_fichas) */
-export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
+export function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
     const params = new URLSearchParams();
 
-    if (q && q.trim() !== '') params.append('q', q.trim());
+    if (q.trim()) params.append('q', q.trim());
     params.append('page', String(page));
     params.append('page_size', String(pageSize));
 
@@ -182,41 +190,30 @@ export async function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
     });
 }
 
-export async function getAllRecords({
-                                         page = 1,
-                                         pageSize = 25,
-                                         q = '',
-                                         companyId = null,
-                                         orderBy = 'name',
-                                         orderDir = 'asc',
-                                     } = {}) {
+export function getAllRecords({
+                                  page = 1,
+                                  pageSize = 25,
+                                  q = '',
+                                  companyId = null,
+                                  orderBy = 'name',
+                                  orderDir = 'asc',
+                              } = {}) {
     const params = new URLSearchParams();
 
     params.append('page', String(page));
     params.append('page_size', String(pageSize));
 
-    if (q && q.trim() !== '') {
-        params.append('q', q.trim());
-    }
-
-    if (companyId != null) {
-        params.append('company_id', String(companyId));
-    }
-
-    if (orderBy) {
-        params.append('order_by', orderBy);
-    }
-
-    if (orderDir) {
-        params.append('order_dir', orderDir);
-    }
+    if (q.trim()) params.append('q', q.trim());
+    if (companyId != null) params.append('company_id', String(companyId));
+    if (orderBy) params.append('order_by', orderBy);
+    if (orderDir) params.append('order_dir', orderDir);
 
     return apiFetch(`employee_info/aval_list_all.php?${params.toString()}`, {
         method: 'GET',
     });
 }
 
-export async function getRecord(userId) {
+export function getRecord(userId) {
     const params = new URLSearchParams();
     params.append('user_id', String(userId));
 
@@ -225,7 +222,7 @@ export async function getRecord(userId) {
     });
 }
 
-export async function getRecordChanges(userId) {
+export function getRecordChanges(userId) {
     const params = new URLSearchParams();
     params.append('user_id', String(userId));
 
@@ -234,25 +231,23 @@ export async function getRecordChanges(userId) {
     });
 }
 
-export async function createDecision(userId, decision) {
+export function createDecision(userId, decision) {
     return apiFetch('employee_info/record/aval_decision.php', {
         method: 'POST',
         body: {
             user_id: userId,
-            decision
-        }
+            decision,
+        },
     });
 }
 
-export async function updateRecord(userId, data = {}, syncUserEmail = false) {
+export function updateRecord(userId, data = {}, syncUserEmail = false) {
     const body = {
         user_id: userId,
         ...data,
     };
 
-    if (syncUserEmail) {
-        body.sync_user_email = 1;
-    }
+    if (syncUserEmail) body.sync_user_email = 1;
 
     return apiFetch('employee_info/record/direct_edit.php', {
         method: 'POST',
@@ -260,96 +255,110 @@ export async function updateRecord(userId, data = {}, syncUserEmail = false) {
     });
 }
 
-/* My Record (ficha_collabs) */
-export async function getSelfRecord() {
+export function getSelfRecord() {
     return apiFetch('employee_info/view_self.php', {
-        method: 'GET'
+        method: 'GET',
     });
 }
 
-export async function createRecordRequest(payload) {
+export function createRecordRequest(payload) {
     return apiFetch('employee_info/record/collab_request.php', {
         method: 'POST',
-        body: payload
+        body: payload,
     });
 }
 
-/* Overtime (horas extra) */
-export async function requestOvertime({ user_id, dia, hora_inicio, hora_fim, justificacao }) {
+export function requestOvertime({user_id, dia, hora_inicio, hora_fim, justificacao}) {
     return apiFetch('overtime/request_overtime.php', {
         method: 'POST',
-        body: { user_id, dia, hora_inicio, hora_fim, justificacao }
+        body: {
+            user_id,
+            dia,
+            hora_inicio,
+            hora_fim,
+            justificacao,
+        },
     });
 }
 
-export async function getOvertimeRequests({ state = 'all', month, user_id, q, limit, offset } = {}) {
+export function getOvertimeRequests({state = 'all', month, user_id, q, limit, offset} = {}) {
     const params = new URLSearchParams();
+
     if (state) params.append('state', state);
     if (month) params.append('month', month);
     if (user_id) params.append('user_id', String(user_id));
     if (q) params.append('q', q);
     if (limit) params.append('limit', String(limit));
     if (offset) params.append('offset', String(offset));
-    return apiFetch(`overtime/request_list.php?${params.toString()}`, { method: 'GET' });
+
+    return apiFetch(`overtime/request_list.php?${params.toString()}`, {
+        method: 'GET',
+    });
 }
 
-export async function approveOvertime({ request_id, decision, comentario }) {
+export function approveOvertime({request_id, decision, comentario}) {
     return apiFetch('overtime/approve_overtime.php', {
         method: 'POST',
-        body: { request_id, decision, comentario }
+        body: {
+            request_id,
+            decision,
+            comentario,
+        },
     });
 }
 
-export async function getOvertimeHistory({ month, state = 'both', q, user_id, limit, offset } = {}) {
+export function getOvertimeHistory({month, state = 'both', q, user_id, limit, offset} = {}) {
     const params = new URLSearchParams();
+
     if (month) params.append('month', month);
     if (state) params.append('state', state);
     if (q) params.append('q', q);
     if (user_id) params.append('user_id', String(user_id));
     if (limit) params.append('limit', String(limit));
     if (offset) params.append('offset', String(offset));
-    return apiFetch(`overtime/sheets_review.php?${params.toString()}`, { method: 'GET' });
+
+    return apiFetch(`overtime/sheets_review.php?${params.toString()}`, {
+        method: 'GET',
+    });
 }
 
-export async function exportOvertimeSheets(month, userIds = []) {
+export function exportOvertimeSheets(month, userIds = []) {
     const params = new URLSearchParams();
+
     params.append('month', month);
     if (userIds.length) params.append('user_ids', userIds.join(','));
+
     return apiFetch(`overtime/sheets_export.php?${params.toString()}`, {
         method: 'GET',
         responseType: 'blob',
     });
 }
 
-/* Schedule Management (horarios) */
-export async function getCalendarTimeframe(from, to) {
+export function getCalendarTimeframe(from, to) {
     const params = new URLSearchParams();
 
-    if (from) params.append('from', String(from)); // YYYY-MM-DD
-    if (to) params.append('to', String(to));       // YYYY-MM-DD
+    if (from) params.append('from', String(from));
+    if (to) params.append('to', String(to));
 
-    const qs = params.toString();
-    return apiFetch(`calendar/get_month.php${qs ? `?${qs}` : ''}`, {
+    return apiFetch(`calendar/get_month.php${params.toString() ? `?${params.toString()}` : ''}`, {
         method: 'GET',
     });
 }
 
-export async function createEventBatch(start, end, {workMin, km, applyWeekend = false, overwrite = true} = {}) {
+export function createEventBatch(start, end, {workMin, km, applyWeekend = false, overwrite = true} = {}) {
     return apiFetch('calendar/batch_apply.php', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
         body: {
             start,
             end,
             workMin,
             km,
             applyWeekend,
-            overwrite
+            overwrite,
         },
     });
 }
 
-export async function createEventByDay(date, opts) {
-    const d = String(date);
-    return createEventBatch(d, d, opts);
+export function createEventByDay(date, opts) {
+    return createEventBatch(String(date), String(date), opts);
 }

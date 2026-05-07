@@ -6,7 +6,7 @@ import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
 import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_horas_extras.js"
 import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
-import {setApiAuthHandlers} from "./api";
+import {handleAuthStatus, setApiAuthHandlers} from "./api";
 import {User} from "../shared/user_store";
 import {CARD_TYPES, guardDashboardRoute} from "../modules/dashboard/dashboard_access.js";
 
@@ -157,8 +157,11 @@ async function render() {
     const route = pageRoute.maintenance ? SharedRoutes.WIP : pageRoute;
 
     try {
-        const res = await fetch(route.html.href.toString(), {credentials: "same-origin"});
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${route.html.href}`);
+        const res = await fetch(route.html.href.toString(), {credentials: "same-origin"})
+
+        if (await handleAuthStatus(res.status)) return
+
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${route.html.href}`)
 
         const html = await res.text();
 
@@ -171,7 +174,7 @@ async function render() {
     } catch (err) {
         if (currentRender !== renderVersion) return;
 
-        console.error("Falha ao carregar vista:", err);
+        console.error("Falha ao carregar a pagina:", err);
         container.innerHTML = `<div style="padding:1rem;"><p class="error">Não foi possível carregar esta secção.</p></div>`;
     }
 
@@ -194,7 +197,7 @@ async function start() {
 setApiAuthHandlers({
     unauthorized() {
         User.clear();
-        window.location.replace("/login.html");
+        window.location.replace('/frontend/modules/login/view.html');
     },
     forbidden() {
         navigate(Path.INICIO);
