@@ -1,4 +1,3 @@
-/* Header layout */
 .gestao-page {
     padding: 2.5rem 1.5rem 2.5rem;
 }
@@ -37,11 +36,10 @@
     line-height: 1.6;
 }
 
-/* Content card */
 .gestao-section {
     display: flex;
     justify-content: center;
-    margin-top: 2.5rem;
+    margin-top: 3.5rem;
 }
 
 .gestao-main {
@@ -59,13 +57,12 @@
     flex-direction: column;
 }
 
-/* Tab strip */
 .gestao-tabs {
     position: relative;
     display: flex;
     align-items: flex-end;
-    gap: 0.4rem;
-    padding: 0.6rem 1.1rem 0 3rem;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem 0 1.5rem;
     background: transparent;
     border-bottom: none;
 }
@@ -81,17 +78,6 @@
     z-index: 0;
 }
 
-.gestao-tabs {
-    position: relative;
-    display: flex;
-    align-items: flex-end;
-    gap: 0.5rem;
-    padding: 0.6rem 1.1rem 0 1.5rem;
-    background: transparent;
-    border-bottom: none;
-}
-
-/* Tab navigation buttons */
 .gestao-tabs-nav {
     display: flex;
     align-items: center;
@@ -110,11 +96,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition:
-            background-color 0.16s ease,
-            color 0.16s ease,
-            box-shadow 0.16s ease,
-            transform 0.12s ease;
+    transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease;
 }
 
 .gestao-tabs-nav-btn:hover {
@@ -149,13 +131,7 @@
     outline: none;
     margin-bottom: 0;
     z-index: 1;
-    transition:
-            color 0.18s ease,
-            border-color 0.22s ease,
-            background-color 0.22s ease,
-            padding 0.22s ease,
-            transform 0.18s ease,
-            box-shadow 0.18s ease;
+    transition: color 0.18s ease, border-color 0.22s ease, background-color 0.22s ease, padding 0.22s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .gestao-tab:hover {
@@ -174,7 +150,6 @@
     z-index: 2;
 }
 
-/* Active separator inside the tab (small gradient line) */
 .gestao-tab--active::after {
     content: '';
     position: absolute;
@@ -185,13 +160,6 @@
     border-radius: 999px;
     background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
     opacity: 0.95;
-}
-
-/* Layout around content card */
-.gestao-section {
-    display: flex;
-    justify-content: center;
-    margin-top: 3.5rem;
 }
 
 .gestao-content-card {
@@ -211,11 +179,14 @@
     display: block;
 }
 
-/* Approvals list */
 .gestao-approvals-list {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+}
+
+.gestao-approvals-list--hidden {
+    display: none;
 }
 
 .gestao-approvals-header h3 {
@@ -231,240 +202,6 @@
     color: var(--text-light);
 }
 
-/* Hide diff view by default */
-.gestao-diff-view {
-    display: none;
-    flex-direction: column;
-    gap: 1.5rem;
-    min-height: 260px;
-    position: relative;
-}
-
-.gestao-diff-view--active {
-    display: flex;
-}
-
-/* hide the list to show diff */
-.gestao-approvals-list--hidden {
-    display: none;
-}
-
-/* Diff header */
-.gestao-diff-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-}
-
-.gestao-diff-header-text {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-}
-
-.gestao-diff-header-text h3 {
-    margin: 0 0 0.3rem;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--navy-blue);
-}
-
-.gestao-diff-header-text p {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--text-light);
-}
-
-/* Back button */
-.gestao-diff-back-icon {
-    position: static;
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    border: none;
-    background: transparent;
-    color: var(--text-light);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition:
-            background-color 0.15s ease,
-            color 0.15s ease,
-            box-shadow 0.15s ease;
-}
-
-.gestao-diff-back-icon:hover {
-    background: rgba(15, 23, 42, 0.05);
-    color: var(--navy-blue);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.16);
-}
-
-/* Columns */
-.gestao-diff-columns {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-}
-
-.gestao-diff-column h4 {
-    margin: 0 0 0.75rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--navy-blue);
-}
-
-.gestao-diff-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-}
-
-/* Field blocks */
-.gestao-diff-field {
-    border-radius: 10px;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    background: #f9fafb;
-    padding: 0.6rem 0.75rem;
-    font-size: 0.9rem;
-}
-
-.gestao-diff-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-light);
-    margin-bottom: 0.25rem;
-}
-
-.gestao-diff-label-inner {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-}
-
-.gestao-diff-label-text {
-    white-space: nowrap;
-}
-
-.gestao-diff-value {
-    color: #0f172a;
-    word-break: break-word;
-    white-space: pre-line;
-}
-
-/* Diff icon container */
-.gestao-diff-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.4rem;
-    height: 1.4rem;
-    border-radius: 999px;
-}
-
-.gestao-diff-icon-svg {
-    width: 1rem;
-    height: 1rem;
-}
-
-.gestao-diff-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-}
-
-/* All records list */
-.gestao-allrecs-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.gestao-allrecs-header h3 {
-    margin: 0 0 0.25rem;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--navy-blue);
-}
-
-.gestao-allrecs-header p {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--text-light);
-}
-
-.gestao-company-name {
-    font-weight: 500;
-    color: #0f172a;
-}
-
-.gestao-allrecs-empty {
-    margin: 0;
-    padding: 1rem 1.25rem;
-    font-size: 0.9rem;
-    color: var(--text-light);
-    text-align: center;
-    display: none;
-}
-
-.gestao-record-view {
-    display: none;
-    flex-direction: column;
-    gap: 1.5rem;
-    min-height: 260px;
-    position: relative;
-}
-
-.gestao-record-view--active {
-    display: flex;
-}
-
-.gestao-allrecs-list--hidden {
-    display: none;
-}
-
-/* Record header */
-.gestao-record-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-}
-
-.gestao-record-header-text {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-}
-
-.gestao-record-header-text h3 {
-    margin: 0 0 0.3rem;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--navy-blue);
-}
-
-.gestao-record-header-text p {
-    margin: 0;
-    font-size: 0.95rem;
-    color: var(--text-light);
-}
-
-
-.gestao-table-wrapper--record {
-    margin: 0;
-}
-
-.gestao-record-table .gestao-record-cell-label {
-    width: 40%;
-}
-
-/* Table */
 .gestao-table-wrapper {
     border-radius: 12px;
     border: 1px solid rgba(15, 23, 42, 0.06);
@@ -472,21 +209,11 @@
     overflow: hidden;
 }
 
-.gestao-table-wrapper--diff {
-    background: transparent;
-    margin: 0;
-}
-
 .gestao-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
     font-size: 0.9rem;
-}
-
-.gestao-diff-table .gestao-diff-cell-label {
-    width: 40%;
-    padding-left: 0.9rem;
 }
 
 .gestao-table thead {
@@ -517,42 +244,11 @@
     cursor: pointer;
 }
 
-.gestao-table tbody tr.gestao-diff-row--changed-old {
-    background: rgba(248, 113, 113, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.8);
-}
-
-.gestao-diff-icon--old {
-    background: rgba(239, 68, 68, 0.15);
-    color: #b91c1c;
-}
-
-.gestao-table tbody tr.gestao-diff-row--changed-new {
-    background: rgba(34, 197, 94, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.8);
-}
-
-.gestao-diff-icon--new {
-    background: rgba(22, 163, 74, 0.15);
-    color: #15803d;
-}
-
-.gestao-diff-table tbody tr {
-    cursor: default;
-    transform: none;
-}
-
-.gestao-diff-table tbody tr {
-    cursor: default;
-    transform: none;
-}
-
 .gestao-table tbody tr:hover {
     background-color: #f9fafb;
     transform: translateY(-1px);
 }
 
-/* Collaborator cell */
 .gestao-collab-name {
     font-weight: 500;
     color: #0f172a;
@@ -563,7 +259,6 @@
     color: var(--text-light);
 }
 
-/* Status badge */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -582,7 +277,6 @@
     color: #92400e;
 }
 
-/* Action button inside table */
 .gestao-table-action {
     border: none;
     background: transparent;
@@ -601,7 +295,6 @@
     text-decoration: underline;
 }
 
-/* Empty state */
 .gestao-approvals-empty {
     margin: 0;
     padding: 1rem 1.25rem;
@@ -611,7 +304,6 @@
     display: none;
 }
 
-/* Accessibility helper */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -623,4 +315,3 @@
     white-space: nowrap;
     border: 0;
 }
-

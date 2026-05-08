@@ -19,6 +19,10 @@
     --hier-card-height: 64px;
     --hier-row-gap: 3.5rem;
     --hier-line-length: var(--hier-row-gap);
+
+    --danger-red: #ef4444;
+    --danger-red-dark: #b91c1c;
+    --danger-gradient: linear-gradient(135deg, var(--danger-red), var(--danger-red-dark));
 }
 
 

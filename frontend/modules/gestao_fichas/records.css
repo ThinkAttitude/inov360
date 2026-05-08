@@ -1,0 +1,161 @@
+.gestao-allrecs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.gestao-allrecs-list--hidden {
+    display: none;
+}
+
+.gestao-allrecs-header h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+}
+
+.gestao-allrecs-header p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.gestao-company-name {
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.gestao-allrecs-empty {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    text-align: center;
+    display: none;
+}
+
+.gestao-record-view {
+    display: none;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: 260px;
+    position: relative;
+}
+
+.gestao-record-view--active {
+    display: flex;
+}
+
+.gestao-record-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.gestao-record-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
+.gestao-record-header-text h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+}
+
+.gestao-record-header-text p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.gestao-table-wrapper--record {
+    margin: 0;
+}
+
+.gestao-record-table .gestao-record-cell-label {
+    width: 40%;
+}
+
+.gestao-table-wrapper--record {
+    overflow: visible;
+}
+
+.gestao-record-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency-first th,
+.gestao-table tbody tr.gestao-record-row--emergency-first td {
+    box-shadow: inset 0 2px 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency-last th,
+.gestao-table tbody tr.gestao-record-row--emergency-last td {
+    box-shadow: inset 0 -2px 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency th:first-child {
+    box-shadow: inset 2px 0 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency td:last-child {
+    box-shadow: inset -2px 0 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency-first th:first-child {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.45rem;
+    box-shadow:
+            inset 2px 0 0 var(--danger-red),
+            inset 0 2px 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency-first td:last-child {
+    box-shadow:
+            inset -2px 0 0 var(--danger-red),
+            inset 0 2px 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency-last th:first-child {
+    box-shadow:
+            inset 2px 0 0 var(--danger-red),
+            inset 0 -2px 0 var(--danger-red);
+}
+
+.gestao-table tbody tr.gestao-record-row--emergency-last td:last-child {
+    box-shadow:
+            inset -2px 0 0 var(--danger-red),
+            inset 0 -2px 0 var(--danger-red);
+}
+
+.gestao-record-row--emergency-first th:first-child::before {
+    content: 'Emergência';
+    position: absolute;
+    top: 0;
+    left: 0.55rem;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.05rem;
+    padding: 0.08rem 0.45rem;
+    border-radius: 999px;
+    background: var(--danger-gradient);
+    color: var(--white);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(185, 28, 28, 0.18);
+}

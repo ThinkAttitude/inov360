@@ -3,6 +3,8 @@ import {openDiffForRequest, mountGstFchsDiff} from './gestao_fichas_diff.js'
 import {openRecordForUser, mountGstFchsRecord} from './gestao_fichas_records.js'
 
 import './styles.css'
+import './records.css'
+import './diff.css'
 
 let approvalsCache = null
 let allRecsCache = null

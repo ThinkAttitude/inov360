@@ -28,7 +28,7 @@ serveView($path);
 
 function serveView(string $path): void
 {
-    $root = realpath(__DIR__ . '/..');
+    $root = realpath(__DIR__ . '/../..');
     $file = realpath($root . '/' . $path);
 
     if (!$root || !$file || strpos($file, $root . DIRECTORY_SEPARATOR) !== 0 || !is_file($file)) {

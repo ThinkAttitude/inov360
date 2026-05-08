@@ -1,5 +1,5 @@
 import {updateRecord, getRecord} from '../../app/api.js';
-import {FICHA_FIELD_META as PROFILE_FIELDS} from '../ficha_collab/ficha_collab_fields.js';
+import {FICHA_RECORD_FIELD_META as RECORD_FIELDS} from '../ficha_collab/ficha_collab_fields.js';
 
 // TODO: Incorporate with the fields for ficha_collabs module if possible
 // TODO: Replace filtering readonly fields logic with iterating over a subset of editable fields
@@ -10,6 +10,10 @@ const recordState = {
     isEditing: false,
 };
 
+function isEmergencyField(key) {
+    return key.startsWith('emergency_');
+}
+
 function renderRecordTable(profile, editable) {
     const container = document.getElementById('gestao-record-table');
     if (!container) return;
@@ -17,7 +21,9 @@ function renderRecordTable(profile, editable) {
     container.innerHTML = '';
 
     const record = profile || {};
-    const keys = Object.keys(PROFILE_FIELDS);
+    const keys = Object.keys(RECORD_FIELDS);
+    const firstEmergencyKey = keys.find(isEmergencyField);
+    const lastEmergencyKey = keys.findLast(isEmergencyField);
 
     const wrapper = document.createElement('div');
     wrapper.className = 'gestao-table-wrapper gestao-table-wrapper--record';
@@ -41,11 +47,15 @@ function renderRecordTable(profile, editable) {
     const tbody = document.createElement('tbody');
 
     keys.forEach(key => {
-        const meta = PROFILE_FIELDS[key];
+        const meta = RECORD_FIELDS[key];
         const label = meta.label;
         if (!label) return;
 
         const tr = document.createElement('tr');
+
+        if (isEmergencyField(key)) tr.classList.add('gestao-record-row--emergency');
+        if (key === firstEmergencyKey) tr.classList.add('gestao-record-row--emergency-first');
+        if (key === lastEmergencyKey) tr.classList.add('gestao-record-row--emergency-last');
 
         const th = document.createElement('th');
         th.className = 'gestao-record-cell-label';
@@ -112,7 +122,7 @@ function normalizeFieldValue(key, rawValue) {
     let v = String(rawValue).trim();
     if (v === '') return null;
 
-    const field = PROFILE_FIELDS[key];
+    const field = RECORD_FIELDS[key];
 
     if (field.type === 'date') return v;
 
@@ -199,7 +209,16 @@ async function loadRecord(userId, name) {
             throw new Error('Resposta inválida de aval_view_record');
         }
 
-        recordState.profile = res.profile || {};
+        const emergency = res.emergency || {};
+
+        recordState.profile = {
+            ...(res.profile || {}),
+            emergency_nome: emergency.nome ?? null,
+            emergency_parentesco: emergency.parentesco ?? null,
+            emergency_telefone: emergency.telefone ?? null,
+            emergency_grupo_sanguineo: emergency.grupo_sanguineo ?? null,
+        };
+
         setEditingMode(false);
     } catch (err) {
         console.error('Falha ao carregar ficha completa:', err);
