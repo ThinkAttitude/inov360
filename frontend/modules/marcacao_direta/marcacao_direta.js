@@ -1,4 +1,5 @@
 import { createDirectLeave, getAllCollaborators } from '../../app/api.js';
+import { toast } from '../../shared/ui/toast/toast.js';
 
 function setMinDates() {
     const today = new Date().toISOString().split('T')[0];
@@ -78,12 +79,17 @@ export function submit() {
             const resp = await createDirectLeave(fd);
             if (resp?.ok) {
                 feedbackDiv.innerHTML = `<div class="feedback-message success">Pedido criado (ID ${resp.pedido_id}).</div>`;
+                toast.success('Ausência marcada com sucesso.');
                 form.reset();
             } else {
-                feedbackDiv.innerHTML = `<div class="feedback-message error">${resp?.error || 'Erro ao submeter o pedido.'}</div>`;
+                const msg = resp?.error || 'Erro ao submeter o pedido.';
+                feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
+                toast.error(msg);
             }
-        } catch {
+        } catch (err) {
+            console.error('Erro ao marcar ausência:', err);
             feedbackDiv.innerHTML = '<div class="feedback-message error">Falha na comunicação com o servidor.</div>';
+            toast.error('Falha na comunicação com o servidor.');
         } finally {
             btn.classList.remove('loading');
             btnText.textContent = 'Marcar Ausência';
@@ -114,9 +120,11 @@ async function fillCollaborators() {
             feedbackDiv.innerHTML = '<div class="feedback-message error">Nenhum colaborador encontrado.</div>';
         }
     } catch (err) {
+        console.error('Erro ao carregar colaboradores:', err);
         if (feedbackDiv) {
             feedbackDiv.innerHTML = `<div class="feedback-message error">Erro ao carregar colaboradores: ${err.message}</div>`;
         }
+        toast.error('Não foi possível carregar a lista de colaboradores.');
     }
 }
 
