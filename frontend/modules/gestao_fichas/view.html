@@ -156,6 +156,23 @@
                                 <p>Lista de colaboradores e respetiva empresa, para consulta de fichas.</p>
                             </div>
 
+                            <div class="gestao-allrecs-toolbar">
+                                <div class="gestao-search">
+                                    <svg class="gestao-search-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                                        <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"></circle>
+                                        <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+                                    </svg>
+                                    <input
+                                        type="search"
+                                        id="gestao-allrecs-search"
+                                        class="gestao-search-input"
+                                        placeholder="Pesquisar por nome ou email..."
+                                        autocomplete="off"
+                                    />
+                                </div>
+                                <div class="gestao-allrecs-summary" id="gestao-allrecs-summary"></div>
+                            </div>
+
                             <div class="gestao-table-wrapper">
                                 <table class="gestao-table" aria-describedby="gestao-allrecs-caption">
                                     <caption id="gestao-allrecs-caption" class="sr-only">
@@ -176,6 +193,16 @@
                                 <p class="gestao-allrecs-empty" id="gestao-allrecs-empty">
                                     Não existem colaboradores para apresentar.
                                 </p>
+                            </div>
+
+                            <div class="gestao-pagination" id="gestao-allrecs-pagination">
+                                <button type="button" class="gestao-page-btn" id="gestao-allrecs-prev" aria-label="Página anterior">
+                                    &laquo; Anterior
+                                </button>
+                                <span class="gestao-page-info" id="gestao-allrecs-page-info">Página 1 de 1</span>
+                                <button type="button" class="gestao-page-btn" id="gestao-allrecs-next" aria-label="Próxima página">
+                                    Seguinte &raquo;
+                                </button>
                             </div>
                         </div>
 
