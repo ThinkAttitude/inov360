@@ -1,4 +1,5 @@
 import { getOvertimeHistory, exportOvertimeSheets } from '../../app/api.js';
+import { toast } from '../../shared/ui/toast/toast.js';
 
 const EXPORT_BUTTON_DEFAULT_HTML = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -26,7 +27,7 @@ export function mountExport({ horasState, esc, formatDate, formatMinutes }) {
         const monthInput = document.getElementById('he-export-month');
         const month = monthInput?.value;
         if (!month) {
-            alert('Selecione um mês.');
+            toast.warning('Selecione um mês.');
             return;
         }
 
@@ -127,8 +128,9 @@ export function mountExport({ horasState, esc, formatDate, formatMinutes }) {
         try {
             const blob = await exportOvertimeSheets(month, userIds);
             downloadBlob(blob, `horas_extra_${month}.xlsx`);
+            toast.success('Ficheiro exportado com sucesso.');
         } catch (error) {
-            alert(error.message || 'Erro ao exportar o ficheiro.');
+            toast.error(error.message || 'Erro ao exportar o ficheiro.');
         } finally {
             if (btn) {
                 btn.disabled = false;

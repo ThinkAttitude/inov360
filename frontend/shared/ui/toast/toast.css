@@ -1,0 +1,125 @@
+/* App-wide toast notifications. Top-right stacked container. */
+
+.app-toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: min(380px, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+.app-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
+    color: #fff;
+    background: #1f2937;
+    box-shadow: 0 14px 32px rgba(2, 8, 23, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    border-left: 4px solid rgba(255, 255, 255, 0.4);
+    font-size: 0.92rem;
+    line-height: 1.35;
+    animation: appToastIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: top right;
+}
+
+.app-toast--leaving {
+    animation: appToastOut 0.22s ease-in forwards;
+}
+
+.app-toast__icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    opacity: 0.95;
+    margin-top: 1px;
+}
+
+.app-toast__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-toast__title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+}
+
+.app-toast__message {
+    color: rgba(255, 255, 255, 0.92);
+    word-wrap: break-word;
+}
+
+.app-toast__close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.app-toast__close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.app-toast--success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-left-color: #047857;
+}
+
+.app-toast--error {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-left-color: #b91c1c;
+}
+
+.app-toast--warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-left-color: #b45309;
+}
+
+.app-toast--info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-left-color: #1d4ed8;
+}
+
+@keyframes appToastIn {
+    from {
+        opacity: 0;
+        transform: translateX(110%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes appToastOut {
+    to {
+        opacity: 0;
+        transform: translateX(110%);
+    }
+}
+
+@media (max-width: 540px) {
+    .app-toast-container {
+        right: 0.75rem;
+        left: 0.75rem;
+        width: auto;
+    }
+}

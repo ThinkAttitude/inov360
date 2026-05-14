@@ -1,6 +1,7 @@
 import { login } from '../../app/api.js';
 import {navigate, Path} from "../../app/router.js";
 import {User} from "../../shared/user_store.js";
+import { toast } from '../../shared/ui/toast/toast.js';
 
 import './styles.css';
 
@@ -22,26 +23,8 @@ const setLoadingState = (isLoading) => {
     submitButton.textContent = isLoading ? 'Logging in...' : 'Login';
 };
 
-const showToast = (message, type = 'error') => {
-    if (!message) return;
-    const existing = document.querySelector('.toast.login-toast');
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.className = `toast ${type} login-toast`;
-    toast.setAttribute('role', 'alert');
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => toast.remove(), 320);
-    }, 3500);
-};
-
 const showError = (message) => {
-    showToast(message || 'Ocorreu um erro ao iniciar sessão.', 'error');
+    toast.error(message || 'Ocorreu um erro ao iniciar sessão.');
 };
 
 const handleSubmit = async (event) => {

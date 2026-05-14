@@ -1,6 +1,7 @@
 import {getAllPendingRequests, getAllRecords} from '../../app/api.js'
 import {openDiffForRequest, mountGstFchsDiff} from './gestao_fichas_diff.js'
 import {openRecordForUser, mountGstFchsRecord} from './gestao_fichas_records.js'
+import { toast } from '../../shared/ui/toast/toast.js'
 
 import './styles.css'
 import './records.css'
@@ -162,6 +163,7 @@ async function renderPendingReqs() {
             emptyEl.textContent = 'Não foi possível carregar os pedidos pendentes.'
             emptyEl.style.display = 'block'
         }
+        toast.error('Não foi possível carregar os pedidos pendentes.')
     } finally {
         if (btn) btn.disabled = false
         updateNavButtons()
@@ -278,6 +280,7 @@ async function renderAllRecs() {
             emptyEl.textContent = 'Não foi possível carregar os colaboradores.'
             emptyEl.style.display = 'block'
         }
+        toast.error('Não foi possível carregar a lista de colaboradores.')
     } finally {
         updateNavButtons()
     }
