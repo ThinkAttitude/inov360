@@ -48,20 +48,9 @@ function generateSecurePassword() {
     return secureShuffle(chars).join('');
 }
 
-function bindPasswordGenerator(btn, emailInput, pwdInput) {
-    if (!btn || !emailInput || !pwdInput) return;
-    const syncDisabled = () => {
-        const hasEmail = emailInput.value.trim().length > 0;
-        btn.disabled = !hasEmail;
-        btn.title = hasEmail ? 'Gerar palavra-passe' : 'Preencha o email primeiro';
-    };
-    syncDisabled();
-    emailInput.addEventListener('input', syncDisabled);
+function bindPasswordGenerator(btn, pwdInput) {
+    if (!btn || !pwdInput) return;
     btn.addEventListener('click', () => {
-        if (!emailInput.value.trim()) {
-            emailInput.focus();
-            return;
-        }
         pwdInput.value = generateSecurePassword();
     });
 }
@@ -679,9 +668,8 @@ function renderCreateModal() {
     });
 
     const btnGenPwd = document.getElementById('create-password-generate');
-    const emailInput = document.getElementById('create-email');
     const pwdInput = document.getElementById('create-password');
-    bindPasswordGenerator(btnGenPwd, emailInput, pwdInput);
+    bindPasswordGenerator(btnGenPwd, pwdInput);
 
     const btnTogglePwd = document.getElementById('create-password-toggle');
     if (btnTogglePwd && pwdInput) {
