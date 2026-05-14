@@ -8,40 +8,87 @@ import {
 
 import './styles.css';
 
+const PWD_CHARSETS = {
+    lower: 'abcdefghijklmnopqrstuvwxyz',
+    upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    digits: '0123456789',
+    symbols: '!@#$%^&*-_=+?'
+};
+const PWD_ALL = PWD_CHARSETS.lower + PWD_CHARSETS.upper + PWD_CHARSETS.digits + PWD_CHARSETS.symbols;
+const PWD_LENGTH = 16;
+
 /**
- * Gera 6 dígitos criptograficamente seguros (000000–999999).
- * Recorre a Math.random apenas se a Web Crypto API não estiver disponível.
- * @returns {string}
+ * Devolve um inteiro aleatório uniforme em [0, max) usando ``crypto.getRandomValues``
+ * com rejection sampling para evitar bias de módulo. Fallback para ``Math.random``
+ * apenas em ambientes sem WebCrypto.
+ * @param {number} max
+ * @returns {number}
  */
-function generateSecureDigits() {
+function secureRandomInt(max) {
     if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
-        const arr = new Uint32Array(1);
-        window.crypto.getRandomValues(arr);
-        return String(arr[0] % 1000000).padStart(6, '0');
+        const limit = Math.floor(0xFFFFFFFF / max) * max;
+        const buf = new Uint32Array(1);
+        do { window.crypto.getRandomValues(buf); } while (buf[0] >= limit);
+        return buf[0] % max;
     }
-    return String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+    return Math.floor(Math.random() * max);
 }
 
 /**
- * Constrói uma palavra-passe inicial a partir do email do utilizador.
- * @param {string} email
+ * Embaralha (Fisher–Yates) um array in-place usando ``secureRandomInt``.
+ * @param {string[]} arr
+ */
+function secureShuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = secureRandomInt(i + 1);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+/**
+ * Gera uma palavra-passe forte com ``PWD_LENGTH`` caracteres garantindo pelo menos
+ * um caracter de cada classe (minúscula, maiúscula, dígito, símbolo). Usa um gerador
+ * criptográfico (resistente a brute force e previsibilidade) e não inclui dados do
+ * utilizador (e.g. parte local do email) para evitar previsibilidade.
  * @returns {string}
  */
-function buildGeneratedPassword(email) {
-    const localPart = (email || '').trim().split('@')[0] || 'user';
-    return `${localPart}${generateSecureDigits()}`;
+function generateSecurePassword() {
+    const chars = [
+        PWD_CHARSETS.lower[secureRandomInt(PWD_CHARSETS.lower.length)],
+        PWD_CHARSETS.upper[secureRandomInt(PWD_CHARSETS.upper.length)],
+        PWD_CHARSETS.digits[secureRandomInt(PWD_CHARSETS.digits.length)],
+        PWD_CHARSETS.symbols[secureRandomInt(PWD_CHARSETS.symbols.length)]
+    ];
+    while (chars.length < PWD_LENGTH) {
+        chars.push(PWD_ALL[secureRandomInt(PWD_ALL.length)]);
+    }
+    return secureShuffle(chars).join('');
 }
 
 /**
  * Liga o botão de gerar palavra-passe ao input correspondente.
+ * O botão fica desactivado enquanto o email estiver vazio para evitar
+ * palavras-passe genéricas (e.g. "user123456").
  * @param {HTMLElement|null} btn
  * @param {HTMLInputElement|null} emailInput
  * @param {HTMLInputElement|null} pwdInput
  */
 function bindPasswordGenerator(btn, emailInput, pwdInput) {
     if (!btn || !emailInput || !pwdInput) return;
+    const syncDisabled = () => {
+        const hasEmail = emailInput.value.trim().length > 0;
+        btn.disabled = !hasEmail;
+        btn.title = hasEmail ? 'Gerar palavra-passe' : 'Preencha o email primeiro';
+    };
+    syncDisabled();
+    emailInput.addEventListener('input', syncDisabled);
     btn.addEventListener('click', () => {
-        pwdInput.value = buildGeneratedPassword(emailInput.value);
+        if (!emailInput.value.trim()) {
+            emailInput.focus();
+            return;
+        }
+        pwdInput.value = generateSecurePassword();
     });
 }
 
