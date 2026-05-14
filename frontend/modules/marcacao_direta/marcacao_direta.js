@@ -1,5 +1,7 @@
 import { createDirectLeave, getAllCollaborators } from '../../app/api.js';
 
+import './styles.css';
+
 function setMinDates() {
     const today = new Date().toISOString().split('T')[0];
     const start = document.getElementById('data_inicio');

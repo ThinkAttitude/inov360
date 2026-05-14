@@ -86,9 +86,9 @@ try {
 }
 
 /* ===== Guardar ficheiro ===== */
-$rootDir    = dirname(__DIR__, 2);              // /var/www/html
-$relDir     = '/uploads/leaves/' . date('Y') . '/' . date('m');
-$absDir     = $rootDir . $relDir;
+$rootDir = dirname(__DIR__, 3);
+$relDir = '/uploads/leaves/' . date('Y') . '/' . date('m');
+$absDir = $rootDir . $relDir;
 if (!is_dir($absDir) && !mkdir($absDir, 0775, true) && !is_dir($absDir)) {
     fail(500, "STORAGE_ERROR", ["msg"=>"Não foi possível criar diretório de uploads"]);
 }

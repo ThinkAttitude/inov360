@@ -8,10 +8,12 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
 }
-$myPerms = $_SESSION['user']['permissions'] ?? [];
-if (!is_array($myPerms) || !in_array(1, $myPerms, true)) {
+$myPerms = array_map('intval', $_SESSION['user']['permissions'] ?? []);
+
+if (!in_array(1, $myPerms, true)) {
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    echo json_encode(['ok' => false, 'code' => 'FORBIDDEN_PERMISSION']);
+    exit;
 }
 
 require_once __DIR__ . '/../includes/db.php';
@@ -86,10 +88,14 @@ try {
 
     $pdo->commit();
 
+    if ((int)$_SESSION['user']['id'] === $userId) {
+        $_SESSION['user']['permissions'] = $permissionIds;
+    }
+
     echo json_encode([
-        'ok'=>true,
-        'user_id'=>$userId,
-        'permissions'=>$permissionIds
+        'ok' => true,
+        'user_id' => $userId,
+        'permissions' => $permissionIds,
     ]);
     exit;
 

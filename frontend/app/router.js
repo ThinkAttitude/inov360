@@ -51,7 +51,7 @@ export const Routes = Object.freeze({
     [Path.HORARIOS]: {
         html: Route(`${MODULES_BASE}/horarios/view.html`),
         mount: mountSchedule,
-        maintenance: true,
+        maintenance: false,
     },
     [Path.APROVACAO_HORARIOS]: {
         html: Route(`${MODULES_BASE}/aprovacao_horarios/aprovacao_horarios.php`),
@@ -66,12 +66,12 @@ export const Routes = Object.freeze({
     [Path.PEDIDOS_FERIAS]: {
         html: Route(`${MODULES_BASE}/pedidos_ferias/view.html`),
         mount: null,
-        maintenance: true,
+        maintenance: false,
     },
     [Path.APROVACAO_FERIAS]: {
         html: Route(`${MODULES_BASE}/aprovacao_ferias/aprovacao_ferias.php`),
         mount: null,
-        maintenance: true,
+        maintenance: false,
     },
     [Path.CONSULTA_PEDIDOS]: {
         html: Route(`${MODULES_BASE}/consulta_pedidos/view.html`),
@@ -101,7 +101,7 @@ export const Routes = Object.freeze({
     [Path.MARCACAO_DIRETA]: {
         html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`),
         mount: initForm,
-        maintenance: true,
+        maintenance: false,
     },
     [Path.GESTAO_FICHAS]: {
         html: Route(`${MODULES_BASE}/gestao_fichas/view.html`),
