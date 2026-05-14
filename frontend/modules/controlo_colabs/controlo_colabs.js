@@ -17,13 +17,6 @@ const PWD_CHARSETS = {
 const PWD_ALL = PWD_CHARSETS.lower + PWD_CHARSETS.upper + PWD_CHARSETS.digits + PWD_CHARSETS.symbols;
 const PWD_LENGTH = 16;
 
-/**
- * Devolve um inteiro aleatório uniforme em [0, max) usando ``crypto.getRandomValues``
- * com rejection sampling para evitar bias de módulo. Fallback para ``Math.random``
- * apenas em ambientes sem WebCrypto.
- * @param {number} max
- * @returns {number}
- */
 function secureRandomInt(max) {
     if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
         const limit = Math.floor(0xFFFFFFFF / max) * max;
@@ -34,10 +27,6 @@ function secureRandomInt(max) {
     return Math.floor(Math.random() * max);
 }
 
-/**
- * Embaralha (Fisher–Yates) um array in-place usando ``secureRandomInt``.
- * @param {string[]} arr
- */
 function secureShuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
         const j = secureRandomInt(i + 1);
@@ -46,13 +35,6 @@ function secureShuffle(arr) {
     return arr;
 }
 
-/**
- * Gera uma palavra-passe forte com ``PWD_LENGTH`` caracteres garantindo pelo menos
- * um caracter de cada classe (minúscula, maiúscula, dígito, símbolo). Usa um gerador
- * criptográfico (resistente a brute force e previsibilidade) e não inclui dados do
- * utilizador (e.g. parte local do email) para evitar previsibilidade.
- * @returns {string}
- */
 function generateSecurePassword() {
     const chars = [
         PWD_CHARSETS.lower[secureRandomInt(PWD_CHARSETS.lower.length)],
@@ -66,14 +48,6 @@ function generateSecurePassword() {
     return secureShuffle(chars).join('');
 }
 
-/**
- * Liga o botão de gerar palavra-passe ao input correspondente.
- * O botão fica desactivado enquanto o email estiver vazio para evitar
- * palavras-passe genéricas (e.g. "user123456").
- * @param {HTMLElement|null} btn
- * @param {HTMLInputElement|null} emailInput
- * @param {HTMLInputElement|null} pwdInput
- */
 function bindPasswordGenerator(btn, emailInput, pwdInput) {
     if (!btn || !emailInput || !pwdInput) return;
     const syncDisabled = () => {

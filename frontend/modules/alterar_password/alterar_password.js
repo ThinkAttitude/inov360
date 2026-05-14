@@ -21,7 +21,6 @@ export function mountAlterarPassword() {
         if (kind) feedback.classList.add(`is-${kind}`);
     };
 
-    // toggles mostrar/ocultar palavra-passe
     form.querySelectorAll(".apw-toggle-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
             const targetId = btn.dataset.target;

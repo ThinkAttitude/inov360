@@ -840,7 +840,6 @@
         padding-inline: 1.25rem;
     }
 }
-/* Botão Gerar palavra-passe no modal Criar colaborador */
 .btn-generate-password {
     margin-top: 0.5rem;
     align-self: flex-start;
@@ -849,7 +848,6 @@
     cursor: pointer;
 }
 
-/* Toggle mostrar/esconder palavra-passe */
 .password-wrapper {
     position: relative;
     display: flex;
