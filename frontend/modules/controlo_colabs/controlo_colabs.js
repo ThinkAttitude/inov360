@@ -5,8 +5,16 @@ import {
     updateHierarchy,
     updatePermissions
 } from '../../app/api.js';
+import {generateSecurePassword} from '../../shared/security/password.js';
 
 import './styles.css';
+
+function bindPasswordGenerator(btn, pwdInput) {
+    if (!btn || !pwdInput) return;
+    btn.addEventListener('click', () => {
+        pwdInput.value = generateSecurePassword();
+    });
+}
 
 const hierarchyState = {
     userId: null,
@@ -619,6 +627,29 @@ function renderCreateModal() {
             closeModal();
         }
     });
+
+    const btnGenPwd = document.getElementById('create-password-generate');
+    const pwdInput = document.getElementById('create-password');
+    bindPasswordGenerator(btnGenPwd, pwdInput);
+
+    const btnTogglePwd = document.getElementById('create-password-toggle');
+    if (btnTogglePwd && pwdInput) {
+        const iconEye = btnTogglePwd.querySelector('.icon-eye');
+        const iconEyeOff = btnTogglePwd.querySelector('.icon-eye-off');
+        btnTogglePwd.addEventListener('click', () => {
+            const isHidden = pwdInput.type === 'password';
+            pwdInput.type = isHidden ? 'text' : 'password';
+            btnTogglePwd.setAttribute('aria-pressed', String(isHidden));
+            btnTogglePwd.setAttribute(
+                'aria-label',
+                isHidden ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'
+            );
+            if (iconEye && iconEyeOff) {
+                iconEye.style.display = isHidden ? 'none' : '';
+                iconEyeOff.style.display = isHidden ? '' : 'none';
+            }
+        });
+    }
 
     if (form) {
         form.addEventListener('submit', e => {
