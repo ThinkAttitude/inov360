@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="styles.css">
-
 <div class="controlo-page">
     <header class="controlo-header">
         <div class="header-left">
@@ -408,14 +406,41 @@
                             <!-- Palavra-passe -->
                             <label class="field-label">
                                 Palavra-passe
-                                <input
-                                        type="password"
-                                        class="field-input"
-                                        id="create-password"
-                                        name="password"
-                                        placeholder="Digite a senha"
-                                        required
-                                />
+                                <div class="password-wrapper">
+                                    <input
+                                            type="password"
+                                            class="field-input"
+                                            id="create-password"
+                                            name="password"
+                                            placeholder="Digite a senha"
+                                            required
+                                    />
+                                    <button
+                                            type="button"
+                                            class="password-toggle-btn"
+                                            id="create-password-toggle"
+                                            aria-label="Mostrar palavra-passe"
+                                            aria-pressed="false"
+                                    >
+                                        <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        <svg class="icon-eye-off" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a19.77 19.77 0 0 1 4.22-5.39"></path>
+                                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a19.86 19.86 0 0 1-3.17 4.19"></path>
+                                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"></path>
+                                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <button
+                                        type="button"
+                                        class="btn-secondary btn-generate-password"
+                                        id="create-password-generate"
+                                >
+                                    Gerar palavra-passe
+                                </button>
                             </label>
                         </div>
                     </div>

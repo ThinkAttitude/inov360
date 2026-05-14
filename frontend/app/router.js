@@ -6,6 +6,7 @@ import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
 import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_horas_extras.js"
 import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
+import {mountAlterarPassword} from "../modules/alterar_password/alterar_password.js"
 import {handleAuthStatus, setApiAuthHandlers} from "./api";
 import {User} from "../shared/user_store";
 import {CARD_TYPES, guardDashboardRoute} from "../modules/dashboard/dashboard_access.js";
@@ -111,6 +112,11 @@ export const Routes = Object.freeze({
     [Path.FICHA_COLLAB]: {
         html: Route(`${MODULES_BASE}/ficha_collab/view.html`),
         mount: mountFichaCollab,
+        maintenance: false,
+    },
+    [Path.ALTERAR_PASSWORD]: {
+        html: Route(`${MODULES_BASE}/alterar_password/view.html`),
+        mount: mountAlterarPassword,
         maintenance: false,
     },
 });

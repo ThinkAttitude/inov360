@@ -620,6 +620,45 @@ function renderCreateModal() {
         }
     });
 
+    const btnGenPwd = document.getElementById('create-password-generate');
+    const emailInput = document.getElementById('create-email');
+    const pwdInput = document.getElementById('create-password');
+    if (btnGenPwd && emailInput && pwdInput) {
+        btnGenPwd.addEventListener('click', () => {
+            const email = (emailInput.value || '').trim();
+            const localPart = email.split('@')[0] || 'user';
+            // 6 dígitos criptograficamente seguros (000000–999999)
+            let digits;
+            if (window.crypto && window.crypto.getRandomValues) {
+                const arr = new Uint32Array(1);
+                window.crypto.getRandomValues(arr);
+                digits = String(arr[0] % 1000000).padStart(6, '0');
+            } else {
+                digits = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+            }
+            pwdInput.value = `${localPart}${digits}`;
+        });
+    }
+
+    const btnTogglePwd = document.getElementById('create-password-toggle');
+    if (btnTogglePwd && pwdInput) {
+        const iconEye = btnTogglePwd.querySelector('.icon-eye');
+        const iconEyeOff = btnTogglePwd.querySelector('.icon-eye-off');
+        btnTogglePwd.addEventListener('click', () => {
+            const isHidden = pwdInput.type === 'password';
+            pwdInput.type = isHidden ? 'text' : 'password';
+            btnTogglePwd.setAttribute('aria-pressed', String(isHidden));
+            btnTogglePwd.setAttribute(
+                'aria-label',
+                isHidden ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'
+            );
+            if (iconEye && iconEyeOff) {
+                iconEye.style.display = isHidden ? 'none' : '';
+                iconEyeOff.style.display = isHidden ? '' : 'none';
+            }
+        });
+    }
+
     if (form) {
         form.addEventListener('submit', e => {
             e.preventDefault();
