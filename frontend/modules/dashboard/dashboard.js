@@ -1,4 +1,5 @@
 import {logout} from "../../app/api.js";
+import {Routes} from "../../app/router.js";
 import {User} from "../../shared/user_store.js";
 import {CARD_TYPES, PERMISSIONS, getCardsFromUser} from "./dashboard_access.js";
 
@@ -23,19 +24,10 @@ function svg(icon, size = 24, cls = '') {
     return `<svg ${cls ? `class="${cls}" ` : ''}width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg>`;
 }
 
-// Chaves de páginas em manutenção (deve refletir Routes em ../../app/router.js)
-const MAINTENANCE_KEYS = new Set([
-    CARD_TYPES.HORARIOS,
-    CARD_TYPES.APROVACAO_HORARIOS,
-    CARD_TYPES.MAPAS_HORARIOS,
-    CARD_TYPES.PEDIDOS_FERIAS,
-    CARD_TYPES.APROVACAO_FERIAS,
-    CARD_TYPES.CONSULTA_PEDIDOS,
-    CARD_TYPES.LISTA_INTERMEDIOS,
-    CARD_TYPES.PEDIDOS_HORAS_EXTRA,
-    CARD_TYPES.APROVACAO_HORAS_EXTRA,
-    CARD_TYPES.MARCACAO_DIRETA,
-]);
+// Estado de manutenção vem de Routes em ../../app/router.js (fonte única de verdade).
+function isMaintenanceRoute(key) {
+    return Routes[key]?.maintenance === true;
+}
 
 // SVG de manutenção (chave inglesa) — inline para evitar dependências externas
 const WRENCH_SVG = `<svg class="menu-maintenance-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`;
@@ -44,7 +36,7 @@ function stampMaintenanceIcons() {
     const links = document.querySelectorAll('.sidebar-menu a[data-content]');
     links.forEach((a) => {
         const key = a.dataset.content;
-        const isMaint = MAINTENANCE_KEYS.has(key);
+        const isMaint = isMaintenanceRoute(key);
         const already = a.querySelector('.menu-maintenance-icon');
         if (isMaint && !already) {
             a.insertAdjacentHTML('beforeend', WRENCH_SVG);

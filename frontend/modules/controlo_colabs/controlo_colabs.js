@@ -8,6 +8,43 @@ import {
 
 import './styles.css';
 
+/**
+ * Gera 6 dígitos criptograficamente seguros (000000–999999).
+ * Recorre a Math.random apenas se a Web Crypto API não estiver disponível.
+ * @returns {string}
+ */
+function generateSecureDigits() {
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+        const arr = new Uint32Array(1);
+        window.crypto.getRandomValues(arr);
+        return String(arr[0] % 1000000).padStart(6, '0');
+    }
+    return String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+}
+
+/**
+ * Constrói uma palavra-passe inicial a partir do email do utilizador.
+ * @param {string} email
+ * @returns {string}
+ */
+function buildGeneratedPassword(email) {
+    const localPart = (email || '').trim().split('@')[0] || 'user';
+    return `${localPart}${generateSecureDigits()}`;
+}
+
+/**
+ * Liga o botão de gerar palavra-passe ao input correspondente.
+ * @param {HTMLElement|null} btn
+ * @param {HTMLInputElement|null} emailInput
+ * @param {HTMLInputElement|null} pwdInput
+ */
+function bindPasswordGenerator(btn, emailInput, pwdInput) {
+    if (!btn || !emailInput || !pwdInput) return;
+    btn.addEventListener('click', () => {
+        pwdInput.value = buildGeneratedPassword(emailInput.value);
+    });
+}
+
 const hierarchyState = {
     userId: null,
     responsaveis: [],
@@ -623,22 +660,7 @@ function renderCreateModal() {
     const btnGenPwd = document.getElementById('create-password-generate');
     const emailInput = document.getElementById('create-email');
     const pwdInput = document.getElementById('create-password');
-    if (btnGenPwd && emailInput && pwdInput) {
-        btnGenPwd.addEventListener('click', () => {
-            const email = (emailInput.value || '').trim();
-            const localPart = email.split('@')[0] || 'user';
-            // 6 dígitos criptograficamente seguros (000000–999999)
-            let digits;
-            if (window.crypto && window.crypto.getRandomValues) {
-                const arr = new Uint32Array(1);
-                window.crypto.getRandomValues(arr);
-                digits = String(arr[0] % 1000000).padStart(6, '0');
-            } else {
-                digits = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
-            }
-            pwdInput.value = `${localPart}${digits}`;
-        });
-    }
+    bindPasswordGenerator(btnGenPwd, emailInput, pwdInput);
 
     const btnTogglePwd = document.getElementById('create-password-toggle');
     if (btnTogglePwd && pwdInput) {
