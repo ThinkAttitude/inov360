@@ -7,17 +7,18 @@ session_start();
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(3, $myPerms, true)) { // exige permissão 3
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* Deps & DB */
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $pdo = db_connect();

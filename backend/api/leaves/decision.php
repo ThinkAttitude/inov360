@@ -7,11 +7,11 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Sessão ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -23,13 +23,11 @@ $comentario = isset($in['comentario']) ? trim((string)$in['comentario']) : null;
 
 if (!$pedidoId || !in_array($acao, ['aprovar','rejeitar'], true)) {
     http_response_code(400);
-    echo json_encode(["ok"=>false,"code"=>"BAD_REQUEST"]);
-    exit;
+    json_error('BAD_REQUEST');
 }
 if ($acao === 'rejeitar' && ($comentario === null || $comentario === '')) {
     http_response_code(400);
-    echo json_encode(["ok"=>false,"code"=>"COMMENT_REQUIRED"]);
-    exit;
+    json_error('COMMENT_REQUIRED');
 }
 
 $avaliadorId = (int)$_SESSION['user']['id'];
@@ -41,8 +39,7 @@ try {
     $ped = $q->fetch(PDO::FETCH_ASSOC);
     if (!$ped) {
         http_response_code(404);
-        echo json_encode(["ok"=>false,"code"=>"REQUEST_NOT_FOUND"]);
-        exit;
+        json_error('REQUEST_NOT_FOUND', 404);
     }
     if ($ped['estado'] !== 'pendente') {
         http_response_code(409);
@@ -66,8 +63,7 @@ try {
     $chk->execute([$colabId, $avaliadorId]);
     if (!$chk->fetchColumn()) {
         http_response_code(403);
-        echo json_encode(["ok"=>false,"code"=>"NOT_RESPONSAVEL"]);
-        exit;
+        json_error('NOT_RESPONSAVEL');
     }
 
     $pdo->beginTransaction();
@@ -165,5 +161,4 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR"]);
-}
+    json_error('DB_ERROR', 500);}

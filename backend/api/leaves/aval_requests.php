@@ -6,8 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $userId = (int)($_SESSION['user']['id'] ?? 0);
@@ -21,6 +20,7 @@ $map = [
 $filterTipos = $type === 'all' ? [] : ($map[$type] ?? []);
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -86,8 +86,7 @@ try {
         $st->execute($params);
     } else {
         http_response_code(500);
-        echo json_encode(["ok"=>false,"code"=>"DB_ERROR"]);
-        exit;
+        json_error('DB_ERROR', 500);
     }
 }
 

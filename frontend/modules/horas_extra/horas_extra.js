@@ -200,16 +200,16 @@ function openDecisionModal(item, action, openModal) {
                 comentario
             });
 
-            if (!res?.ok) throw new Error('Erro');
+            if (!res?.ok) throw new Error(res?.error || 'Erro ao processar a decisão.');
 
             m.close();
             horasState.pending = null;
             horasState.history = null;
             loadPending();
             toast.success(isApprove ? 'Pedido aprovado.' : 'Pedido recusado.');
-        } catch {
+        } catch (err) {
             if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = isApprove ? 'Aprovar' : 'Recusar'; }
-            toast.error('Erro ao processar a decisão.');
+            toast.error(err?.message || 'Erro ao processar a decisão.');
         }
     });
 }

@@ -191,7 +191,7 @@ async function saveRecordEdits() {
         toast.success('Alterações guardadas.');
     } catch (err) {
         console.error('Falha ao guardar edição direta:', err);
-        toast.error('Não foi possível guardar as alterações da ficha.');
+        toast.error(err?.message || 'Não foi possível guardar as alterações da ficha.');
     }
 }
 
@@ -225,7 +225,7 @@ async function loadRecord(userId, name) {
     } catch (err) {
         console.error('Falha ao carregar ficha completa:', err);
         if (container) container.textContent = 'Não foi possível carregar a ficha.';
-        toast.error('Não foi possível carregar a ficha do colaborador.');
+        toast.error(err?.message || 'Não foi possível carregar a ficha do colaborador.');
     }
 }
 

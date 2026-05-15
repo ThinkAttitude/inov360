@@ -6,15 +6,16 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 /*$myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(1, $myPerms, true)) { // exige permissão 1
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }*/
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 
 try {
     $pdo = db_connect();
@@ -85,5 +86,5 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['ok'=>false,'code'=>'SERVER_ERROR']); exit;
+    json_error('SERVER_ERROR', 500);
 }

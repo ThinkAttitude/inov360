@@ -66,7 +66,7 @@ async function fillCollaborators() {
         }
     } catch (e) {
         console.error('Erro ao carregar colaboradores:', e);
-        toast.error('Não foi possível carregar a lista de colaboradores.');
+        toast.error(e?.message || 'Não foi possível carregar a lista de colaboradores.');
     }
 }
 
@@ -135,7 +135,7 @@ function togglePermChips(ids = [], enabled = true) {
                     chip.classList.toggle('chip-on', wasOn);
                     chip.classList.toggle('chip-off', !wasOn);
                     chip.setAttribute('aria-pressed', String(wasOn));
-                    toast.error('Não foi possível atualizar a permissão.');
+                    toast.error(err?.message || 'Não foi possível atualizar a permissão.');
                 }
             });
             chip.dataset.bound = '1';
@@ -183,7 +183,7 @@ async function renderDiagram(userId = null) {
 
     const res = await getHierarchyByUser(userId).catch(err => {
         console.error('Erro ao carregar hierarquia:', err);
-        toast.error('Não foi possível carregar a hierarquia.');
+        toast.error(err?.message || 'Não foi possível carregar a hierarquia.');
         setHierarchyState({
             responsaveis: [],
             subs: [],
@@ -716,7 +716,7 @@ function renderHierarchyModal() {
                 })
                 .catch(err => {
                     console.error('Falha ao guardar hierarquia:', err);
-                    toast.error('Não foi possível guardar a hierarquia.');
+                    toast.error(err?.message || 'Não foi possível guardar a hierarquia.');
                 });
         });
     }

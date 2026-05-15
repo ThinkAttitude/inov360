@@ -6,13 +6,14 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $uid = (int)($_SESSION['user']['id'] ?? 0);
 
 /* DB + helper 25..24 */
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../lib/helper/periods.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -23,10 +24,10 @@ $action   = $in['action'] ?? ''; // 'approve' | 'reject'
 $comment  = isset($in['comment']) ? trim((string)$in['comment']) : null;
 
 if (!$periodId || !in_array($action, ['approve','reject'], true)) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"BAD_REQUEST"]); exit;
+    http_response_code(400); json_error('BAD_REQUEST');
 }
 if ($action === 'reject' && ($comment === null || $comment === '')) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"COMMENT_REQUIRED"]); exit;
+    http_response_code(400); json_error('COMMENT_REQUIRED');
 }
 
 /* Carregar período */
@@ -39,9 +40,9 @@ $q = $pdo->prepare("
 $q->execute([':id'=>$periodId]);
 $P = $q->fetch(PDO::FETCH_ASSOC);
 
-if (!$P) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"PERIOD_NOT_FOUND"]); exit; }
+if (!$P) { http_response_code(404); json_error('PERIOD_NOT_FOUND', 404); }
 if ($P['estado'] !== 'submitted') {
-    http_response_code(409); echo json_encode(["ok"=>false,"code"=>"NOT_SUBMITTED"]); exit;
+    http_response_code(409); json_error('NOT_SUBMITTED', 409);
 }
 
 /* Gate de hierarquia (responsável ativo/válido AGORA) */
@@ -58,14 +59,14 @@ $gate = $pdo->prepare("
 $gate->execute([':target'=>(int)$P['user_id'], ':me'=>$uid]);
 if (!$gate->fetchColumn()) {
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"NOT_RESPONSAVEL"]); exit;
+    json_error('NOT_RESPONSAVEL');
 }
 
 /* BLOQUEIO 25(M) 00:00 */
 $label = substr($P['period_end'], 0, 7); // YYYY-MM do mês M
 if ((new DateTime()) >= ts_lock_at($label)) {
     http_response_code(409);
-    echo json_encode(["ok"=>false,"code"=>"PERIOD_CLOSED"]); exit;
+    json_error('PERIOD_CLOSED', 409);
 }
 
 /* Transação */
@@ -119,5 +120,4 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
-}
+    json_error('DB_ERROR', 500, ["msg"=>$e->getMessage()]);}

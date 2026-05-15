@@ -225,7 +225,7 @@ async function loadDiffForRequest(userId) {
 
         if (oldEl) oldEl.textContent = 'Não foi possível carregar a ficha atual.'
         if (newEl) newEl.textContent = 'Não foi possível carregar o pedido de alteração.'
-        toast.error('Não foi possível carregar a comparação.')
+        toast.error(err?.message || 'Não foi possível carregar a comparação.')
     }
 }
 
@@ -242,14 +242,14 @@ async function sendDecision(decision) {
         const res = await createDecision(diffState.userId, decision);
         if (!res || res.success !== true) {
             console.error('Falha ao gravar decisão:', res);
-            toast.error('Não foi possível gravar a decisão.');
+            toast.error(res?.error || res?.message || 'Não foi possível gravar a decisão.');
             return;
         }
         toast.success(decision === 'approve' ? 'Pedido aprovado.' : 'Pedido recusado.');
         showApprovalsListView();
     } catch (err) {
         console.error('Erro na decisão:', err);
-        toast.error('Erro ao gravar a decisão.');
+        toast.error(err?.message || 'Erro ao gravar a decisão.');
     } finally {
         if (acceptBtn) acceptBtn.disabled = false;
         if (rejectBtn) rejectBtn.disabled = false;

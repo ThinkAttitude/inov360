@@ -9,17 +9,18 @@ require_once __DIR__ . '/../lib/helper/periods.php';
 /* === Auth === */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $meId    = (int)($_SESSION['user']['id'] ?? 0);
 $myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(4, $myPerms, true)) { // perm 4: request_overtime
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* === DB === */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -48,21 +49,21 @@ $ficheiro     = isset($in['ficheiro']) ? trim((string)$in['ficheiro']) : null; /
 /* === Validações === */
 if ($userId <= 0 || $dia === '' || $horaIni === '' || $horaFim === '' || $justificacao === '') {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'MISSING_FIELDS']); exit;
+    json_error('MISSING_FIELDS');
 }
 if (!is_valid_date($dia)) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'INVALID_DATE']); exit;
+    json_error('INVALID_DATE');
 }
 if (!is_valid_time($horaIni) || !is_valid_time($horaFim)) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'INVALID_TIME_FORMAT']); exit;
+    json_error('INVALID_TIME_FORMAT');
 }
 
 // Bloquear Pedidos
 if (!ot_is_open_for_day($dia)) {
     http_response_code(409);
-    echo json_encode(['ok'=>false,'code'=>'OVERTIME_CLOSED']); exit;
+    json_error('OVERTIME_CLOSED');
 }
 
 
@@ -73,19 +74,19 @@ $tsIni = strtotime($inicio);
 $tsFim = strtotime($fim);
 if ($tsIni === false || $tsFim === false || $tsFim <= $tsIni) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'INVALID_TIME_RANGE']); exit;
+    json_error('INVALID_TIME_RANGE');
 }
 
 /* granularidade: 15 min */
 $mins = (int)round(($tsFim - $tsIni) / 60);
 if ($mins % 15 !== 0) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'INVALID_GRANULARITY_15MIN']); exit;
+    json_error('INVALID_GRANULARITY_15MIN');
 }
 /* limite diário opcional: 12h */
 if ($mins > 12*60) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'MAX_HOURS_EXCEEDED']); exit;
+    json_error('MAX_HOURS_EXCEEDED');
 }
 
 /* === Exec === */
@@ -98,7 +99,7 @@ try {
     if (!$chkUser->fetchColumn()) {
         $pdo->rollBack();
         http_response_code(404);
-        echo json_encode(['ok'=>false,'code'=>'USER_NOT_FOUND']); exit;
+        json_error('USER_NOT_FOUND', 404);
     }
 
     // sobreposição com pedidos PENDENTES (requested) no mesmo user
@@ -114,7 +115,7 @@ try {
     if ($pend->fetchColumn()) {
         $pdo->rollBack();
         http_response_code(409);
-        echo json_encode(['ok'=>false,'code'=>'DUPLICATE_REQUEST_OVERLAP']); exit;
+        json_error('DUPLICATE_REQUEST_OVERLAP');
     }
 
     // sobreposição com overtime APROVADO existente
@@ -129,7 +130,7 @@ try {
     if ($aprov->fetchColumn()) {
         $pdo->rollBack();
         http_response_code(409);
-        echo json_encode(['ok'=>false,'code'=>'ALREADY_HAS_APPROVED_OVERTIME']); exit;
+        json_error('ALREADY_HAS_APPROVED_OVERTIME');
     }
 
     // inserir pedido
@@ -180,5 +181,4 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(['ok'=>false,'code'=>'DB_ERROR','msg'=>$e->getMessage()]);
-}
+    json_error('DB_ERROR', 500, ['msg'=>$e->getMessage()]);}

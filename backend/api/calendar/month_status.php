@@ -6,12 +6,13 @@ header('Content-Type: application/json; charset=utf-8');
 
 /* --- segurança --- */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    http_response_code(401); json_error('UNAUTHENTICATED', 401);
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -29,10 +30,10 @@ $month = $_GET['month'] ?? null;
 if (!$month && !empty($_GET['date']) && is_date($_GET['date'])) {
     $month = (new DateTime($_GET['date']))->format('Y-m');
 }
-if (!$month) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_MONTH"]); exit; }
+if (!$month) { http_response_code(400); json_error('MISSING_MONTH'); }
 
 [$start,$end] = ym_bounds($month);
-if (!$start) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_MONTH"]); exit; }
+if (!$start) { http_response_code(400); json_error('INVALID_MONTH'); }
 
 $userId = $selfId;
 

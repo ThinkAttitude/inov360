@@ -3,21 +3,20 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(6, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'FORBIDDEN']);
-    exit;
+    json_error('FORBIDDEN', 403);
 }
 
 try {
@@ -169,6 +168,5 @@ try {
     error_log('aval_requests error: ' . $e->getMessage());
 
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'SERVER_ERROR']);
-    exit;
+    json_error('SERVER_ERROR', 500);
 }

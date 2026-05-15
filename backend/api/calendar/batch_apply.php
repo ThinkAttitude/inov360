@@ -5,13 +5,14 @@ header('Content-Type: application/json; charset=utf-8');
 
 /* ===== SEGURANÇA ===== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    http_response_code(401); json_error('UNAUTHENTICATED', 401);
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -30,7 +31,7 @@ $in    = json_input();
 $start = $in['start'] ?? '';
 $end   = $in['end']   ?? '';
 if (!is_valid_date($start) || !is_valid_date($end) || $start > $end) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_RANGE"]); exit;
+    http_response_code(400); json_error('INVALID_RANGE');
 }
 
 $userId = $selfId; // por padrão edita o próprio
@@ -43,7 +44,7 @@ $applyWeekend = !empty($in['applyWeekend']) || !empty($in['applyweekend']); // a
 $overwrite    = array_key_exists('overwrite',$in) ? (bool)$in['overwrite'] : true;
 
 if ($work===null && $oncall===null && $km===null) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"NO_FIELDS"]); exit;
+    http_response_code(400); json_error('NO_FIELDS');
 }
 
 /* ===== PREPARED (sem placeholders repetidos) ===== */
@@ -118,5 +119,4 @@ try {
     echo json_encode(["ok"=>true,"user_id"=>$userId,"range"=>[$start,$end],"summary"=>$summary,"skippedLocked"=>$skippedLocked]);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
-    http_response_code(500); echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
-}
+    http_response_code(500); json_error('DB_ERROR', 500, ["msg"=>$e->getMessage()]);}

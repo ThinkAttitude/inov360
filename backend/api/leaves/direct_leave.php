@@ -7,18 +7,18 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Sessão & Role ===== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(2, $myPerms, true)) { // exige permissão 2
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -182,5 +182,4 @@ try {
     // tentativa de rollback do ficheiro se falhar a BD
     if (is_file($absPath)) @unlink($absPath);
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
-}
+    json_error('DB_ERROR', 500, ["msg"=>$e->getMessage()]);}

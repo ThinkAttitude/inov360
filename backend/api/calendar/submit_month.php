@@ -5,13 +5,14 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    http_response_code(401); json_error('UNAUTHENTICATED', 401);
 }
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 /* DB + helper 25..24 */
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../lib/helper/periods.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -25,12 +26,12 @@ if (!$month && !empty($in['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $in['d
     $dt = new DateTime($in['date']); $month = $dt->format('Y-m');
 }
 if (!$month || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/',$month)) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_OR_INVALID_MONTH"]); exit;
+    http_response_code(400); json_error('MISSING_OR_INVALID_MONTH');
 }
 
 /* BLOQUEIO 25(M) 00:00 */
 if ((new DateTime()) >= ts_lock_at($month)) {
-    http_response_code(409); echo json_encode(["ok"=>false,"code"=>"PERIOD_CLOSED"]); exit;
+    http_response_code(409); json_error('PERIOD_CLOSED', 409);
 }
 
 /* Bounds 25..24 para M */
@@ -117,5 +118,4 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
-}
+    json_error('DB_ERROR', 500, ["msg"=>$e->getMessage()]);}

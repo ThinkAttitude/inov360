@@ -114,7 +114,7 @@ export async function mountCalendar() {
                     toast.success('Horário guardado.')
                 } catch (err) {
                     console.error('Erro ao guardar horário:', err)
-                    toast.error('Não foi possível guardar o horário.')
+                    toast.error(err?.message || 'Não foi possível guardar o horário.')
                 }
             },
             onDone: () => overlays.closeActive(),

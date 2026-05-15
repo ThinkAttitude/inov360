@@ -284,13 +284,13 @@ async function loadAndInitFicha(signal) {
                         if (ok) {
                             toast.success('Pedido de alteração submetido.');
                         } else {
-                            toast.error('Não foi possível submeter o pedido.');
+                            toast.error(r?.error || r?.message || 'Não foi possível submeter o pedido.');
                         }
                         return ok;
                     })
                     .catch(function (e) {
                         console.error('Erro ao submeter pedido:', e);
-                        toast.error('Erro ao submeter o pedido de alteração.');
+                        toast.error(e?.message || 'Erro ao submeter o pedido de alteração.');
                         return false;
                     });
             }
@@ -300,7 +300,7 @@ async function loadAndInitFicha(signal) {
     } catch (e) {
         if (!signal.aborted) {
             console.error('Erro ao carregar ficha:', e);
-            toast.error('Não foi possível carregar a sua ficha.');
+            toast.error(e?.message || 'Não foi possível carregar a sua ficha.');
         }
     }
 }

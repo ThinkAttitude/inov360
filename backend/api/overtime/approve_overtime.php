@@ -7,18 +7,19 @@ header('Content-Type: application/json; charset=utf-8');
 /* === Auth === */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $meId    = (int)($_SESSION['user']['id'] ?? 0);
 $myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(5, $myPerms, true)) { // perm 5: approve_overtime
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* === Helpers / DB === */
 require_once __DIR__ . '/../lib/helper/periods.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -42,7 +43,7 @@ $comentario = isset($in['comentario']) ? trim((string)$in['comentario']) : null;
 
 if ($reqId <= 0 || ($decision !== 'approve' && $decision !== 'reject')) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'MISSING_FIELDS']); exit;
+    json_error('MISSING_FIELDS');
 }
 
 try {
@@ -61,7 +62,7 @@ try {
     if (!$req) {
         $pdo->rollBack();
         http_response_code(404);
-        echo json_encode(['ok'=>false,'code'=>'REQUEST_NOT_FOUND']); exit;
+        json_error('REQUEST_NOT_FOUND', 404);
     }
 
     // 2) Bloqueio pelo deadline (vale para approve e reject)
@@ -69,7 +70,7 @@ try {
     if (!ot_is_open_for_day($dia)) {
         $pdo->rollBack();
         http_response_code(409);
-        echo json_encode(['ok'=>false,'code'=>'OVERTIME_CLOSED']); exit;
+        json_error('OVERTIME_CLOSED');
     }
 
     if ($req['estado'] !== 'requested') {
@@ -122,7 +123,7 @@ try {
     if ($overlap->fetchColumn()) {
         $pdo->rollBack();
         http_response_code(409);
-        echo json_encode(['ok'=>false,'code'=>'OVERTIME_CONFLICT']); exit;
+        json_error('OVERTIME_CONFLICT');
     }
 
     // 4) Materializar no overtime (preferir ligar request_id a um registo igual, senão inserir)
@@ -193,5 +194,4 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(['ok'=>false,'code'=>'DB_ERROR','msg'=>$e->getMessage()]);
-}
+    json_error('DB_ERROR', 500, ['msg'=>$e->getMessage()]);}

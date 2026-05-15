@@ -163,7 +163,7 @@ async function renderPendingReqs() {
             emptyEl.textContent = 'Não foi possível carregar os pedidos pendentes.'
             emptyEl.style.display = 'block'
         }
-        toast.error('Não foi possível carregar os pedidos pendentes.')
+        toast.error(err?.message || 'Não foi possível carregar os pedidos pendentes.')
     } finally {
         if (btn) btn.disabled = false
         updateNavButtons()
@@ -280,7 +280,7 @@ async function renderAllRecs() {
             emptyEl.textContent = 'Não foi possível carregar os colaboradores.'
             emptyEl.style.display = 'block'
         }
-        toast.error('Não foi possível carregar a lista de colaboradores.')
+        toast.error(err?.message || 'Não foi possível carregar a lista de colaboradores.')
     } finally {
         updateNavButtons()
     }

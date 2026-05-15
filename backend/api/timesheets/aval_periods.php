@@ -5,7 +5,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    http_response_code(401); json_error('UNAUTHENTICATED', 401);
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
@@ -24,6 +24,7 @@ if ($month && preg_match('/^\d{4}-\d{2}$/',$month)) {
 }
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

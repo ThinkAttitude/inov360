@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user']['id'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 try {
@@ -32,8 +32,7 @@ try {
 
     if (!$user) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'USER_NOT_FOUND']);
-        exit;
+        json_error('USER_NOT_FOUND', 404);
     }
 
     $stmtProfile = $pdo->prepare("
@@ -163,5 +162,4 @@ try {
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'SERVER_ERROR']);
-}
+    json_error('SERVER_ERROR', 500);}

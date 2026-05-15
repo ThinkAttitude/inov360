@@ -1,6 +1,7 @@
 <?php
 // api/finance/profile_update.php
 declare(strict_types=1);
+require_once __DIR__ . '/../../lib/helper/responses.php';
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -8,8 +9,7 @@ header('Content-Type: application/json; charset=utf-8');
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(7, $perms, true)) {
@@ -21,13 +21,12 @@ if (!is_array($perms) || !in_array(7, $perms, true)) {
 
 /* input */
 $in = json_decode(file_get_contents('php://input'), true);
-if (!is_array($in)) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"BAD_JSON"]); exit; }
+if (!is_array($in)) { http_response_code(400); json_error('BAD_JSON'); }
 $userId = (int)($in['user_id'] ?? 0);
 if ($userId <= 0) {
     http_response_code(400);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'MISSING_USER']);
-    exit;
+    json_error('MISSING_USER');
 }
 
 require_once __DIR__ . '/../../includes/db.php';

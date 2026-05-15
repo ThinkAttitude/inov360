@@ -6,15 +6,16 @@ header('Content-Type: application/json; charset=utf-8');
 
 /* Auth */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
-    http_response_code(401); echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    http_response_code(401); json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(5, $perms, true)) { // approve_overtime
-    http_response_code(403); echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    http_response_code(403); json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* Deps & DB */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -30,7 +31,7 @@ $q      = trim((string)($_GET['q'] ?? ''));                // opcional (nome/ema
 $limit  = max(1, (int)($_GET['limit']  ?? 200));
 $offset = max(0, (int)($_GET['offset'] ?? 0));
 
-if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { http_response_code(400); echo json_encode(['ok'=>false,'code'=>'INVALID_MONTH']); exit; }
+if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) { http_response_code(400); json_error('INVALID_MONTH'); }
 if (!in_array($state, ['approved','rejected','both'], true)) $state = 'both';
 
 /* WHERE */

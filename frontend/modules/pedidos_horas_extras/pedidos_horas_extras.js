@@ -29,7 +29,7 @@ async function fillCollaborators() {
         if (feedbackDiv) {
             feedbackDiv.innerHTML = '<div class="feedback-message error">Erro ao carregar colaboradores</div>';
         }
-        toast.error('Não foi possível carregar a lista de colaboradores.');
+        toast.error(err?.message || 'Não foi possível carregar a lista de colaboradores.');
     }
 }
 
@@ -81,13 +81,15 @@ function setupForm() {
                 toast.success('Pedido de horas extra criado.');
                 form.reset();
             } else {
-                feedbackDiv.innerHTML = '<div class="feedback-message error">Erro ao submeter o pedido.</div>';
-                toast.error('Erro ao submeter o pedido.');
+                const msg = res?.error || res?.message || 'Erro ao submeter o pedido.';
+                feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
+                toast.error(msg);
             }
         } catch (err) {
             console.error('Erro ao submeter horas extra:', err);
-            feedbackDiv.innerHTML = '<div class="feedback-message error">Falha na comunicação com o servidor.</div>';
-            toast.error('Falha na comunicação com o servidor.');
+            const msg = err?.message || 'Falha na comunicação com o servidor.';
+            feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
+            toast.error(msg);
         } finally {
             btn.classList.remove('loading');
             btnText.textContent = 'Submeter Pedido';

@@ -7,14 +7,14 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Auth ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $user   = $_SESSION['user'];
 $userId = (int)($user['id'] ?? 0);
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -40,7 +40,7 @@ $FIELD_LABELS = [
 ];
 
 /* ===== Helpers ===== */
-function bad_request(string $m){ http_response_code(400); echo json_encode(["ok"=>false,"code"=>"BAD_REQUEST","message"=>$m]); exit; }
+function bad_request(string $m){ http_response_code(400); json_error('BAD_REQUEST', 200, ["message"=>$m]); }
 function s($v){ return is_null($v) ? null : trim((string)$v); }
 function d($v){
     $v = s($v);
@@ -188,17 +188,10 @@ try {
         strpos($e->getMessage(), "zona_atuacao") !== false
     ) {
         http_response_code(400);
-        echo json_encode([
-            "ok"=>false,
-            "code"=>"BAD_REQUEST",
-            "message"=>"Zona de atuação inválida. Escolha uma das opções disponíveis."
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        json_error('BAD_REQUEST', 200, ["message"=>"Zona de atuação inválida. Escolha uma das opções disponíveis."]);
     }
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"SERVER_ERROR","message"=>$e->getMessage()]);
-} catch (Throwable $e) { // Fallback
+    json_error('SERVER_ERROR', 500, ["message"=>$e->getMessage()]);} catch (Throwable $e) { // Fallback
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"SERVER_ERROR","message"=>$e->getMessage()]);
-}
+    json_error('SERVER_ERROR', 500, ["message"=>$e->getMessage()]);}

@@ -6,17 +6,18 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 /* Helpers */
 require_once __DIR__ . '/../lib/helper/periods.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 function is_date($d){ return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/',$d); }
 
 /* Input */
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
-if ($userId <= 0) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_USER"]); exit; }
+if ($userId <= 0) { http_response_code(400); json_error('MISSING_USER'); }
 
 $month = $_GET['month'] ?? null; // label M = YYYY-MM
 if (!$month && !empty($_GET['date']) && is_date($_GET['date'])) {
@@ -24,7 +25,7 @@ if (!$month && !empty($_GET['date']) && is_date($_GET['date'])) {
     $month = (new DateTime($_GET['date']))->format('Y-m');
 }
 if (!$month || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/',$month)) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_OR_INVALID_MONTH"]); exit;
+    http_response_code(400); json_error('MISSING_OR_INVALID_MONTH');
 }
 
 /* Bounds 25..24 do mês M */
@@ -46,7 +47,7 @@ catch(Throwable $e){ $nameCol = 'name'; }
 $uq = $pdo->prepare("SELECT id, $nameCol AS name FROM user WHERE id=:id LIMIT 1");
 $uq->execute([':id'=>$userId]);
 $u = $uq->fetch(PDO::FETCH_ASSOC);
-if (!$u) { http_response_code(404); echo json_encode(["ok"=>false,"code"=>"USER_NOT_FOUND"]); exit; }
+if (!$u) { http_response_code(404); json_error('USER_NOT_FOUND', 404); }
 
 /* Gate de hierarquia (responsável ativo/válido) */
 $gate = $pdo->prepare("
@@ -62,7 +63,7 @@ $gate = $pdo->prepare("
 $gate->execute([':target'=>$userId, ':me'=>$selfId]);
 if (!$gate->fetchColumn()) {
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"NOT_RESPONSAVEL"]); exit;
+    json_error('NOT_RESPONSAVEL');
 }
 
 /* Grelha base */
