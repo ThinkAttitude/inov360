@@ -39,11 +39,30 @@ function getContainer() {
     return el;
 }
 
-function removeToast(node) {
+function removeToast(node, handlers) {
     if (!node || !node.parentNode) return;
+
+    // Clean up event listeners
+    if (handlers) {
+        node.removeEventListener('mouseenter', handlers.mouseenter);
+        node.removeEventListener('mouseleave', handlers.mouseleave);
+    }
+
+    // Trigger exit animation
     node.classList.add('app-toast--leaving');
-    setTimeout(() => {
-        if (node.parentNode) node.parentNode.removeChild(node);
+
+    // Remove from DOM after animation completes
+    // Store timeout ID for potential cancellation
+    node.animationTimeoutId = setTimeout(() => {
+        if (node.parentNode) {
+            node.parentNode.removeChild(node);
+
+            // Clean up empty container
+            const container = document.getElementById(CONTAINER_ID);
+            if (container && container.children.length === 0) {
+                container.parentNode?.removeChild(container);
+            }
+        }
     }, 220);
 }
 
@@ -55,6 +74,11 @@ export function show(options = {}) {
         duration = DEFAULT_DURATION,
         dismissible = true,
     } = options;
+
+    // Validate type
+    if (!ICONS[type]) {
+        console.warn(`Unknown toast type: "${type}". Using "info" instead.`);
+    }
 
     const container = getContainer();
     const toastEl = document.createElement('div');
@@ -91,28 +115,63 @@ export function show(options = {}) {
         closeBtn.className = 'app-toast__close';
         closeBtn.setAttribute('aria-label', 'Fechar notificação');
         closeBtn.innerHTML = CLOSE_ICON;
-        closeBtn.addEventListener('click', () => removeToast(toastEl));
+        closeBtn.addEventListener('click', () => {
+            removeToast(toastEl, handlers);
+        });
         toastEl.appendChild(closeBtn);
     }
 
     container.appendChild(toastEl);
 
+    // State management
     let timeoutId = null;
+    let isRemoving = false;
+    let handlers = null;
+
     if (duration > 0) {
-        timeoutId = setTimeout(() => removeToast(toastEl), duration);
-        toastEl.addEventListener('mouseenter', () => {
+        // Set auto-dismiss timeout
+        timeoutId = setTimeout(() => {
+            removeToast(toastEl, handlers);
+        }, duration);
+
+        // Pause dismissal on hover
+        const handleMouseEnter = () => {
             if (timeoutId) {
                 clearTimeout(timeoutId);
                 timeoutId = null;
             }
-        });
-        toastEl.addEventListener('mouseleave', () => {
-            if (!timeoutId) timeoutId = setTimeout(() => removeToast(toastEl), 1500);
-        });
+        };
+
+        // Resume dismissal on mouse leave
+        const handleMouseLeave = () => {
+            if (!isRemoving && !timeoutId) {
+                timeoutId = setTimeout(() => {
+                    removeToast(toastEl, handlers);
+                }, 1500);
+            }
+        };
+
+        handlers = { mouseenter: handleMouseEnter, mouseleave: handleMouseLeave };
+        toastEl.addEventListener('mouseenter', handleMouseEnter);
+        toastEl.addEventListener('mouseleave', handleMouseLeave);
     }
 
+    // Override removeToast to set removing flag
+    const originalRemoveToast = removeToast;
+    const wrappedRemoveToast = () => {
+        if (isRemoving) return;
+        isRemoving = true;
+
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+
+        originalRemoveToast(toastEl, handlers);
+    };
+
     return {
-        dismiss: () => removeToast(toastEl),
+        dismiss: wrappedRemoveToast,
         element: toastEl,
     };
 }
