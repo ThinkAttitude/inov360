@@ -101,7 +101,7 @@ export const Routes = Object.freeze({
     [Path.MARCACAO_DIRETA]: {
         html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`),
         mount: initForm,
-        maintenance: true,
+        maintenance: false,
     },
     [Path.GESTAO_FICHAS]: {
         html: Route(`${MODULES_BASE}/gestao_fichas/view.html`),
