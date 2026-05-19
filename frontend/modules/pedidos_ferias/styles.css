@@ -429,3 +429,108 @@
     color: var(--navy-blue);
     font-weight: 800;
 }
+
+/* ─── Status correct data-attributes (backend uses pt names) ─── */
+.ferias-card[data-status="pendente"] .ferias-card-status {
+    border-color: rgba(245, 158, 11, 0.25);
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    color: #b45309;
+}
+
+.ferias-card[data-status="aprovado"] .ferias-card-status {
+    border-color: rgba(16, 185, 129, 0.25);
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    color: #059669;
+}
+
+.ferias-card[data-status="rejeitado"] .ferias-card-status {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    color: #b91c1c;
+}
+
+/* topline accent */
+.ferias-card[data-status="pendente"]  .ferias-card-topline { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.ferias-card[data-status="aprovado"]  .ferias-card-topline { background: linear-gradient(90deg, #10b981, #34d399); }
+.ferias-card[data-status="rejeitado"] .ferias-card-topline { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* ─── Empty state ─── */
+.ferias-empty {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* ─── Comprovativo link ─── */
+a.ferias-comprovativo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--light-blue);
+    text-decoration: none;
+}
+
+a.ferias-comprovativo-link:hover { text-decoration: underline; }
+
+/* ─── New request form ─── */
+.ferias-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 0.25rem 0;
+}
+
+.ferias-form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ferias-form-dates {
+    flex-direction: row;
+    gap: 1rem;
+}
+
+.ferias-form-dates > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ferias-form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.ferias-form-required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+.ferias-form-hint {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-light);
+    margin-left: 0.35rem;
+}
+
+.ferias-form-error {
+    color: #b91c1c;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.ferias-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+}
