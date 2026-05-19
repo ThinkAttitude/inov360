@@ -1,5 +1,6 @@
 import {updateRecord, getRecord} from '../../app/api.js';
 import {FICHA_RECORD_FIELD_META as RECORD_FIELDS} from '../ficha_collab/ficha_collab_fields.js';
+import { toast } from '../../shared/ui/toast/toast.js';
 
 // TODO: Incorporate with the fields for ficha_collabs module if possible
 // TODO: Replace filtering readonly fields logic with iterating over a subset of editable fields
@@ -187,9 +188,10 @@ async function saveRecordEdits() {
 
         recordState.profile = (res.updated && res.updated.profile) || recordState.profile;
         setEditingMode(false);
+        toast.success('Alterações guardadas.');
     } catch (err) {
         console.error('Falha ao guardar edição direta:', err);
-        alert('Não foi possível guardar as alterações da ficha.');
+        toast.error(err?.message || 'Não foi possível guardar as alterações da ficha.');
     }
 }
 
@@ -223,6 +225,7 @@ async function loadRecord(userId, name) {
     } catch (err) {
         console.error('Falha ao carregar ficha completa:', err);
         if (container) container.textContent = 'Não foi possível carregar a ficha.';
+        toast.error(err?.message || 'Não foi possível carregar a ficha do colaborador.');
     }
 }
 

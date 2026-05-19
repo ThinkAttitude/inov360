@@ -1,5 +1,6 @@
 import {createEventBatch, createEventByDay, getCalendarTimeframe} from '../../app/api.js'
 import {createOverlays} from '../../app/overlays.js'
+import {toast} from '../../shared/ui/toast/toast.js'
 import {renderHorariosCalendar} from './horarios.js'
 import {buildWorkForm} from './horarios_form.js'
 import {ymd, toInclusiveYmd} from './horarios_utils.js'
@@ -107,8 +108,14 @@ export async function mountCalendar() {
         const form = buildWorkForm({
             dateStr: info.dateStr,
             onSubmit: async ({startStr, endStr, workMin, km}) => {
-                if (startStr === endStr) await createEventByDay(startStr, {workMin, km, overwrite: true})
-                else await createEventBatch(startStr, endStr, {workMin, km, overwrite: true})
+                try {
+                    if (startStr === endStr) await createEventByDay(startStr, {workMin, km, overwrite: true})
+                    else await createEventBatch(startStr, endStr, {workMin, km, overwrite: true})
+                    toast.success('Horário guardado.')
+                } catch (err) {
+                    console.error('Erro ao guardar horário:', err)
+                    toast.error(err?.message || 'Não foi possível guardar o horário.')
+                }
             },
             onDone: () => overlays.closeActive(),
         })

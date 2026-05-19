@@ -1,4 +1,5 @@
 import { getAllCollaborators, requestOvertime } from '../../app/api.js';
+import { toast } from '../../shared/ui/toast/toast.js';
 import './styles.css';
 
 async function fillCollaborators() {
@@ -23,10 +24,12 @@ async function fillCollaborators() {
         if (res.items.length === 0 && feedbackDiv) {
             feedbackDiv.innerHTML = '<div class="feedback-message error">Nenhum colaborador encontrado.</div>';
         }
-    } catch {
+    } catch (err) {
+        console.error('Erro ao carregar colaboradores:', err);
         if (feedbackDiv) {
             feedbackDiv.innerHTML = '<div class="feedback-message error">Erro ao carregar colaboradores</div>';
         }
+        toast.error(err?.message || 'Não foi possível carregar a lista de colaboradores.');
     }
 }
 
@@ -75,12 +78,18 @@ function setupForm() {
 
             if (res?.ok) {
                 feedbackDiv.innerHTML = '<div class="feedback-message success">Pedido de horas extra criado com sucesso.</div>';
+                toast.success('Pedido de horas extra criado.');
                 form.reset();
             } else {
-                feedbackDiv.innerHTML = '<div class="feedback-message error">Erro ao submeter o pedido.</div>';
+                const msg = res?.error || res?.message || 'Erro ao submeter o pedido.';
+                feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
+                toast.error(msg);
             }
-        } catch {
-            feedbackDiv.innerHTML = '<div class="feedback-message error">Falha na comunicação com o servidor.</div>';
+        } catch (err) {
+            console.error('Erro ao submeter horas extra:', err);
+            const msg = err?.message || 'Falha na comunicação com o servidor.';
+            feedbackDiv.innerHTML = `<div class="feedback-message error">${msg}</div>`;
+            toast.error(msg);
         } finally {
             btn.classList.remove('loading');
             btnText.textContent = 'Submeter Pedido';

@@ -3,6 +3,7 @@ import {
     approveOvertime,
 } from '../../app/api.js';
 import { createOverlays } from '../../app/overlays.js';
+import { toast } from '../../shared/ui/toast/toast.js';
 import { mountHistory } from './horas_extra_history.js';
 import { mountExport } from './horas_extra_export.js';
 import './styles.css';
@@ -199,15 +200,16 @@ function openDecisionModal(item, action, openModal) {
                 comentario
             });
 
-            if (!res?.ok) throw new Error('Erro');
+            if (!res?.ok) throw new Error(res?.error || 'Erro ao processar a decisão.');
 
             m.close();
             horasState.pending = null;
             horasState.history = null;
             loadPending();
-        } catch {
+            toast.success(isApprove ? 'Pedido aprovado.' : 'Pedido recusado.');
+        } catch (err) {
             if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = isApprove ? 'Aprovar' : 'Recusar'; }
-            alert('Erro ao processar a decisão.');
+            toast.error(err?.message || 'Erro ao processar a decisão.');
         }
     });
 }

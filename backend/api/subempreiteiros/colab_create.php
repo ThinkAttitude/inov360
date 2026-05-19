@@ -7,14 +7,14 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Auth ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $user   = $_SESSION['user'];
 $userId = (int)($user['id'] ?? 0);
 
 /* ===== DB ===== */
 require_once "../includes/db.php";
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -30,8 +30,7 @@ $ALLOWED = [
 /* ===== Helpers ===== */
 function bad_request(string $m, int $code = 400){
     http_response_code($code);
-    echo json_encode(["ok"=>false,"code"=>"BAD_REQUEST","message"=>$m], JSON_UNESCAPED_UNICODE);
-    exit;
+    json_error('BAD_REQUEST', 200, ["message"=>$m]);
 }
 function s($v){ return is_null($v) ? null : trim((string)$v); }
 function ensure_dir($p){ if(!is_dir($p)) mkdir($p,0775,true); }
@@ -163,12 +162,7 @@ VALUES
     if ($pdo->inTransaction()) $pdo->rollBack();
 
     http_response_code(500);
-    echo json_encode([
-        "ok"        => false,
-        "code"      => "DB_ERROR",
-        "sqlstate"  => $e->getCode(),
+    json_error('DB_ERROR', 500, ["sqlstate"  => $e->getCode(),
         "errorInfo" => $e->errorInfo,
-        "message"   => $e->getMessage()
-    ]);
-    exit;
+        "message"   => $e->getMessage()]);
 }

@@ -1,6 +1,7 @@
 import { login } from '../../app/api.js';
 import {navigate, Path} from "../../app/router.js";
 import {User} from "../../shared/user_store.js";
+import { toast } from '../../shared/ui/toast/toast.js';
 
 import './styles.css';
 
@@ -22,9 +23,8 @@ const setLoadingState = (isLoading) => {
     submitButton.textContent = isLoading ? 'Logging in...' : 'Login';
 };
 
-// TODO: Implement a better error display mechanism
 const showError = (message) => {
-    console.error(message);
+    toast.error(message || 'Ocorreu um erro ao iniciar sessão.');
 };
 
 const handleSubmit = async (event) => {
@@ -35,12 +35,19 @@ const handleSubmit = async (event) => {
     setLoadingState(true);
 
     try {
-        // TODO: Get user via response instead of using me()
         const response = await login(emailInput.value, passwordInput.value);
-        User.set((response.user))
-        if (response.success) navigate(Path.INICIO);
+        if (response && response.success) {
+            User.set(response.user);
+            navigate(Path.INICIO);
+            return;
+        }
+        showError(response?.message || 'Email ou palavra-passe incorretos.');
+        passwordInput.value = '';
+        passwordInput.focus();
     } catch (error) {
         showError(error.message);
+        passwordInput.value = '';
+        passwordInput.focus();
     } finally {
         setLoadingState(false);
     }

@@ -7,26 +7,25 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Auth ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok" => false, "code" => "UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
-    echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* ===== Helpers ===== */
 function bad_request(string $m): void {
     http_response_code(422);
-    echo json_encode(["ok" => false, "code" => "BAD_REQUEST", "message" => $m]);
-    exit;
+    json_error('BAD_REQUEST', 200, ["message" => $m]);
 }
 
 function get_json_body(): array {
@@ -78,8 +77,7 @@ try {
 
     if (!$obra) {
         http_response_code(404);
-        echo json_encode(["ok" => false, "code" => "OBRA_NOT_FOUND"]);
-        exit;
+        json_error('OBRA_NOT_FOUND', 404);
     }
 
     $fields['obra_pk']  = (int)$obra['id'];
@@ -92,8 +90,7 @@ try {
 
     if (!$sub) {
         http_response_code(404);
-        echo json_encode(["ok" => false, "code" => "SUB_NOT_FOUND"]);
-        exit;
+        json_error('SUB_NOT_FOUND', 404);
     }
 
     /* Inserir associação (idempotente) */
@@ -167,5 +164,4 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(["ok" => false, "code" => "SERVER_ERROR", "detail" => $e->getMessage()]);
-}
+    json_error('SERVER_ERROR', 500, ["detail" => $e->getMessage()]);}

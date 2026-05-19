@@ -6,15 +6,16 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(1, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 //require_once __DIR__ . '/../includes/mailer.php'; TODO: temporarily disabled email sending
 
 function read_payload(): array {
@@ -212,7 +213,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $items = norm_items(read_payload());
-    if (!$items) { http_response_code(400); echo json_encode(['ok'=>false,'code'=>'EMPTY_INPUT']); exit; }
+    if (!$items) { http_response_code(400); json_error('EMPTY_INPUT'); }
 
     $created = [];
     $errors  = [];
@@ -307,5 +308,5 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['ok'=>false,'code'=>'SERVER_ERROR']); exit;
+    json_error('SERVER_ERROR', 500);
 }

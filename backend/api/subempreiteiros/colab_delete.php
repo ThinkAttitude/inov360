@@ -7,19 +7,19 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Auth ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $user   = $_SESSION['user'];
 $userId = (int)($user['id'] ?? 0);
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 /* ===== Input ===== */
-function bad_request(string $m, int $code=400){ http_response_code($code); echo json_encode(["ok"=>false,"code"=>"BAD_REQUEST","message"=>$m]); exit; }
+function bad_request(string $m, int $code=400){ http_response_code($code); json_error('BAD_REQUEST', 200, ["message"=>$m]); }
 
 $colabId = 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -47,13 +47,11 @@ $row = $st->fetch(PDO::FETCH_ASSOC);
 
 if (!$row) {
     http_response_code(404);
-    echo json_encode(["ok"=>false,"code"=>"NOT_FOUND","message"=>"Colaborador não encontrado."]);
-    exit;
+    json_error('NOT_FOUND', 404, ["message"=>"Colaborador não encontrado."]);
 }
 if ((int)$row['sub_user_id'] !== $userId) {
     http_response_code(403);
-    echo json_encode(["ok"=>false,"code"=>"FORBIDDEN","message"=>"Sem acesso a este colaborador."]);
-    exit;
+    json_error('FORBIDDEN', 403, ["message"=>"Sem acesso a este colaborador."]);
 }
 
 /* ===== Guardar paths para tentar apagar depois ===== */
@@ -79,16 +77,14 @@ try {
         // algo falhou; abortar
         $pdo->rollBack();
         http_response_code(409);
-        echo json_encode(["ok"=>false,"code"=>"CONFLICT","message"=>"Não foi possível remover o colaborador."]);
-        exit;
+        json_error('CONFLICT', 409, ["message"=>"Não foi possível remover o colaborador."]);
     }
 
     $pdo->commit();
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"SERVER_ERROR","message"=>$e->getMessage()]);
-    exit;
+    json_error('SERVER_ERROR', 500, ["message"=>$e->getMessage()]);
 }
 
 /* ===== Tentar apagar ficheiros (best-effort) ===== */

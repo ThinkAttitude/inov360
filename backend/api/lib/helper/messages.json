@@ -1,0 +1,113 @@
+{
+    "common": {
+        "UNAUTHENTICATED": "Sessão expirada. Volte a iniciar sessão.",
+        "FORBIDDEN": "Não tem permissão para realizar esta ação.",
+        "FORBIDDEN_PERMISSION": "Não tem permissão para aceder a este recurso.",
+        "FORBIDDEN_SCOPE": "Esta ação está fora do âmbito permitido.",
+        "BAD_REQUEST": "Pedido inválido.",
+        "BAD_JSON": "Corpo do pedido inválido.",
+        "METHOD_NOT_ALLOWED": "Método não permitido.",
+        "MISSING_FIELDS": "Faltam campos obrigatórios.",
+        "MISSING_PARAMS": "Faltam parâmetros obrigatórios.",
+        "MISSING_USER": "Utilizador não especificado.",
+        "MISSING_USER_ID": "Indique o ID do utilizador.",
+        "USER_ID_REQUIRED": "Indique o ID do utilizador.",
+        "NO_FIELDS": "Nenhum campo para atualizar.",
+        "NO_CHANGES": "Não foram detetadas alterações.",
+        "EMPTY_INPUT": "Sem dados para processar.",
+        "NOT_FOUND": "Recurso não encontrado.",
+        "CONFLICT": "Conflito ao processar o pedido.",
+        "USER_NOT_FOUND": "Utilizador não encontrado.",
+        "SERVER_ERROR": "Ocorreu um erro inesperado. Tente novamente.",
+        "INTERNAL_ERROR": "Erro interno do servidor.",
+        "DB_ERROR": "Erro ao aceder à base de dados.",
+        "INVALID_JSON": "Corpo do pedido inválido.",
+        "INVALID_DATE": "Data inválida.",
+        "INVALID_RANGE": "Intervalo de datas inválido.",
+        "RANGE_ERROR": "Intervalo inválido.",
+        "INVALID_TIME_FORMAT": "Formato de hora inválido. Utilize HH:MM.",
+        "INVALID_TIME_RANGE": "Intervalo de horas inválido.",
+        "INVALID_GRANULARITY_15MIN": "As horas devem ser em múltiplos de 15 minutos.",
+        "BAD_FILETYPE": "Tipo de ficheiro não permitido.",
+        "FILE_TOO_LARGE": "Ficheiro demasiado grande.",
+        "FILE_MOVE_ERROR": "Falha ao guardar o ficheiro no servidor.",
+        "DOC_REQUIRED": "É obrigatório anexar um documento.",
+        "UPLOAD_FAILED": "Falha no upload do ficheiro."
+    },
+    "auth": {
+        "INVALID_CREDENTIALS": "Email ou palavra-passe incorretos.",
+        "EMAIL_REQUIRED": "Email é obrigatório.",
+        "PASSWORD_REQUIRED": "Palavra-passe é obrigatória.",
+        "CREDENTIALS_REQUIRED": "Email e palavra-passe são obrigatórios.",
+        "CURRENT_PASSWORD_WRONG": "Palavra-passe atual incorreta.",
+        "PASSWORDS_DO_NOT_MATCH": "A confirmação não coincide com a nova palavra-passe.",
+        "PASSWORD_TOO_WEAK": "A palavra-passe não cumpre os requisitos mínimos de segurança.",
+        "PASSWORD_SAME_AS_OLD": "A nova palavra-passe não pode ser igual à atual.",
+        "ACCOUNT_DISABLED": "Conta desativada. Contacte o administrador."
+    },
+    "validation": {
+        "EMAIL_INVALID": "Email com formato inválido.",
+        "EMAIL_IN_USE": "Já existe um utilizador com este email.",
+        "EMAIL_EMPTY_NOT_ALLOWED": "O email do utilizador não pode ficar vazio.",
+        "PHONE_INVALID": "Número de telefone inválido.",
+        "EMERGENCY_PHONE_INVALID": "Número de contacto de emergência inválido.",
+        "NIB_INVALID": "NIB inválido.",
+        "DATE_INVALID": "Data inválida.",
+        "FIELD_REQUIRED": "Campo obrigatório em falta."
+    },
+    "leaves": {
+        "REQUEST_NOT_FOUND": "Pedido de ausência não encontrado.",
+        "ALREADY_DECIDED": "Este pedido já foi decidido.",
+        "DATE_RANGE_INVALID": "A data de início deve ser anterior à data de fim.",
+        "FILE_REQUIRED": "É obrigatório anexar um ficheiro justificativo.",
+        "OVERLAPPING_REQUEST": "Já existe um pedido para este intervalo de datas.",
+        "DUPLICATE_REQUEST_OVERLAP": "Já existe um pedido para este intervalo de datas."
+    },
+    "overtime": {
+        "OVERTIME_CLOSED": "O período de horas extra deste mês já foi encerrado.",
+        "OVERTIME_CONFLICT": "Conflito com outro pedido de horas extra.",
+        "ALREADY_HAS_APPROVED_OVERTIME": "Já existe um pedido aprovado neste período.",
+        "MAX_HOURS_EXCEEDED": "Limite máximo de horas extra excedido.",
+        "MONTH_REQUIRED": "Indique o mês a consultar.",
+        "ALREADY_APPROVED": "Este pedido já foi aprovado.",
+        "ALREADY_REJECTED": "Este pedido já foi rejeitado."
+    },
+    "records": {
+        "PROFILE_NOT_FOUND": "Ficha do colaborador não encontrada.",
+        "NO_PENDING_REQUESTS": "Não existem pedidos pendentes.",
+        "NO_RESPONSAVEIS": "Não existem responsáveis configurados.",
+        "PENDING_EXISTS": "Já existe um pedido pendente para esta ficha.",
+        "PENDING_EMERGENCY_EXISTS": "Já existe um pedido pendente para os contactos de emergência.",
+        "NOT_RESPONSAVEL": "Não é responsável por este colaborador.",
+        "RESP_SUB_CONFLICT": "Não é possível ser simultaneamente responsável e subordinado.",
+        "SELF_REFERENCE": "Um utilizador não pode ser hierárquico de si próprio."
+    },
+    "calendar": {
+        "INVALID_DAY": "Dia inválido.",
+        "MONTH_LOCKED": "Mês já submetido. Não é possível alterar.",
+        "MONTH_NOT_FOUND": "Mês não encontrado.",
+        "MISSING_MONTH": "Indique o mês.",
+        "INVALID_MONTH": "Mês inválido.",
+        "MISSING_OR_INVALID_MONTH": "Mês em falta ou inválido.",
+        "INVALID_MONTH_FORMAT": "Formato de mês inválido. Utilize YYYY-MM.",
+        "INVALID_TIMEFRAME": "Intervalo temporal inválido.",
+        "INVALID_TIMEFRAME_ORDER": "A data inicial deve ser anterior à data final.",
+        "PERIOD_NOT_FOUND": "Período não encontrado.",
+        "PERIOD_CLOSED": "Período já encerrado.",
+        "PERIOD_LOCKED": "Período bloqueado para alterações.",
+        "ALREADY_SUBMITTED": "Já foi submetido anteriormente.",
+        "NOT_SUBMITTED": "Ainda não foi submetido.",
+        "COMMENT_REQUIRED": "É obrigatório indicar um comentário."
+    },
+    "permissions": {
+        "PERMISSION_NOT_FOUND": "Permissão não encontrada.",
+        "INVALID_PERMISSION": "Permissão inválida.",
+        "HIERARCHY_INVALID": "Hierarquia inválida."
+    },
+    "sht": {
+        "OBRA_NOT_FOUND": "Obra não encontrada.",
+        "SUB_NOT_FOUND": "Subempreiteiro não encontrado.",
+        "ASSOCIATION_EXISTS": "Associação já existe.",
+        "ASSOCIATION_NOT_FOUND": "Associação não encontrada."
+    }
+}

@@ -9,13 +9,14 @@ $myPerms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($myPerms) || !in_array(3, $myPerms, true)) { // perm 3: periods_info (backoffice)
     http_response_code(403);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* Deps & DB */
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../lib/helper/periods.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 

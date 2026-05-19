@@ -6,13 +6,13 @@ session_start();
 /* ===== Auth ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401); header('Content-Type: application/json');
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(8, $perms, true)) { // sht_management
     http_response_code(403);
-    echo json_encode(['success'=>false,'error'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 /* ===== Config ===== */
@@ -25,11 +25,12 @@ const BASE_PUBLIC_URL = '';
 
 /* ===== Libs ===== */
 require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /* ===== Helpers ===== */
-function bad_request(string $m){ http_response_code(422); header('Content-Type: application/json'); echo json_encode(["ok"=>false,"code"=>"BAD_REQUEST","message"=>$m]); exit; }
+function bad_request(string $m){ http_response_code(422); header('Content-Type: application/json'); json_error('BAD_REQUEST', 200, ["message"=>$m]); }
 function is_empty(?string $v): bool { return $v === null || trim($v) === ''; }
 function expired(?string $dateYmd): bool {
     if (is_empty($dateYmd)) return true;
@@ -68,7 +69,7 @@ try {
         $st->execute([':num'=>$obraNum]);
     }
     $obra = $st->fetch(PDO::FETCH_ASSOC);
-    if (!$obra) { http_response_code(404); header('Content-Type: application/json'); echo json_encode(["ok"=>false,"code"=>"NOT_FOUND","message"=>"Obra não encontrada."]); exit; }
+    if (!$obra) { http_response_code(404); header('Content-Type: application/json'); json_error('NOT_FOUND', 404, ["message"=>"Obra não encontrada."]); }
     $obraPk  = (int)$obra['id'];
     $obraNum = (int)$obra['id_obra'];
 
@@ -317,5 +318,4 @@ try {
 } catch (Throwable $e) {
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(["ok"=>false,"code"=>"SERVER_ERROR","detail"=>$e->getMessage()]);
-}
+    json_error('SERVER_ERROR', 500, ["detail"=>$e->getMessage()]);}

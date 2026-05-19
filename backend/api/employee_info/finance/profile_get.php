@@ -8,8 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(7, $perms, true)) {
@@ -23,11 +22,11 @@ $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 if ($userId <= 0) {
     http_response_code(400);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'MISSING_USER']);
-    exit;
+    json_error('MISSING_USER');
 }
 
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 

@@ -3,21 +3,20 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(6, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'FORBIDDEN']);
-    exit;
+    json_error('FORBIDDEN', 403);
 }
 
 $ctype = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -82,14 +81,12 @@ foreach ($payload as $k => $v) {
 
 if ($userId <= 0) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'BAD_REQUEST', 'hint' => 'Provide user_id']);
-    exit;
+    json_error('BAD_REQUEST', 200, ['hint' => 'Provide user_id']);
 }
 
 if (!$cdUpdates) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'NO_FIELDS']);
-    exit;
+    json_error('NO_FIELDS');
 }
 
 $CD_DATE_FIELDS = [
@@ -154,8 +151,7 @@ unset($v);
 
 if (isset($cdUpdates['email']) && $cdUpdates['email'] !== null && $cdUpdates['email'] !== '' && !filter_var($cdUpdates['email'], FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'EMAIL_INVALID']);
-    exit;
+    json_error('EMAIL_INVALID');
 }
 
 $validatePhone = function ($value): bool {
@@ -169,14 +165,12 @@ $validatePhone = function ($value): bool {
 
 if (isset($cdUpdates['telefone']) && !$validatePhone($cdUpdates['telefone'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'PHONE_INVALID']);
-    exit;
+    json_error('PHONE_INVALID');
 }
 
 if (isset($cdUpdates['nib']) && $cdUpdates['nib'] !== null && $cdUpdates['nib'] !== '' && !preg_match('/^\d{21}$/', (string)$cdUpdates['nib'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'NIB_INVALID']);
-    exit;
+    json_error('NIB_INVALID');
 }
 
 $validateDate = function ($value): bool {
@@ -190,8 +184,7 @@ $validateDate = function ($value): bool {
 foreach ($CD_DATE_FIELDS as $field) {
     if (isset($cdUpdates[$field]) && !$validateDate($cdUpdates[$field])) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'DATE_INVALID', 'field' => $field]);
-        exit;
+        json_error('DATE_INVALID', 200, ['field' => $field]);
     }
 }
 
@@ -205,8 +198,7 @@ try {
 
     if (!$user) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'USER_NOT_FOUND']);
-        exit;
+        json_error('USER_NOT_FOUND', 404);
     }
 
     $pdo->beginTransaction();
@@ -275,17 +267,14 @@ try {
 
     if ($msg === 'EMAIL_IN_USE') {
         http_response_code(409);
-        echo json_encode(['success' => false, 'error' => 'EMAIL_IN_USE']);
-        exit;
+        json_error('EMAIL_IN_USE');
     }
 
     if ($msg === 'USER_EMAIL_EMPTY_NOT_ALLOWED') {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'USER_EMAIL_EMPTY_NOT_ALLOWED']);
-        exit;
+        json_error('USER_EMAIL_EMPTY_NOT_ALLOWED');
     }
 
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'INTERNAL_ERROR']);
-    exit;
+    json_error('INTERNAL_ERROR', 500);
 }
