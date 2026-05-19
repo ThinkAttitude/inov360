@@ -1,6 +1,6 @@
 import {getCollabLeaveSummary, getCollabLeaveRequests, submitLeaveRequest} from '../../app/api.js';
 import {createOverlays} from '../../app/overlays.js';
-import { TYPE_LABELS, TIPOS_COM_COMPROVATIVO, typeLabel } from './pedidos_ferias_fields.js';
+import { TYPE_LABELS, TYPES_REQUIRING_PROOF, typeLabel } from './pedidos_ferias_fields.js';
 import './styles.css';
 import './request_form.css';
 
@@ -229,7 +229,7 @@ function openNewRequestModal(openModal) {
     };
 
     tipoSel?.addEventListener('change', () => {
-        const needsDoc = TIPOS_COM_COMPROVATIVO.has(tipoSel.value);
+        const needsDoc = TYPES_REQUIRING_PROOF.has(tipoSel.value);
         if (fileRow) fileRow.style.display = needsDoc ? '' : 'none';
         showError('');
     });
@@ -257,7 +257,7 @@ function openNewRequestModal(openModal) {
         if (!data_fim)     return showError('Indique a data de fim.');
         if (data_fim < data_inicio) return showError('A data de fim deve ser posterior à de início.');
         if (!justificacao) return showError('A justificação é obrigatória.');
-        if (TIPOS_COM_COMPROVATIVO.has(tipo) && !ficheiro)
+        if (TYPES_REQUIRING_PROOF.has(tipo) && !ficheiro)
             return showError('É necessário anexar um comprovativo para este tipo de ausência.');
 
         const fd = new FormData();
