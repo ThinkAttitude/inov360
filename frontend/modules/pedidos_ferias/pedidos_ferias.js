@@ -197,14 +197,14 @@ function openNewRequestModal(openModal) {
 
     const hoje = new Date().toISOString().split('T')[0];
 
-    m.setContent(`
+    m.body.innerHTML = `
         <div class="ferias-form">
             <div class="ferias-form-row">
                 <label class="field-label" for="ferias-form-tipo">Tipo de ausência</label>
                 <select class="field-input" id="ferias-form-tipo">
                     <option value="">Selecione...</option>
                     ${Object.entries(TIPO_LABEL).map(([v, l]) =>
-                        `<option value="${v}">${esc(l)}</option>`
+                        `<option value="${esc(v)}">${esc(l)}</option>`
                     ).join('')}
                 </select>
             </div>
@@ -233,13 +233,14 @@ function openNewRequestModal(openModal) {
             </div>
             <p class="ferias-form-error" id="ferias-form-error" style="display:none"></p>
         </div>
-        <div class="ferias-form-actions">
-            <button type="button" class="btn-secondary ferias-form-cancel">Cancelar</button>
-            <button type="button" class="btn-primary ferias-form-submit">Submeter pedido</button>
-        </div>
-    `);
+    `;
 
-    const el = (id) => m.element.querySelector(`#${id}`);
+    m.footer.innerHTML = `
+        <button type="button" class="btn-secondary ferias-form-cancel">Cancelar</button>
+        <button type="button" class="btn-primary ferias-form-submit">Submeter pedido</button>
+    `;
+
+    const el = (id) => m.body.querySelector(`#${id}`);
 
     const tipoSel   = el('ferias-form-tipo');
     const inicioIn  = el('ferias-form-inicio');
@@ -248,8 +249,8 @@ function openNewRequestModal(openModal) {
     const fileRow   = el('ferias-form-ficheiro-row');
     const fileIn    = el('ferias-form-ficheiro');
     const errorEl   = el('ferias-form-error');
-    const submitBtn = m.element.querySelector('.ferias-form-submit');
-    const cancelBtn = m.element.querySelector('.ferias-form-cancel');
+    const submitBtn = m.footer.querySelector('.ferias-form-submit');
+    const cancelBtn = m.footer.querySelector('.ferias-form-cancel');
 
     const showError = (msg) => {
         if (!errorEl) return;
