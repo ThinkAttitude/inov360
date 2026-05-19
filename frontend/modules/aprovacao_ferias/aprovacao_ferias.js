@@ -5,7 +5,9 @@ import {
     decideLeaveRequest,
 } from '../../app/api.js';
 import { createOverlays } from '../../app/overlays.js';
+import { TYPE_LABELS, typeLabel, typeChipClass } from './aprovacao_ferias_fields.js';
 import './styles.css';
+import './modal.css';
 
 const state = {
     summary: null,
@@ -26,27 +28,6 @@ function formatDate(iso) {
     const [y, m, d] = onlyDate.split('-');
     if (!y || !m || !d) return iso;
     return `${d}/${m}/${y}`;
-}
-
-const TIPO_LABEL = {
-    ferias: 'Férias',
-    baixa_medica: 'Baixa médica',
-    baixa_seguro: 'Baixa por seguro',
-    licenca_paternidade: 'Licença de paternidade',
-    licenca_maternidade: 'Licença de maternidade',
-    casamento: 'Casamento',
-    consulta_medica: 'Consulta médica',
-    pessoal: 'Motivo pessoal',
-};
-
-function tipoLabel(t) {
-    return TIPO_LABEL[t] || (t ? t.replace(/_/g, ' ') : '-');
-}
-
-function tipoChipClass(t) {
-    if (t === 'ferias') return 'aprov-chip--ferias';
-    if (t === 'baixa_medica' || t === 'baixa_seguro') return 'aprov-chip--baixa';
-    return 'aprov-chip--licenca';
 }
 
 function setStat(value) {
@@ -135,7 +116,7 @@ function renderPendingCard(item) {
         <div class="aprov-card-main">
             <div class="aprov-card-header">
                 <h3 class="aprov-card-name">${esc(item.colaborador?.nome || '—')}</h3>
-                <span class="aprov-chip ${tipoChipClass(item.tipo)}">${esc(tipoLabel(item.tipo))}</span>
+                <span class="aprov-chip ${typeChipClass(item.tipo)}">${esc(typeLabel(item.tipo))}</span>
             </div>
             <div class="aprov-card-meta">
                 <span><strong>Início:</strong> ${formatDate(item.inicio)}</span>
@@ -217,7 +198,7 @@ function renderHistory(items) {
             <div class="aprov-card-main">
                 <div class="aprov-card-header">
                     <h3 class="aprov-card-name">${esc(item.colaborador?.nome || '—')}</h3>
-                    <span class="aprov-chip ${tipoChipClass(item.tipo)}">${esc(tipoLabel(item.tipo))}</span>
+                    <span class="aprov-chip ${typeChipClass(item.tipo)}">${esc(typeLabel(item.tipo))}</span>
                     ${statusChip}
                 </div>
                 <div class="aprov-card-meta">
@@ -294,7 +275,7 @@ function openDecisionModal(item, acao, openModal) {
             </div>
             <div class="ui-modal-detail-field">
                 <span class="ui-modal-detail-label">Tipo</span>
-                <span class="ui-modal-detail-value">${esc(tipoLabel(item.tipo))}</span>
+                <span class="ui-modal-detail-value">${esc(typeLabel(item.tipo))}</span>
             </div>
             <div class="ui-modal-detail-field">
                 <span class="ui-modal-detail-label">Início</span>

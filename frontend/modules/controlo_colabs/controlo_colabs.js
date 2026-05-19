@@ -7,6 +7,7 @@ import {
 } from '../../app/api.js';
 
 import './styles.css';
+import './modal.css';
 
 const hierarchyState = {
     userId: null,
