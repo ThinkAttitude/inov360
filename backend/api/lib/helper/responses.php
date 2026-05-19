@@ -24,7 +24,7 @@ declare(strict_types=1);
  * If the code isn't found, returns the code itself (so it stays visible during
  * development and easy to spot missing entries).
  */
-function inov_msg(string $code, array $params = []): string
+function get_message(string $code, array $params = []): string
 {
     static $flat = null;
 
@@ -92,7 +92,7 @@ function json_error(string $codeOrMessage, ?int $status = null, array $extra = [
         }
         header('Content-Type: application/json; charset=utf-8');
     }
-    $message = inov_msg($codeOrMessage);
+    $message = get_message($codeOrMessage);
     echo json_encode(['ok' => false, 'error' => $message] + $extra, JSON_UNESCAPED_UNICODE);
     exit;
 }
