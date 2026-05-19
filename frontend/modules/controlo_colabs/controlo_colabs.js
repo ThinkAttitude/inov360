@@ -29,10 +29,18 @@ const isHierarchyDirty = () => {
 function updateHierarchyControls() {
     const saveBtn = document.getElementById('hierarchy-modal-save');
     const closeFooter = document.getElementById('hierarchy-modal-close-footer');
+    const statusEl = document.getElementById('hierarchy-modal-status');
     const dirty = isHierarchyDirty();
 
     if (saveBtn) saveBtn.disabled = !dirty;
     if (closeFooter) closeFooter.textContent = dirty ? 'Cancelar' : 'Fechar';
+    if (dirty && statusEl?.classList.contains('hier-modal-status--success')) {
+        statusEl.textContent = '';
+        statusEl.classList.remove(
+            'hier-modal-status--success',
+            'hier-modal-status--visible',
+        );
+    }
 }
 
 async function fillCollaborators() {
@@ -694,6 +702,27 @@ function renderHierarchyModal() {
                 .map(s => (s.user ? s.user.id : null))
                 .filter(id => id != null);
 
+            const statusEl = document.getElementById('hierarchy-modal-status');
+            const originalLabel = saveBtn.textContent;
+
+            const setStatus = (msg, kind) => {
+                if (!statusEl) return;
+                statusEl.textContent = msg || '';
+                statusEl.classList.remove(
+                    'hier-modal-status--success',
+                    'hier-modal-status--error',
+                    'hier-modal-status--info',
+                    'hier-modal-status--visible',
+                );
+                if (msg) {
+                    statusEl.classList.add(`hier-modal-status--${kind}`, 'hier-modal-status--visible');
+                }
+            };
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'A guardar...';
+            setStatus('A guardar...', 'info');
+
             updateHierarchy(hierarchyState.userId, respIds, subsIds)
                 .then(res => {
                     if (!res || res.ok !== true) {
@@ -703,10 +732,20 @@ function renderHierarchyModal() {
                         baseRespCount: hierarchyState.responsaveis.length,
                         baseSubCount: hierarchyState.subs.length,
                     });
+                    saveBtn.textContent = originalLabel;
                     updateHierarchyControls();
+                    setStatus('Hierarquia guardada com sucesso.', 'success');
+                    setTimeout(() => {
+                        if (statusEl?.textContent === 'Hierarquia guardada com sucesso.') {
+                            setStatus('', 'success');
+                        }
+                    }, 3500);
                 })
                 .catch(err => {
                     console.error('Falha ao guardar hierarquia:', err);
+                    saveBtn.textContent = originalLabel;
+                    saveBtn.disabled = false;
+                    setStatus(err?.message || 'Não foi possível guardar a hierarquia.', 'error');
                 });
         });
     }
