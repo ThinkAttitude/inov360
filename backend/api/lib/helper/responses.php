@@ -9,7 +9,6 @@ declare(strict_types=1);
  *
  * Usage:
  *   require_once __DIR__ . '/../lib/helper/responses.php';
- *   json_ok(['items' => $rows]);
  *   json_error('UNAUTHENTICATED', 401);
  *   json_error('EMAIL_IN_USE');               // status 200 by default
  *   json_error('DATE_INVALID', 200, ['field' => 'data_inicio']);
@@ -57,19 +56,6 @@ function get_message(string $code, array $params = []): string
     }
 
     return $message;
-}
-
-/**
- * Emit a JSON success response and exit.
- */
-function json_ok(array $data = [], int $status = 200): void
-{
-    if (!headers_sent()) {
-        http_response_code($status);
-        header('Content-Type: application/json; charset=utf-8');
-    }
-    echo json_encode(['ok' => true] + $data, JSON_UNESCAPED_UNICODE);
-    exit;
 }
 
 /**
