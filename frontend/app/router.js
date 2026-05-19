@@ -6,6 +6,7 @@ import {mountGstFchs} from "../modules/gestao_fichas/gestao_fichas.js"
 import {mountFichaCollab} from "../modules/ficha_collab/ficha_collab.js"
 import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_horas_extras.js"
 import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
+import {mountAprovacaoFerias} from "../modules/aprovacao_ferias/aprovacao_ferias.js"
 import {handleAuthStatus, setApiAuthHandlers} from "./api";
 import {User} from "../shared/user_store";
 import {CARD_TYPES, guardDashboardRoute} from "../modules/dashboard/dashboard_access.js";
@@ -69,9 +70,9 @@ export const Routes = Object.freeze({
         maintenance: true,
     },
     [Path.APROVACAO_FERIAS]: {
-        html: Route(`${MODULES_BASE}/aprovacao_ferias/aprovacao_ferias.php`),
-        mount: null,
-        maintenance: true,
+        html: Route(`${MODULES_BASE}/aprovacao_ferias/view.html`),
+        mount: mountAprovacaoFerias,
+        maintenance: false,
     },
     [Path.CONSULTA_PEDIDOS]: {
         html: Route(`${MODULES_BASE}/consulta_pedidos/view.html`),
