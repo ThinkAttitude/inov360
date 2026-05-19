@@ -5,7 +5,7 @@ import {
     decideLeaveRequest,
 } from '../../app/api.js';
 import { createOverlays } from '../../app/overlays.js';
-import { TYPE_LABELS, typeLabel, typeChipClass } from './aprovacao_ferias_fields.js';
+import { TYPE_LABELS, typeLabel, typeChipClass } from '../pedidos_ferias/pedidos_ferias_fields.js';
 import './styles.css';
 import './modal.css';
 

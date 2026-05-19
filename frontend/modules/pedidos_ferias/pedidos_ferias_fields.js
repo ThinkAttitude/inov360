@@ -9,6 +9,12 @@ export const TYPE_LABELS = {
     pessoal: 'Motivo pessoal',
 };
 
+export const TIPOS_COM_COMPROVATIVO = new Set([
+    'licenca_paternidade', 'licenca_maternidade',
+    'baixa_medica', 'baixa_seguro',
+    'casamento', 'consulta_medica',
+]);
+
 export function typeLabel(t) {
     return TYPE_LABELS[t] || (t ? t.replace(/_/g, ' ') : '-');
 }
