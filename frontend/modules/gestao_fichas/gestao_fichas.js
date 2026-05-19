@@ -10,6 +10,17 @@ import './diff.css'
 let approvalsCache = null
 let allRecsCache = null
 
+const ALLRECS_PAGE_SIZE = 25
+const allRecsState = {
+    page: 1,
+    pageSize: ALLRECS_PAGE_SIZE,
+    q: '',
+    total: 0,
+    totalPages: 1,
+    loading: false,
+}
+let allRecsSearchTimer = null
+
 function formatRequestDate(raw) {
     if (!raw) return '-'
 
@@ -262,18 +273,41 @@ async function renderAllRecs() {
         emptyEl.style.display = 'block'
     }
 
+    allRecsState.loading = true
+    updateAllRecsPagination()
+
     try {
-        const res = await getAllRecords()
+        const res = await getAllRecords({
+            page: allRecsState.page,
+            pageSize: allRecsState.pageSize,
+            q: allRecsState.q,
+        })
 
         if (!res || res.success !== true || !Array.isArray(res.items)) {
             throw new Error('Invalid response')
         }
 
+        allRecsState.total = Number.isFinite(res.total) ? res.total : res.items.length
+        allRecsState.totalPages = Math.max(1, Number.isFinite(res.total_pages) ? res.total_pages : 1)
+
+        if (allRecsState.page > allRecsState.totalPages) {
+            allRecsState.page = allRecsState.totalPages
+        }
+
         allRecsCache = res.items
         buildAllRecs(allRecsCache)
+
+        if (allRecsCache.length === 0 && emptyEl) {
+            emptyEl.textContent = allRecsState.q
+                ? 'Nenhum colaborador corresponde à pesquisa.'
+                : 'Não existem colaboradores para apresentar.'
+            emptyEl.style.display = 'block'
+        }
     } catch (err) {
         console.error('Failed to load all records:', err)
         allRecsCache = []
+        allRecsState.total = 0
+        allRecsState.totalPages = 1
         buildAllRecs(allRecsCache)
 
         if (emptyEl) {
@@ -282,7 +316,71 @@ async function renderAllRecs() {
         }
         toast.error(err?.message || 'Não foi possível carregar a lista de colaboradores.')
     } finally {
+        allRecsState.loading = false
+        updateAllRecsPagination()
         updateNavButtons()
+    }
+}
+
+function updateAllRecsPagination() {
+    const prevBtn = document.getElementById('gestao-allrecs-prev')
+    const nextBtn = document.getElementById('gestao-allrecs-next')
+    const pageInfo = document.getElementById('gestao-allrecs-page-info')
+    const summary = document.getElementById('gestao-allrecs-summary')
+    const pagination = document.getElementById('gestao-allrecs-pagination')
+
+    const {page, totalPages, total, pageSize, loading} = allRecsState
+
+    if (pagination) {
+        pagination.style.display = total > 0 ? 'flex' : 'none'
+    }
+
+    if (pageInfo) pageInfo.textContent = `Página ${page} de ${totalPages}`
+    if (prevBtn) prevBtn.disabled = loading || page <= 1
+    if (nextBtn) nextBtn.disabled = loading || page >= totalPages
+
+    if (summary) {
+        if (total === 0) {
+            summary.textContent = ''
+        } else {
+            const start = (page - 1) * pageSize + 1
+            const end = Math.min(page * pageSize, total)
+            summary.textContent = `A mostrar ${start}–${end} de ${total}`
+        }
+    }
+}
+
+function bindAllRecsControls() {
+    const searchInput = document.getElementById('gestao-allrecs-search')
+    const prevBtn = document.getElementById('gestao-allrecs-prev')
+    const nextBtn = document.getElementById('gestao-allrecs-next')
+
+    if (searchInput) {
+        searchInput.addEventListener('input', event => {
+            const value = String(event.target.value || '')
+            if (allRecsSearchTimer) clearTimeout(allRecsSearchTimer)
+            allRecsSearchTimer = setTimeout(() => {
+                allRecsState.q = value
+                allRecsState.page = 1
+                renderAllRecs()
+            }, 300)
+        })
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (allRecsState.loading || allRecsState.page <= 1) return
+            allRecsState.page -= 1
+            renderAllRecs()
+        })
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (allRecsState.loading || allRecsState.page >= allRecsState.totalPages) return
+            allRecsState.page += 1
+            renderAllRecs()
+        })
     }
 }
 
@@ -302,6 +400,7 @@ function showAllRecsView() {
 
     if (allRecsCache !== null) {
         buildAllRecs(allRecsCache)
+        updateAllRecsPagination()
         updateNavButtons()
         return
     }
@@ -406,7 +505,9 @@ export function mountGstFchs() {
     bindNavButtons()
     bindPendingRequestsInteraction()
     bindAllRecsInteraction()
+    bindAllRecsControls()
     mountGstFchsDiff()
     mountGstFchsRecord()
+    updateAllRecsPagination()
     updateNavButtons()
 }

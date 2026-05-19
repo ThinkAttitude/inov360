@@ -128,6 +128,13 @@ export function me() {
     });
 }
 
+export function updatePassword({old_password, new_password, confirm_password}) {
+    return apiFetch('auth/password_update.php', {
+        method: 'POST',
+        body: {old_password, new_password, confirm_password},
+    });
+}
+
 export function getAllCollaborators() {
     return apiFetch('collab_management/collabs_list.php', {
         method: 'GET',

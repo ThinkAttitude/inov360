@@ -840,3 +840,39 @@
         padding-inline: 1.25rem;
     }
 }
+.btn-generate-password {
+    margin-top: 0.5rem;
+    align-self: flex-start;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.password-wrapper .field-input {
+    flex: 1;
+    padding-right: 2.5rem;
+}
+.password-toggle-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+.password-toggle-btn:hover {
+    color: #000;
+    background: rgba(0, 0, 0, 0.05);
+}

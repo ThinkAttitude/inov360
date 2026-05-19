@@ -15,6 +15,7 @@ export const CARD_TYPES = Object.freeze({
     MARCACAO_DIRETA: "marcacao_direta",
     GESTAO_FICHAS: "gestao_fichas",
     FICHA_COLLAB: "ficha_collab",
+    ALTERAR_PASSWORD: "alterar_password",
 });
 
 export const PERMISSIONS = Object.freeze({
@@ -32,6 +33,7 @@ const CARDS = new Set([
     CARD_TYPES.PEDIDOS_FERIAS,
     CARD_TYPES.LISTA_INTERMEDIOS,
     CARD_TYPES.FICHA_COLLAB,
+    CARD_TYPES.ALTERAR_PASSWORD,
 ]);
 
 function hasPermission(auth, permission) {

@@ -43,14 +43,14 @@ try {
     $params = [];
 
     if (!empty($companyId)) {
-        $where[] = 'u.company_id = ?';
-        $params[] = $companyId;
+        $where[] = 'u.company_id = :company_id';
+        $params[':company_id'] = ['value' => $companyId, 'type' => PDO::PARAM_INT];
     }
 
     if ($q !== '') {
-        $where[] = '(cd.nome LIKE ? OR cd.email LIKE ?)';
-        $params[] = "%{$q}%";
-        $params[] = "%{$q}%";
+        $where[] = '(cd.nome LIKE :q_name OR cd.email LIKE :q_email)';
+        $params[':q_name'] = ['value' => "%{$q}%", 'type' => PDO::PARAM_STR];
+        $params[':q_email'] = ['value' => "%{$q}%", 'type' => PDO::PARAM_STR];
     }
 
     $sqlWhere = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -74,8 +74,8 @@ try {
 
     $stmt = $pdo->prepare($sql);
 
-    foreach ($params as $i => $v) {
-        $stmt->bindValue($i + 1, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    foreach ($params as $name => $p) {
+        $stmt->bindValue($name, $p['value'], $p['type']);
     }
 
     $stmt->bindValue(':lim', $pageSize, PDO::PARAM_INT);
@@ -94,8 +94,8 @@ try {
 
     $stmtCount = $pdo->prepare($sqlCount);
 
-    foreach ($params as $i => $v) {
-        $stmtCount->bindValue($i + 1, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    foreach ($params as $name => $p) {
+        $stmtCount->bindValue($name, $p['value'], $p['type']);
     }
 
     $stmtCount->execute();
