@@ -3,9 +3,10 @@ import {createOverlays} from '../../app/overlays.js'
 import {renderHorariosCalendar} from './horarios.js'
 import {buildWorkForm} from './horarios_form.js'
 import {ymd, toInclusiveYmd} from './horarios_utils.js'
+import {buildDayDetails} from './horarios_details.js'
 
 import './styles.css'
-import './popover-styles.css'
+import './popover.css'
 
 /**
  * CalendarDay entry.
@@ -116,10 +117,19 @@ export async function mountCalendar() {
         overlays.openPopover(info.dayEl, form, {className: 'horarios-popover'})
     }
 
+    const onViewClick = ({dateStr, dayEl, day}) => {
+        if (ctrl.signal.aborted || horariosState.view.calendar !== v.calendar) return
+        if (!dayEl) return
+
+        const details = buildDayDetails({dateStr, day})
+        overlays.openPopover(dayEl, details, {className: 'horarios-popover horarios-detail-dialog'})
+    }
+
     v.calendar = renderHorariosCalendar(calRoot, fc, horariosState.view, {
         signal: ctrl.signal,
         fetchDays,
         onDateClick,
+        onViewClick,
     })
 
     return destroyCalendar

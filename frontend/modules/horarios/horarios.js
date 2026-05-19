@@ -6,12 +6,12 @@ function dayCellClassNames(arg) {
     return inWindow ? [] : ['horarios-outside']
 }
 
-function renderBadges(cal, daysByDate) {
+function renderBadges(cal, daysByDate, deps) {
     if (!cal || cal.view.type !== 'opMonth') return
     const root = cal.el
     if (!root) return
 
-    root.querySelectorAll('.horarios-work-badge, .horarios-km-badge').forEach(el => el.remove())
+    root.querySelectorAll('.horarios-work-badge, .horarios-km-badge, .horarios-cell-actions').forEach(el => el.remove())
 
     const startStr = ymd(cal.view.currentStart)
     const endStr = ymd(cal.view.currentEnd)
@@ -21,31 +21,66 @@ function renderBadges(cal, daysByDate) {
         if (!dateStr || dateStr < startStr || dateStr >= endStr) return
 
         const day = daysByDate.get(dateStr)
-        if (!day) return
-
-        const leaves = Array.isArray(day.leaves) ? day.leaves : []
-        if (leaves.length) return
+        const leaves = Array.isArray(day?.leaves) ? day.leaves : []
+        const hasWork = Number(day?.workMin || 0) > 0 || Number(day?.km || 0) > 0
+        const hasEvent = hasWork || leaves.length > 0
 
         const top = cell.querySelector('.fc-daygrid-day-top')
-        if (!top) return
+        if (top && day && !leaves.length) {
+            const statusClass = day.status === 'approved' ? 'is-approved' : 'is-draft'
 
-        const statusClass = day.status === 'approved' ? 'is-approved' : 'is-draft'
+            const workLabel = formatWorkTime(day.workMin)
+            if (workLabel) {
+                const badge = document.createElement('span')
+                badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO} ${statusClass}`
+                badge.textContent = workLabel
+                top.appendChild(badge)
+            }
 
-        const workLabel = formatWorkTime(day.workMin)
-        if (workLabel) {
-            const badge = document.createElement('span')
-            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO} ${statusClass}`
-            badge.textContent = workLabel
-            top.appendChild(badge)
+            const kmLabel = formatKm(day.km)
+            if (kmLabel) {
+                const badge = document.createElement('span')
+                badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO} ${statusClass}`
+                badge.textContent = kmLabel
+                top.appendChild(badge)
+            }
         }
 
-        const kmLabel = formatKm(day.km)
-        if (kmLabel) {
-            const badge = document.createElement('span')
-            badge.className = `horarios-work-badge legend-dot ${DAY_KIND.TRABALHO} ${statusClass}`
-            badge.textContent = kmLabel
-            top.appendChild(badge)
+        const frame = cell.querySelector('.fc-daygrid-day-frame')
+        if (!frame) return
+
+        const actions = document.createElement('div')
+        actions.className = `horarios-cell-actions${hasEvent ? ' has-event' : ''}`
+
+        const addBtn = document.createElement('button')
+        addBtn.type = 'button'
+        addBtn.className = 'horarios-cell-action horarios-cell-action-add'
+        addBtn.setAttribute('aria-label', 'Adicionar horário')
+        addBtn.textContent = '+'
+        addBtn.addEventListener('click', event => {
+            event.preventDefault()
+            event.stopPropagation()
+            deps.onDateClick?.({dateStr, dayEl: cell})
+        })
+
+        actions.appendChild(addBtn)
+
+        if (hasEvent) {
+            const viewBtn = document.createElement('button')
+            viewBtn.type = 'button'
+            viewBtn.className = 'horarios-cell-action horarios-cell-action-view'
+            viewBtn.setAttribute('aria-label', 'Ver detalhes')
+            viewBtn.textContent = '👁'
+            viewBtn.addEventListener('click', event => {
+                event.preventDefault()
+                event.stopPropagation()
+                deps.onViewClick?.({dateStr, dayEl: cell, day})
+            })
+
+            actions.appendChild(viewBtn)
         }
+
+        frame.appendChild(actions)
     })
 }
 
@@ -84,10 +119,9 @@ export function renderHorariosCalendar(calRoot, fc, viewState, deps) {
         datesSet: (arg) => {
             windowStartStr = ymd(arg.view.currentStart)
             windowEndStr = ymd(arg.view.currentEnd)
-            renderBadges(cal, viewState.daysByDate)
+            renderBadges(cal, viewState.daysByDate, deps)
         },
         dayCellClassNames,
-        dateClick: deps.onDateClick,
         events: async (fetchInfo, success, fail) => {
             try {
                 if (deps.signal.aborted) return
@@ -101,7 +135,7 @@ export function renderHorariosCalendar(calRoot, fc, viewState, deps) {
                 success(buildBackgroundEvents(days, windowStartStr, windowEndStr))
 
                 requestAnimationFrame(() => {
-                    if (!deps.signal.aborted) renderBadges(cal, viewState.daysByDate)
+                    if (!deps.signal.aborted) renderBadges(cal, viewState.daysByDate, deps)
                 })
             } catch (err) {
                 if (!deps.signal.aborted) fail(err)
