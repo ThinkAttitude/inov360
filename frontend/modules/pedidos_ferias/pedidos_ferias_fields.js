@@ -9,7 +9,7 @@ export const TYPE_LABELS = {
     pessoal: 'Motivo pessoal',
 };
 
-export const TIPOS_COM_COMPROVATIVO = new Set([
+export const TYPES_REQUIRING_PROOF = new Set([
     'licenca_paternidade', 'licenca_maternidade',
     'baixa_medica', 'baixa_seguro',
     'casamento', 'consulta_medica',
