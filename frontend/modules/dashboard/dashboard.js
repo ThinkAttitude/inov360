@@ -296,7 +296,6 @@ export function mountInicio() {
     const render = (auth) => {
         const el = document.getElementById("userName");
         if (el) el.textContent = auth?.name || "";
-        applyDashboardAccess(auth);
     };
 
     const unsubscribe = User.subscribe(render);
