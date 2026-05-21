@@ -1,5 +1,4 @@
 import {logout} from "../../app/api.js";
-import {Routes} from "../../app/router.js";
 import {User} from "../../shared/user_store.js";
 import {CARD_TYPES, PERMISSIONS, getCardsFromUser} from "./dashboard_access.js";
 import {Routes} from "../../app/router.js";
