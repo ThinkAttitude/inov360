@@ -17,10 +17,10 @@ function fmtDate(iso) {
     return `${d}/${m}/${y}`;
 }
 
-const STATUS_META = {
-    pendente:   { label: 'PENDENTE',   cls: 'ferias-status-pending'  },
-    aprovado:   { label: 'APROVADO',   cls: 'ferias-status-approved' },
-    rejeitado:  { label: 'REJEITADO',  cls: 'ferias-status-rejected' },
+const STATUS_LABELS = {
+    pendente:  'PENDENTE',
+    aprovado:  'APROVADO',
+    rejeitado: 'REJEITADO',
 };
 
 const TYPE_ICON = {
@@ -44,7 +44,7 @@ function buildCard(item) {
 
     const node = tpl.content.firstElementChild.cloneNode(true);
 
-    const meta = STATUS_META[item.estado] || { label: item.estado.toUpperCase(), cls: '' };
+    const statusLabel = STATUS_LABELS[item.estado] || item.estado.toUpperCase();
 
     node.dataset.status = item.estado;
     node.dataset.id = String(item.id);
@@ -55,8 +55,7 @@ function buildCard(item) {
 
     const statusEl = node.querySelector('.ferias-card-status');
     if (statusEl) {
-        if (meta.cls) statusEl.classList.add(meta.cls);
-        statusEl.querySelector('.ferias-card-status-text').textContent = meta.label;
+        statusEl.querySelector('.ferias-card-status-text').textContent = statusLabel;
     }
 
     node.querySelector('.ferias-card-start').textContent = fmtDate(item.inicio);
