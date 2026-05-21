@@ -35,11 +35,13 @@ if (!$hasResp->fetchColumn()) {
 }
 
 $sql = "
-  SELECT id, tipo, data_inicio, data_fim, justificacao, ficheiro,
-         estado, criado_em, decidido_por, responsavel_id
-    FROM pedidos_ferias
-   WHERE user_id = :u
-   ORDER BY criado_em DESC, id DESC
+  SELECT pf.id, pf.tipo, pf.data_inicio, pf.data_fim, pf.justificacao, pf.ficheiro,
+         pf.estado, pf.criado_em, pf.decidido_por, pf.responsavel_id,
+         u.name AS decidido_por_nome
+    FROM pedidos_ferias pf
+    LEFT JOIN `user` u ON u.id = pf.decidido_por
+   WHERE pf.user_id = :u
+   ORDER BY pf.criado_em DESC, pf.id DESC
 ";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([':u'=>$userId]);
@@ -52,16 +54,17 @@ $baseUrl = rtrim(
 $rows = [];
 while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $rows[] = [
-        "id"            => (int)$r['id'],
-        "tipo"          => $r['tipo'],
-        "inicio"        => $r['data_inicio'],
-        "fim"           => $r['data_fim'],
-        "justificacao"  => $r['justificacao'],
-        "responsavel_id"=> $r['responsavel_id'] ? (int)$r['responsavel_id'] : null,
-        "comprovativo"  => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
-        "estado"        => $r['estado'],
-        "criado_em"     => $r['criado_em'],
-        "decidido_por"  => $r['decidido_por'] ? (int)$r['decidido_por'] : null
+        "id"                 => (int)$r['id'],
+        "tipo"               => $r['tipo'],
+        "inicio"             => $r['data_inicio'],
+        "fim"                => $r['data_fim'],
+        "justificacao"       => $r['justificacao'],
+        "responsavel_id"     => $r['responsavel_id'] ? (int)$r['responsavel_id'] : null,
+        "comprovativo"       => $r['ficheiro'] ? $baseUrl . '/uploads/' . $r['ficheiro'] : null,
+        "estado"             => $r['estado'],
+        "criado_em"          => $r['criado_em'],
+        "decidido_por"       => $r['decidido_por'] ? (int)$r['decidido_por'] : null,
+        "decidido_por_nome"  => $r['decidido_por_nome'] ?? null,
     ];
 }
 

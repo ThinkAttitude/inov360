@@ -209,6 +209,21 @@ export function getHierarchyByUser(userId = null) {
     });
 }
 
+export function getCollabLeaveSummary() {
+    return apiFetch('leaves/collab_summary.php', { method: 'GET' });
+}
+
+export function getCollabLeaveRequests() {
+    return apiFetch('leaves/collab_requests.php', { method: 'GET' });
+}
+
+export function submitLeaveRequest(formData) {
+    return apiFetch('leaves/request.php', {
+        method: 'POST',
+        body: formData,
+    });
+}
+
 export function getAllPendingRequests(q = '', page = 1, pageSize = 20) {
     const params = new URLSearchParams();
 

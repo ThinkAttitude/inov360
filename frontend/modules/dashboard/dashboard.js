@@ -117,7 +117,7 @@ const CARD_DEFS = {
     },
 };
 
-function applyDashboardAccess(auth) {
+function updateDashboardCards(auth) {
     const {sideCards, welcomeCards} = getCardsFromUser(auth);
     upsertSidebarEntries([...sideCards]);
     upsertWelcomeCards([...welcomeCards]);
@@ -264,7 +264,7 @@ export function mountDashboardShell() {
     };
 
     const render = (auth) => {
-        applyDashboardAccess(auth);
+        updateDashboardCards(auth);
         setActive();
     };
 
@@ -296,7 +296,6 @@ export function mountInicio() {
     const render = (auth) => {
         const el = document.getElementById("userName");
         if (el) el.textContent = auth?.name || "";
-        applyDashboardAccess(auth);
     };
 
     const unsubscribe = User.subscribe(render);
