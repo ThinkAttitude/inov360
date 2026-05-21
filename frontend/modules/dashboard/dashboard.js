@@ -2,6 +2,7 @@ import {logout} from "../../app/api.js";
 import {Routes} from "../../app/router.js";
 import {User} from "../../shared/user_store.js";
 import {CARD_TYPES, PERMISSIONS, getCardsFromUser} from "./dashboard_access.js";
+import {Routes} from "../../app/router.js";
 
 import "./styles.css";
 import "../../shared/ui/pages/wip/styles.css";
@@ -141,11 +142,31 @@ const CARD_DEFS = {
     },
 };
 
-function applyDashboardAccess(auth) {
+function updateDashboardCards(auth) {
     const {sideCards, welcomeCards} = getCardsFromUser(auth);
     upsertSidebarEntries([...sideCards]);
     upsertWelcomeCards([...welcomeCards]);
-    bindMaintenanceIcons();
+    bindMaintenanceIcon();
+}
+
+const MAINTENANCE_ICON = '<svg class="menu-maintenance-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>';
+
+function bindMaintenanceIcon() {
+    document.querySelectorAll(".sidebar-menu a[data-content]").forEach((a) => {
+        const key = a.dataset.content;
+        const isMaintenance = Routes[key]?.maintenance === true;
+        const existingIcon = a.querySelector(".menu-maintenance-icon");
+
+        if (isMaintenance && !existingIcon) {
+            a.insertAdjacentHTML("beforeend", MAINTENANCE_ICON);
+            a.setAttribute("title", "Página em manutenção");
+            a.closest("li")?.classList.add("is-maintenance");
+        } else if (!isMaintenance && existingIcon) {
+            existingIcon.remove();
+            a.removeAttribute("title");
+            a.closest("li")?.classList.remove("is-maintenance");
+        }
+    });
 }
 
 function createWelcomeCard(key) {
@@ -268,7 +289,7 @@ export function mountDashboardShell() {
     };
 
     const render = (auth) => {
-        applyDashboardAccess(auth);
+        updateDashboardCards(auth);
         setActive();
     };
 
@@ -301,7 +322,6 @@ export function mountInicio() {
     const render = (auth) => {
         const el = document.getElementById("userName");
         if (el) el.textContent = auth?.name || "";
-        applyDashboardAccess(auth);
     };
 
     const unsubscribe = User.subscribe(render);

@@ -1,0 +1,24 @@
+/* ===== Modal extras ===== */
+.aprov-modal-comment {
+    width: 100%;
+    min-height: 90px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-family: inherit;
+    font-size: 0.92rem;
+    resize: vertical;
+    margin-top: 0.75rem;
+}
+
+.aprov-modal-comment:focus {
+    outline: none;
+    border-color: var(--gradient-1, #3e84f2);
+    box-shadow: 0 0 0 3px rgba(62, 132, 242, 0.15);
+}
+
+.aprov-modal-error {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin: 0.5rem 0 0 0;
+}

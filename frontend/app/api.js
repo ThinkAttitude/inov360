@@ -176,12 +176,58 @@ export function createDirectLeave(formData) {
     });
 }
 
+export function getLeaveApprovalSummary() {
+    return apiFetch('leaves/aval_summary.php', {
+        method: 'GET',
+    });
+}
+
+export function getLeaveApprovalRequests({type = 'all'} = {}) {
+    const params = new URLSearchParams();
+    if (type) params.append('type', type);
+    return apiFetch(`leaves/aval_requests.php?${params.toString()}`, {
+        method: 'GET',
+    });
+}
+
+export function getLeaveApprovalHistory() {
+    return apiFetch('leaves/aval_history_list.php', {
+        method: 'GET',
+    });
+}
+
+export function decideLeaveRequest({pedido_id, acao, comentario = null}) {
+    return apiFetch('leaves/decision.php', {
+        method: 'POST',
+        body: {
+            pedido_id,
+            acao,
+            comentario,
+        },
+    });
+}
+
 export function getHierarchyByUser(userId = null) {
     const params = new URLSearchParams();
     if (userId) params.append('user_id', String(userId));
 
     return apiFetch(`collab_management/get_hierarchy.php?${params.toString()}`, {
         method: 'GET',
+    });
+}
+
+export function getCollabLeaveSummary() {
+    return apiFetch('leaves/collab_summary.php', { method: 'GET' });
+}
+
+export function getCollabLeaveRequests() {
+    return apiFetch('leaves/collab_requests.php', { method: 'GET' });
+}
+
+export function submitLeaveRequest(formData) {
+    return apiFetch('leaves/request.php', {
+        method: 'POST',
+        body: formData,
     });
 }
 

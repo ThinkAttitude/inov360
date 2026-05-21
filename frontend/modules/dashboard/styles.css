@@ -159,6 +159,17 @@
     transform: scaleY(1);
 }
 
+.sidebar-menu .menu-maintenance-icon {
+    margin-left: auto;
+    color: #fbbf24;
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+
+.sidebar-menu li.is-maintenance a {
+    opacity: 0.85;
+}
+
 .sidebar-footer {
     flex-shrink: 0;
     padding: 1rem;

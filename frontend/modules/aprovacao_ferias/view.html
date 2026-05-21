@@ -1,0 +1,60 @@
+<div class="aprov-page">
+    <header class="aprov-header">
+        <div class="aprov-header-left">
+            <div class="aprov-page-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 11l3 3L22 4"></path>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+            </div>
+            <div class="aprov-header-text">
+                <h2>Aprovação de Pedidos</h2>
+                <p>Aprove ou rejeite pedidos de férias e ausências dos colaboradores a seu cargo.</p>
+            </div>
+        </div>
+    </header>
+
+    <section class="aprov-content">
+        <div class="aprov-stats">
+            <div class="aprov-stat-card">
+                <div class="aprov-stat-icon aprov-stat-icon--pending" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12,6 12,12 16,14"></polyline>
+                    </svg>
+                </div>
+                <div class="aprov-stat-text">
+                    <span class="aprov-stat-value" id="aprov-stat-pending">—</span>
+                    <span class="aprov-stat-label">Pendentes</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="aprov-tabs">
+            <button type="button" class="aprov-tab aprov-tab--active" data-tab="pendentes">Pendentes</button>
+            <button type="button" class="aprov-tab" data-tab="historico">Histórico</button>
+        </div>
+
+        <div class="aprov-view aprov-view--active" id="aprov-view-pendentes">
+            <div class="aprov-filters">
+                <div class="aprov-filter-group" id="aprov-type-filter">
+                    <button type="button" class="aprov-filter aprov-filter--active" data-type="all">Todos</button>
+                    <button type="button" class="aprov-filter" data-type="ferias">Férias</button>
+                    <button type="button" class="aprov-filter" data-type="baixas">Baixas</button>
+                    <button type="button" class="aprov-filter" data-type="licencas">Licenças</button>
+                </div>
+            </div>
+
+            <div class="aprov-list" id="aprov-pending-list" aria-live="polite">
+                <p class="aprov-empty" id="aprov-pending-empty">A carregar...</p>
+            </div>
+        </div>
+
+        <div class="aprov-view" id="aprov-view-historico">
+            <div class="aprov-list" id="aprov-history-list" aria-live="polite">
+                <p class="aprov-empty" id="aprov-history-empty">A carregar...</p>
+            </div>
+        </div>
+    </section>
+</div>

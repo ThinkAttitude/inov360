@@ -624,28 +624,6 @@
     z-index: 2;
 }
 
-/* --------- Modal do diagrama de hierarquia --------- */
-
-.controlo-modal--wide {
-    max-width: 1024px;
-}
-
-.hier-modal-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.hier-modal-subtitle {
-    margin: 0.2rem 0 0;
-    font-size: 0.85rem;
-    color: var(--text-light);
-}
-
-.hier-modal-footer {
-    justify-content: flex-end;
-}
-
 /* Big diagram (scroll + drag) */
 
 .hier-diagram-container {

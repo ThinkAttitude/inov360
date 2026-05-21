@@ -429,3 +429,49 @@
     color: var(--navy-blue);
     font-weight: 800;
 }
+
+/* ─── Status correct data-attributes (backend uses pt names) ─── */
+.ferias-card[data-status="pendente"] .ferias-card-status {
+    border-color: rgba(245, 158, 11, 0.25);
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    color: #b45309;
+}
+
+.ferias-card[data-status="aprovado"] .ferias-card-status {
+    border-color: rgba(16, 185, 129, 0.25);
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    color: #059669;
+}
+
+.ferias-card[data-status="rejeitado"] .ferias-card-status {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    color: #b91c1c;
+}
+
+/* topline accent */
+.ferias-card[data-status="pendente"]  .ferias-card-topline { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.ferias-card[data-status="aprovado"]  .ferias-card-topline { background: linear-gradient(90deg, #10b981, #34d399); }
+.ferias-card[data-status="rejeitado"] .ferias-card-topline { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* ─── Empty state ─── */
+.ferias-empty {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* ─── Comprovativo link ─── */
+a.ferias-comprovativo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--light-blue);
+    text-decoration: none;
+}
+
+a.ferias-comprovativo-link:hover { text-decoration: underline; }

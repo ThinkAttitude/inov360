@@ -10,6 +10,7 @@ import {generateSecurePassword} from '../../shared/security/password.js';
 
 
 import './styles.css';
+import './modal.css';
 
 function bindPasswordGenerator(btn, pwdInput) {
     if (!btn || !pwdInput) return;
@@ -22,27 +23,51 @@ const hierarchyState = {
     userId: null,
     responsaveis: [],
     subs: [],
-    baseRespCount: 0,
-    baseSubCount: 0,
+    // Snapshot of resp/sub IDs at load time — used to detect unsaved changes
+    // before the user navigates away or submits (dirty-state check for hierarchy editor).
+    baseRespIds: [],
+    baseSubIds: [],
 };
 
 const setHierarchyState = (patch) => Object.assign(hierarchyState, patch);
 
+const idsOfEntries = (list) =>
+    (Array.isArray(list) ? list : [])
+        .map(item => (item && item.user ? item.user.id : null))
+        .filter(id => id != null)
+        .sort((a, b) => a - b);
+
+const sameIds = (a, b) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+};
+
 const isHierarchyDirty = () => {
-    const {responsaveis, subs, baseRespCount, baseSubCount} = hierarchyState;
+    const {responsaveis, subs, baseRespIds, baseSubIds} = hierarchyState;
     return (
-        responsaveis.length !== baseRespCount ||
-        subs.length !== baseSubCount
+        !sameIds(idsOfEntries(responsaveis), baseRespIds) ||
+        !sameIds(idsOfEntries(subs), baseSubIds)
     );
 };
 
 function updateHierarchyControls() {
     const saveBtn = document.getElementById('hierarchy-modal-save');
     const closeFooter = document.getElementById('hierarchy-modal-close-footer');
+    const statusEl = document.getElementById('hierarchy-modal-status');
     const dirty = isHierarchyDirty();
 
     if (saveBtn) saveBtn.disabled = !dirty;
     if (closeFooter) closeFooter.textContent = dirty ? 'Cancelar' : 'Fechar';
+    if (dirty && statusEl?.classList.contains('hier-modal-status--success')) {
+        statusEl.textContent = '';
+        statusEl.classList.remove(
+            'hier-modal-status--success',
+            'hier-modal-status--visible',
+        );
+    }
 }
 
 async function fillCollaborators() {
@@ -178,8 +203,8 @@ async function renderDiagram(userId = null) {
             userId: null,
             responsaveis: [],
             subs: [],
-            baseRespCount: 0,
-            baseSubCount: 0,
+            baseRespIds: [],
+            baseSubIds: [],
         });
         emptyEl.style.display = '';
         updateHierarchyControls();
@@ -196,8 +221,8 @@ async function renderDiagram(userId = null) {
         setHierarchyState({
             responsaveis: [],
             subs: [],
-            baseRespCount: 0,
-            baseSubCount: 0,
+            baseRespIds: [],
+            baseSubIds: [],
         });
         emptyEl.style.display = '';
         updateHierarchyControls();
@@ -210,8 +235,8 @@ async function renderDiagram(userId = null) {
         setHierarchyState({
             responsaveis: [],
             subs: [],
-            baseRespCount: 0,
-            baseSubCount: 0,
+            baseRespIds: [],
+            baseSubIds: [],
         });
         emptyEl.style.display = '';
         updateHierarchyControls();
@@ -226,8 +251,8 @@ async function renderDiagram(userId = null) {
     setHierarchyState({
         responsaveis,
         subs,
-        baseRespCount: responsaveis.length,
-        baseSubCount: subs.length,
+        baseRespIds: idsOfEntries(responsaveis),
+        baseSubIds: idsOfEntries(subs),
     });
 
     const hasAny = responsaveis.length > 0 || subs.length > 0;
@@ -734,15 +759,37 @@ function renderHierarchyModal() {
                 .map(s => (s.user ? s.user.id : null))
                 .filter(id => id != null);
 
+            const statusEl = document.getElementById('hierarchy-modal-status');
+            const originalLabel = saveBtn.textContent;
+
+            const setStatus = (msg, kind) => {
+                if (!statusEl) return;
+                statusEl.textContent = msg || '';
+                statusEl.classList.remove(
+                    'hier-modal-status--success',
+                    'hier-modal-status--error',
+                    'hier-modal-status--info',
+                    'hier-modal-status--visible',
+                );
+                if (msg) {
+                    statusEl.classList.add(`hier-modal-status--${kind}`, 'hier-modal-status--visible');
+                }
+            };
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'A guardar...';
+            setStatus('A guardar...', 'info');
+
             updateHierarchy(hierarchyState.userId, respIds, subsIds)
                 .then(res => {
                     if (!res || res.ok !== true) {
                         throw new Error('Resposta inválida do servidor');
                     }
                     setHierarchyState({
-                        baseRespCount: hierarchyState.responsaveis.length,
-                        baseSubCount: hierarchyState.subs.length,
+                        baseRespIds: idsOfEntries(hierarchyState.responsaveis),
+                        baseSubIds: idsOfEntries(hierarchyState.subs),
                     });
+                    saveBtn.textContent = originalLabel;
                     updateHierarchyControls();
                     toast.success('Hierarquia guardada com sucesso.');
                 })
