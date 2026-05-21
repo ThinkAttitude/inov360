@@ -7,11 +7,14 @@ import {
 } from '../../app/api.js';
 
 import './styles.css';
+import './modal.css';
 
 const hierarchyState = {
     userId: null,
     responsaveis: [],
     subs: [],
+    // Snapshot of resp/sub IDs at load time — used to detect unsaved changes
+    // before the user navigates away or submits (dirty-state check for hierarchy editor).
     baseRespIds: [],
     baseSubIds: [],
 };

@@ -1,31 +1,9 @@
 import {getCollabLeaveSummary, getCollabLeaveRequests, submitLeaveRequest} from '../../app/api.js';
 import {createOverlays} from '../../app/overlays.js';
+import { TYPE_LABELS, TYPES_REQUIRING_PROOF, typeLabel } from './pedidos_ferias_fields.js';
 import './styles.css';
+import './request_form.css';
 
-// ─── Tipos ───────────────────────────────────────────────────────────────────
-
-const TIPO_LABEL = {
-    ferias:               'Férias',
-    baixa_medica:         'Baixa médica',
-    baixa_seguro:         'Baixa por seguro',
-    licenca_paternidade:  'Licença de paternidade',
-    licenca_maternidade:  'Licença de maternidade',
-    casamento:            'Casamento',
-    consulta_medica:      'Consulta médica',
-    pessoal:              'Motivo pessoal',
-};
-
-const TIPOS_COM_COMPROVATIVO = new Set([
-    'licenca_paternidade', 'licenca_maternidade',
-    'baixa_medica', 'baixa_seguro',
-    'casamento', 'consulta_medica',
-]);
-
-function tipoLabel(t) {
-    return TIPO_LABEL[t] || (t ? t.replace(/_/g, ' ') : '-');
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function esc(str) {
     const d = document.createElement('div');
@@ -57,12 +35,8 @@ function typeIcon(tipo) {
     return TYPE_ICON.other;
 }
 
-// ─── State ───────────────────────────────────────────────────────────────────
-
 let allItems = [];
 let currentFilter = 'all';
-
-// ─── Render ──────────────────────────────────────────────────────────────────
 
 function buildCard(item) {
     const tpl = document.getElementById('ferias-pedido-template');
@@ -76,7 +50,7 @@ function buildCard(item) {
     node.dataset.id = String(item.id);
 
     node.querySelector('.ferias-card-type-icon').innerHTML = typeIcon(item.tipo);
-    node.querySelector('.ferias-card-title').textContent = tipoLabel(item.tipo);
+    node.querySelector('.ferias-card-title').textContent = typeLabel(item.tipo);
     node.querySelector('.ferias-card-created').textContent = fmtDate(item.criado_em);
 
     const statusEl = node.querySelector('.ferias-card-status');
@@ -169,8 +143,6 @@ function updateStats(summary) {
     set('ferias-rejeitados-value',summary.rejeitados);
 }
 
-// ─── Load data ────────────────────────────────────────────────────────────────
-
 async function loadData() {
     try {
         const [summaryRes, requestsRes] = await Promise.all([
@@ -190,8 +162,6 @@ async function loadData() {
     }
 }
 
-// ─── New request modal ────────────────────────────────────────────────────────
-
 function openNewRequestModal(openModal) {
     const m = openModal({ title: 'Novo pedido de férias/ausência' });
 
@@ -203,7 +173,7 @@ function openNewRequestModal(openModal) {
                 <label class="field-label" for="ferias-form-tipo">Tipo de ausência</label>
                 <select class="field-input" id="ferias-form-tipo">
                     <option value="">Selecione...</option>
-                    ${Object.entries(TIPO_LABEL).map(([v, l]) =>
+                    ${Object.entries(TYPE_LABELS).map(([v, l]) =>
                         `<option value="${esc(v)}">${esc(l)}</option>`
                     ).join('')}
                 </select>
@@ -259,7 +229,7 @@ function openNewRequestModal(openModal) {
     };
 
     tipoSel?.addEventListener('change', () => {
-        const needsDoc = TIPOS_COM_COMPROVATIVO.has(tipoSel.value);
+        const needsDoc = TYPES_REQUIRING_PROOF.has(tipoSel.value);
         if (fileRow) fileRow.style.display = needsDoc ? '' : 'none';
         showError('');
     });
@@ -287,7 +257,7 @@ function openNewRequestModal(openModal) {
         if (!data_fim)     return showError('Indique a data de fim.');
         if (data_fim < data_inicio) return showError('A data de fim deve ser posterior à de início.');
         if (!justificacao) return showError('A justificação é obrigatória.');
-        if (TIPOS_COM_COMPROVATIVO.has(tipo) && !ficheiro)
+        if (TYPES_REQUIRING_PROOF.has(tipo) && !ficheiro)
             return showError('É necessário anexar um comprovativo para este tipo de ausência.');
 
         const fd = new FormData();
@@ -322,8 +292,6 @@ function openNewRequestModal(openModal) {
     });
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-
 function bindTabs() {
     document.querySelectorAll('.ferias-tab[data-filter]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -338,8 +306,6 @@ function bindTabs() {
         });
     });
 }
-
-// ─── Mount ────────────────────────────────────────────────────────────────────
 
 export function mountPedidosFerias() {
     const ol = createOverlays();
