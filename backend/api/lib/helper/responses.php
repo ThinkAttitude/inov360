@@ -70,7 +70,7 @@ function get_message(string $code, array $params = []): string
  *                                to explicitly set the status here.
  * @param array    $extra         Extra fields merged into the JSON body.
  */
-function json_error(string $codeOrMessage, ?int $status = null, array $extra = []): void
+function json_error(string $codeOrMessage, ?int $status = null, array $extra = [], array $params = []): void
 {
     if (!headers_sent()) {
         if ($status !== null) {
@@ -78,7 +78,9 @@ function json_error(string $codeOrMessage, ?int $status = null, array $extra = [
         }
         header('Content-Type: application/json; charset=utf-8');
     }
-    $message = get_message($codeOrMessage);
+
+    $message = get_message($codeOrMessage, $params);
     echo json_encode(['ok' => false, 'error' => $message] + $extra, JSON_UNESCAPED_UNICODE);
     exit;
 }
+

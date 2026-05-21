@@ -29,10 +29,12 @@
         "INVALID_TIME_RANGE": "Intervalo de horas inválido.",
         "INVALID_GRANULARITY_15MIN": "As horas devem ser em múltiplos de 15 minutos.",
         "BAD_FILETYPE": "Tipo de ficheiro não permitido.",
-        "FILE_TOO_LARGE": "Ficheiro demasiado grande.",
+        "FILE_TOO_LARGE": "O ficheiro é demasiado grande (máximo {size} MB).",
         "FILE_MOVE_ERROR": "Falha ao guardar o ficheiro no servidor.",
         "DOC_REQUIRED": "É obrigatório anexar um documento.",
-        "UPLOAD_FAILED": "Falha no upload do ficheiro."
+        "UPLOAD_FAILED": "Falha no upload do ficheiro.",
+        "STORAGE_ERROR": "Erro no servidor ao tentar guardar o ficheiro.",
+        "FILE_UPLOAD_ERROR": "Ocorreu um erro ao processar o upload do ficheiro."
     },
     "auth": {
         "INVALID_CREDENTIALS": "Email ou palavra-passe incorretos.",
