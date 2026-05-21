@@ -7,14 +7,14 @@ header('Content-Type: application/json; charset=utf-8');
 /* ==== Segurança ==== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok" => false, "code" => "UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 /* ==== DB ==== */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -29,8 +29,7 @@ $to   = $_GET['to'] ?? null;
 
 if (!is_date($from) || !is_date($to)) {
     http_response_code(400);
-    echo json_encode(["ok" => false, "code" => "INVALID_TIMEFRAME"]);
-    exit;
+    json_error('INVALID_TIMEFRAME');
 }
 
 $start = (string)$from;
@@ -38,8 +37,7 @@ $end   = (string)$to;
 
 if ($start > $end) {
     http_response_code(400);
-    echo json_encode(["ok" => false, "code" => "INVALID_TIMEFRAME_ORDER"]);
-    exit;
+    json_error('INVALID_TIMEFRAME_ORDER');
 }
 
 $userId = $selfId;

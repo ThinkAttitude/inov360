@@ -8,6 +8,7 @@ import {mountPedidosHorasExtra} from "../modules/pedidos_horas_extras/pedidos_ho
 import {mountHorasExtra} from "../modules/horas_extra/horas_extra.js"
 import {mountAprovacaoFerias} from "../modules/aprovacao_ferias/aprovacao_ferias.js"
 import {mountPedidosFerias} from "../modules/pedidos_ferias/pedidos_ferias.js"
+import {mountAlterarPassword} from "../modules/alterar_password/alterar_password.js"
 import {handleAuthStatus, setApiAuthHandlers} from "./api";
 import {User} from "../shared/user_store";
 import {CARD_TYPES, guardDashboardRoute} from "../modules/dashboard/dashboard_access.js";
@@ -103,7 +104,7 @@ export const Routes = Object.freeze({
     [Path.MARCACAO_DIRETA]: {
         html: Route(`${MODULES_BASE}/marcacao_direta/marcacao_direta.html`),
         mount: initForm,
-        maintenance: true,
+        maintenance: false,
     },
     [Path.GESTAO_FICHAS]: {
         html: Route(`${MODULES_BASE}/gestao_fichas/view.html`),
@@ -113,6 +114,11 @@ export const Routes = Object.freeze({
     [Path.FICHA_COLLAB]: {
         html: Route(`${MODULES_BASE}/ficha_collab/view.html`),
         mount: mountFichaCollab,
+        maintenance: false,
+    },
+    [Path.ALTERAR_PASSWORD]: {
+        html: Route(`${MODULES_BASE}/alterar_password/view.html`),
+        mount: mountAlterarPassword,
         maintenance: false,
     },
 });

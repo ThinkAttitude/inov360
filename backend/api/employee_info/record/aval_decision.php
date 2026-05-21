@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -11,12 +12,12 @@ header('Cache-Control: no-store');
 // Auth + perm record_managment (id=6)
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(6, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['success'=>false,'error'=>'FORBIDDEN']); exit;
+    json_error('FORBIDDEN', 403);
 }
 $actorId = (int)$_SESSION['user']['id'];
 
@@ -30,7 +31,7 @@ $userId   = isset($payload['user_id']) ? (int)$payload['user_id'] : 0;
 $decision = strtolower(trim((string)($payload['decision'] ?? ''))); // approve | reject
 if ($userId <= 0 || !in_array($decision, ['approve','reject'], true)) {
     http_response_code(400);
-    echo json_encode(['success'=>false,'error'=>'BAD_REQUEST']); exit;
+    json_error('BAD_REQUEST');
 }
 
 try {
@@ -48,7 +49,7 @@ try {
 
     if (!$pendProfile && !$pendEmerg) {
         http_response_code(404);
-        echo json_encode(['success'=>false,'error'=>'NO_PENDING_REQUESTS']); exit;
+        json_error('NO_PENDING_REQUESTS');
     }
 
     // REJECT: marca tudo como recusado (sem aplicar alterações)
@@ -84,7 +85,7 @@ try {
             if ($chk->fetch()) {
                 $pdo->rollBack();
                 http_response_code(409);
-                echo json_encode(['success'=>false,'error'=>'EMAIL_IN_USE']); exit;
+                json_error('EMAIL_IN_USE');
             }
             $updUser = $pdo->prepare("UPDATE `user` SET email=? WHERE id=?");
             $updUser->execute([$lastP['email'], $userId]);
@@ -148,5 +149,4 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     // error_log($e->getMessage());
     http_response_code(500);
-    echo json_encode(['success'=>false,'error'=>'SERVER_ERROR']);
-}
+    json_error('SERVER_ERROR', 500);}

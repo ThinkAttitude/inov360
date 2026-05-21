@@ -7,13 +7,14 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== SEGURANÇA ===== */
 if (!isset($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false,"code"=>"UNAUTHENTICATED"]); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $selfId = (int)($_SESSION['user']['id'] ?? 0);
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -37,19 +38,19 @@ function skm($v){  return ($v===null||$v==='')?null:max(0.0,(float)$v); }
 /* ===== VERBO ===== */
 if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
     http_response_code(405);
-    echo json_encode(["ok"=>false,"code"=>"METHOD_NOT_ALLOWED"]); exit;
+    json_error('METHOD_NOT_ALLOWED', 405);
 }
 
 /* ===== INPUT ===== */
 $in   = json_input();
 $date = $in['date'] ?? '';
-if (!is_valid_date($date)) { http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_DATE"]); exit; }
+if (!is_valid_date($date)) { http_response_code(400); json_error('INVALID_DATE'); }
 
 /* user alvo: sessão por defeito; só manager pode indicar outro user_id */
 $userId = $selfId;
 
 if (period_is_locked($pdo, $userId, $date)) {
-    http_response_code(409); echo json_encode(["ok"=>false,"code"=>"PERIOD_LOCKED"]); exit;
+    http_response_code(409); json_error('PERIOD_LOCKED', 409);
 }
 
 $work   = array_key_exists('workMin',$in)   ? smin($in['workMin'])   : null;
@@ -58,7 +59,7 @@ $km     = array_key_exists('km',$in)        ? skm($in['km'])         : null;
 $clear  = !empty($in['clear']);
 
 if ($work===null && $oncall===null && $km===null && !$clear) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"NO_FIELDS"]); exit;
+    http_response_code(400); json_error('NO_FIELDS');
 }
 
 /* ===== SQL (corrigido: :d1 e :d2 ao invés de :d repetido) ===== */
@@ -111,5 +112,4 @@ try{
 }catch(Throwable $e){
     if($pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR","msg"=>$e->getMessage()]);
-}
+    json_error('DB_ERROR', 500, ["msg"=>$e->getMessage()]);}

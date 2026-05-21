@@ -5,9 +5,19 @@ import {
     updateHierarchy,
     updatePermissions
 } from '../../app/api.js';
+import { toast } from '../../shared/ui/toast/toast.js';
+import {generateSecurePassword} from '../../shared/security/password.js';
+
 
 import './styles.css';
 import './modal.css';
+
+function bindPasswordGenerator(btn, pwdInput) {
+    if (!btn || !pwdInput) return;
+    btn.addEventListener('click', () => {
+        pwdInput.value = generateSecurePassword();
+    });
+}
 
 const hierarchyState = {
     userId: null,
@@ -90,6 +100,7 @@ async function fillCollaborators() {
         }
     } catch (e) {
         console.error('Erro ao carregar colaboradores:', e);
+        toast.error(e?.message || 'Não foi possível carregar a lista de colaboradores.');
     }
 }
 
@@ -152,11 +163,13 @@ function togglePermChips(ids = [], enabled = true) {
                     if (!resp || resp.ok !== true) {
                         throw new Error('Resposta inválida do servidor');
                     }
+                    toast.success(newState ? 'Permissão atribuída.' : 'Permissão removida.');
                 } catch (err) {
                     console.error('Falha ao atualizar permissões:', err);
                     chip.classList.toggle('chip-on', wasOn);
                     chip.classList.toggle('chip-off', !wasOn);
                     chip.setAttribute('aria-pressed', String(wasOn));
+                    toast.error(err?.message || 'Não foi possível atualizar a permissão.');
                 }
             });
             chip.dataset.bound = '1';
@@ -204,6 +217,7 @@ async function renderDiagram(userId = null) {
 
     const res = await getHierarchyByUser(userId).catch(err => {
         console.error('Erro ao carregar hierarquia:', err);
+        toast.error(err?.message || 'Não foi possível carregar a hierarquia.');
         setHierarchyState({
             responsaveis: [],
             subs: [],
@@ -645,6 +659,29 @@ function renderCreateModal() {
         }
     });
 
+    const btnGenPwd = document.getElementById('create-password-generate');
+    const pwdInput = document.getElementById('create-password');
+    bindPasswordGenerator(btnGenPwd, pwdInput);
+
+    const btnTogglePwd = document.getElementById('create-password-toggle');
+    if (btnTogglePwd && pwdInput) {
+        const iconEye = btnTogglePwd.querySelector('.icon-eye');
+        const iconEyeOff = btnTogglePwd.querySelector('.icon-eye-off');
+        btnTogglePwd.addEventListener('click', () => {
+            const isHidden = pwdInput.type === 'password';
+            pwdInput.type = isHidden ? 'text' : 'password';
+            btnTogglePwd.setAttribute('aria-pressed', String(isHidden));
+            btnTogglePwd.setAttribute(
+                'aria-label',
+                isHidden ? 'Esconder palavra-passe' : 'Mostrar palavra-passe'
+            );
+            if (iconEye && iconEyeOff) {
+                iconEye.style.display = isHidden ? 'none' : '';
+                iconEyeOff.style.display = isHidden ? '' : 'none';
+            }
+        });
+    }
+
     if (form) {
         form.addEventListener('submit', e => {
             e.preventDefault();
@@ -655,12 +692,15 @@ function renderCreateModal() {
                     if (res && res.ok === true) {
                         closeModal();
                         await fillCollaborators();
+                        toast.success('Colaborador criado com sucesso.');
                     } else {
                         console.error('Failed to create collaborator:', res?.error);
+                        toast.error(res?.error || 'Não foi possível criar o colaborador.');
                     }
                 })
                 .catch(err => {
                     console.error('Failed to create collaborator:', err);
+                    toast.error(err.message || 'Erro ao criar o colaborador.');
                 });
         });
     }
@@ -751,18 +791,11 @@ function renderHierarchyModal() {
                     });
                     saveBtn.textContent = originalLabel;
                     updateHierarchyControls();
-                    setStatus('Hierarquia guardada com sucesso.', 'success');
-                    setTimeout(() => {
-                        if (statusEl?.textContent === 'Hierarquia guardada com sucesso.') {
-                            setStatus('', 'success');
-                        }
-                    }, 3500);
+                    toast.success('Hierarquia guardada com sucesso.');
                 })
                 .catch(err => {
                     console.error('Falha ao guardar hierarquia:', err);
-                    saveBtn.textContent = originalLabel;
-                    saveBtn.disabled = false;
-                    setStatus(err?.message || 'Não foi possível guardar a hierarquia.', 'error');
+                    toast.error(err?.message || 'Não foi possível guardar a hierarquia.');
                 });
         });
     }

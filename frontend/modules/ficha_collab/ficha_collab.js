@@ -1,6 +1,7 @@
 import {getSelfRecord, createRecordRequest} from '../../app/api.js';
 import {FICHA_EDITABLE_FIELD_META, FICHA_SECTIONS} from './ficha_collab_fields.js';
 import {initEditToggle} from './edit_toggle.js';
+import { toast } from '../../shared/ui/toast/toast.js';
 
 import './styles.css'
 
@@ -279,10 +280,17 @@ async function loadAndInitFicha(signal) {
 
                 return createRecordRequest(payload)
                     .then(function (r) {
-                        return !(!r || r.success !== true);
+                        const ok = !(!r || r.success !== true);
+                        if (ok) {
+                            toast.success('Pedido de alteração submetido.');
+                        } else {
+                            toast.error(r?.error || r?.message || 'Não foi possível submeter o pedido.');
+                        }
+                        return ok;
                     })
                     .catch(function (e) {
                         console.error('Erro ao submeter pedido:', e);
+                        toast.error(e?.message || 'Erro ao submeter o pedido de alteração.');
                         return false;
                     });
             }
@@ -290,7 +298,10 @@ async function loadAndInitFicha(signal) {
 
         fichaToggle.setState(cloneState(fichaBaseState));
     } catch (e) {
-        if (!signal.aborted) console.error('Erro ao carregar ficha:', e);
+        if (!signal.aborted) {
+            console.error('Erro ao carregar ficha:', e);
+            toast.error(e?.message || 'Não foi possível carregar a sua ficha.');
+        }
     }
 }
 export function mountFichaCollab() {

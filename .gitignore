@@ -2,6 +2,23 @@
 /.vscode/
 node_modules/
 frontend/dist/
+frontend/dist.zip
+frontend/modules.zip
 docker-compose.yml
 Dockerfile
 /inov360_private/
+
+
+# Deploy artefacts
+deploy/
+deploy[0-9]*/
+deploy_*.zip
+deploy.zip
+frontend/dist.zip
+frontend/modules.zip
+
+# Uploads
+backend/uploads/
+
+# DB dumps
+backend/sql/inov360_demo.sql

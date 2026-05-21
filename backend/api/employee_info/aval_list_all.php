@@ -3,21 +3,20 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(6, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'FORBIDDEN']);
-    exit;
+    json_error('FORBIDDEN', 403);
 }
 
 try {
@@ -44,14 +43,14 @@ try {
     $params = [];
 
     if (!empty($companyId)) {
-        $where[] = 'u.company_id = ?';
-        $params[] = $companyId;
+        $where[] = 'u.company_id = :company_id';
+        $params[':company_id'] = ['value' => $companyId, 'type' => PDO::PARAM_INT];
     }
 
     if ($q !== '') {
-        $where[] = '(cd.nome LIKE ? OR cd.email LIKE ?)';
-        $params[] = "%{$q}%";
-        $params[] = "%{$q}%";
+        $where[] = '(cd.nome LIKE :q_name OR cd.email LIKE :q_email)';
+        $params[':q_name'] = ['value' => "%{$q}%", 'type' => PDO::PARAM_STR];
+        $params[':q_email'] = ['value' => "%{$q}%", 'type' => PDO::PARAM_STR];
     }
 
     $sqlWhere = $where ? 'WHERE ' . implode(' AND ', $where) : '';
@@ -75,8 +74,8 @@ try {
 
     $stmt = $pdo->prepare($sql);
 
-    foreach ($params as $i => $v) {
-        $stmt->bindValue($i + 1, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    foreach ($params as $name => $p) {
+        $stmt->bindValue($name, $p['value'], $p['type']);
     }
 
     $stmt->bindValue(':lim', $pageSize, PDO::PARAM_INT);
@@ -95,8 +94,8 @@ try {
 
     $stmtCount = $pdo->prepare($sqlCount);
 
-    foreach ($params as $i => $v) {
-        $stmtCount->bindValue($i + 1, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+    foreach ($params as $name => $p) {
+        $stmtCount->bindValue($name, $p['value'], $p['type']);
     }
 
     $stmtCount->execute();
@@ -128,5 +127,4 @@ try {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'SERVER_ERROR']);
-}
+    json_error('SERVER_ERROR', 500);}

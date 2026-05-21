@@ -6,15 +6,16 @@ header('Content-Type: application/json; charset=utf-8');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(1, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['ok'=>false,'code'=>'FORBIDDEN_PERMISSION']); exit;
+    json_error('FORBIDDEN_PERMISSION', 403);
 }
 
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 
 function read_json_or_post(): array {
     $ctype = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -44,18 +45,15 @@ try {
 
     if ($userId <= 0) {
         http_response_code(400);
-        echo json_encode(['ok'=>false,'code'=>'USER_ID_REQUIRED']);
-        exit;
+        json_error('USER_ID_REQUIRED');
     }
     if (in_array($userId, $responsaveis, true) || in_array($userId, $subs, true)) {
         http_response_code(400);
-        echo json_encode(['ok'=>false,'code'=>'SELF_REFERENCE']);
-        exit;
+        json_error('SELF_REFERENCE');
     }
     if (array_intersect($responsaveis, $subs)) {
         http_response_code(400);
-        echo json_encode(['ok'=>false,'code'=>'RESP_SUB_CONFLICT']);
-        exit;
+        json_error('RESP_SUB_CONFLICT', 409);
     }
 
     $idsToCheck = array_values(array_unique(array_merge([$userId], $responsaveis, $subs)));
@@ -66,8 +64,7 @@ try {
     $missing = array_values(array_diff($idsToCheck, $found));
     if ($missing) {
         http_response_code(400);
-        echo json_encode(['ok'=>false,'code'=>'USER_NOT_FOUND','missing'=>$missing]);
-        exit;
+        json_error('USER_NOT_FOUND', 404, ['missing'=>$missing]);
     }
 
     $pdo->beginTransaction();
@@ -117,10 +114,5 @@ try {
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     http_response_code(500);
-    echo json_encode([
-        'ok' => false,
-        'code' => 'SERVER_ERROR',
-        'message' => $e->getMessage()
-    ]);
-    exit;
+    json_error('SERVER_ERROR', 500, ['message' => $e->getMessage()]);
 }

@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/lib/helper/responses.php';
 
 session_start();
 
@@ -20,8 +21,7 @@ if (empty($_SESSION['is_login']) || empty($_SESSION['user']['id'])) {
 
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 serveView($path);

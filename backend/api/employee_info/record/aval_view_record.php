@@ -4,28 +4,26 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(6, $perms, true)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'FORBIDDEN']);
-    exit;
+    json_error('FORBIDDEN', 403);
 }
 
 $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 if ($userId <= 0) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'BAD_REQUEST', 'hint' => 'Provide ?user_id=INT']);
-    exit;
+    json_error('BAD_REQUEST', 200, ['hint' => 'Provide ?user_id=INT']);
 }
 
 try {
@@ -45,8 +43,7 @@ try {
 
     if (!$user) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'USER_NOT_FOUND']);
-        exit;
+        json_error('USER_NOT_FOUND', 404);
     }
 
     $stmtProfile = $pdo->prepare("
@@ -88,5 +85,4 @@ try {
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'SERVER_ERROR']);
-}
+    json_error('SERVER_ERROR', 500);}

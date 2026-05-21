@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 session_start();
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 if (empty($_SESSION['is_login']) || empty($_SESSION['user']['id'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 $userId = (int)$_SESSION['user']['id'];
@@ -49,13 +49,11 @@ foreach ($emergencyFields as $payloadField => $dbField) {
 }
 
 if (!$profileInput && !$emergencyInput) {
-    echo json_encode(['success' => false, 'error' => 'NO_FIELDS']);
-    exit;
+    json_error('NO_FIELDS');
 }
 
 if (array_key_exists('email', $profileInput) && $profileInput['email'] !== null && !filter_var($profileInput['email'], FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(['success' => false, 'error' => 'EMAIL_INVALID']);
-    exit;
+    json_error('EMAIL_INVALID');
 }
 
 $validatePhone = function ($value): bool {
@@ -66,18 +64,15 @@ $validatePhone = function ($value): bool {
 };
 
 if (array_key_exists('telefone', $profileInput) && !$validatePhone($profileInput['telefone'])) {
-    echo json_encode(['success' => false, 'error' => 'PHONE_INVALID']);
-    exit;
+    json_error('PHONE_INVALID');
 }
 
 if (array_key_exists('telefone', $emergencyInput) && !$validatePhone($emergencyInput['telefone'])) {
-    echo json_encode(['success' => false, 'error' => 'EMERGENCY_PHONE_INVALID']);
-    exit;
+    json_error('EMERGENCY_PHONE_INVALID');
 }
 
 if (array_key_exists('nib', $profileInput) && $profileInput['nib'] !== null && !preg_match('/^\d{21}$/', $profileInput['nib'])) {
-    echo json_encode(['success' => false, 'error' => 'NIB_INVALID']);
-    exit;
+    json_error('NIB_INVALID');
 }
 
 try {
@@ -93,8 +88,7 @@ try {
     $qPending->execute([$userId]);
 
     if ((int)$qPending->fetchColumn() > 0 && $profileInput) {
-        echo json_encode(['success' => false, 'error' => 'PENDING_EXISTS']);
-        exit;
+        json_error('PENDING_EXISTS');
     }
 
     $qPendingEm = $pdo->prepare("
@@ -106,8 +100,7 @@ try {
     $qPendingEm->execute([$userId]);
 
     if ((int)$qPendingEm->fetchColumn() > 0 && $emergencyInput) {
-        echo json_encode(['success' => false, 'error' => 'PENDING_EMERGENCY_EXISTS']);
-        exit;
+        json_error('PENDING_EMERGENCY_EXISTS');
     }
 
     $st = $pdo->prepare("
@@ -121,8 +114,7 @@ try {
 
     if (!$currentProfile) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'PROFILE_NOT_FOUND']);
-        exit;
+        json_error('PROFILE_NOT_FOUND', 404);
     }
 
     $st2 = $pdo->prepare("
@@ -160,8 +152,7 @@ try {
     }
 
     if (!$changedProfile && !$changedEmergency) {
-        echo json_encode(['success' => false, 'error' => 'NO_CHANGES']);
-        exit;
+        json_error('NO_CHANGES');
     }
 
     $valueFor = function (array $changes, array $current, string $field) {
@@ -218,6 +209,5 @@ try {
     error_log('collab_request error: ' . $e->getMessage());
 
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'SERVER_ERROR']);
-    exit;
+    json_error('SERVER_ERROR', 500);
 }

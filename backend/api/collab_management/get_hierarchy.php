@@ -1,13 +1,14 @@
 <?php
 // api/users/get_hierarchy.php
 declare(strict_types=1);
+require_once __DIR__ . '/../lib/helper/responses.php';
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
 /* --- Auth --- */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['ok'=>false,'code'=>'UNAUTHENTICATED']); exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 /*
@@ -28,7 +29,7 @@ if (isset($_GET['user_id']) && $_GET['user_id'] !== '') {
 
 if ($userId <= 0) {
     http_response_code(400);
-    echo json_encode(['ok'=>false,'code'=>'MISSING_USER_ID']); exit;
+    json_error('MISSING_USER_ID');
 }
 
 /* --- DB --- */
@@ -116,5 +117,5 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['ok'=>false,'code'=>'SERVER_ERROR']); exit;
+    json_error('SERVER_ERROR', 500);
 }

@@ -7,8 +7,7 @@ session_start();
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success'=>false,'error'=>'UNAUTHENTICATED']);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 $perms = $_SESSION['user']['permissions'] ?? [];
 if (!is_array($perms) || !in_array(7, $perms, true)) {
@@ -21,6 +20,7 @@ if (!is_array($perms) || !in_array(7, $perms, true)) {
 /* --------- deps & db --------- */
 require_once __DIR__ . '/../../../vendor/autoload.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../lib/helper/responses.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;

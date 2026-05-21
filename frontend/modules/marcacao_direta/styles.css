@@ -258,29 +258,6 @@ input[type="file"]:focus {
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
-/* Mensagens de feedback */
-.feedback-message {
-    margin-top: 1.5rem;
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.feedback-message.success {
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    color: #065f46;
-    border: 1px solid #86efac;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-}
-
-.feedback-message.error {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    color: #991b1b;
-    border: 1px solid #f87171;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
-}
-
 /* Responsividade */
 @media (max-width: 768px) {
     .container {

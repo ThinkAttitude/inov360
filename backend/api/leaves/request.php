@@ -7,12 +7,12 @@ header('Content-Type: application/json; charset=utf-8');
 /* ===== Sessão ===== */
 if (empty($_SESSION['is_login']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(["ok"=>false, "code"=>"UNAUTHENTICATED"]);
-    exit;
+    json_error('UNAUTHENTICATED', 401);
 }
 
 /* ===== DB ===== */
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../lib/helper/responses.php';
 $pdo = db_connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -30,15 +30,15 @@ $tipos_com_comprovativo = [
 
 /* ===== Validações básicas ===== */
 if (!$tipo || !$data_inicio || !$data_fim || !$justificacao) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"MISSING_FIELDS"]); exit;
+    http_response_code(400); json_error('MISSING_FIELDS');
 }
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $data_inicio) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data_fim)) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"INVALID_DATE"]); exit;
+    http_response_code(400); json_error('INVALID_DATE');
 }
 $di = DateTime::createFromFormat('Y-m-d', $data_inicio);
 $df = DateTime::createFromFormat('Y-m-d', $data_fim);
 if (!$di || !$df || $di > $df) {
-    http_response_code(400); echo json_encode(["ok"=>false,"code"=>"RANGE_ERROR"]); exit;
+    http_response_code(400); json_error('RANGE_ERROR');
 }
 
 /* ===== Confirmar que o colaborador tem responsáveis ativos/válidos ===== */
@@ -54,8 +54,7 @@ $hasResp = $pdo->prepare("
 $hasResp->execute([$userId]);
 if (!$hasResp->fetchColumn()) {
     http_response_code(400);
-    echo json_encode(["ok"=>false,"code"=>"NO_RESPONSAVEIS"]);
-    exit;
+    json_error('NO_RESPONSAVEIS');
 }
 
 /* ===== Upload (obrigatório para certos tipos) ===== */
@@ -63,7 +62,7 @@ $ficheiro_nome = null;
 
 if (in_array($tipo, $tipos_com_comprovativo, true)) {
     if (!isset($_FILES['ficheiro']) || $_FILES['ficheiro']['error'] !== UPLOAD_ERR_OK) {
-        http_response_code(400); echo json_encode(["ok"=>false,"code"=>"DOC_REQUIRED"]); exit;
+        http_response_code(400); json_error('DOC_REQUIRED');
     }
 }
 
@@ -79,17 +78,17 @@ if (isset($_FILES['ficheiro']) && $_FILES['ficheiro']['error'] === UPLOAD_ERR_OK
     $okExt  = ['pdf','jpg','jpeg','png'];
 
     if (!in_array($mime, $okMime, true) || !in_array($ext, $okExt, true)) {
-        http_response_code(400); echo json_encode(["ok"=>false,"code"=>"BAD_FILETYPE"]); exit;
+        http_response_code(400); json_error('BAD_FILETYPE');
     }
     if (($_FILES['ficheiro']['size'] ?? 0) > 5*1024*1024) {
-        http_response_code(400); echo json_encode(["ok"=>false,"code"=>"FILE_TOO_LARGE"]); exit;
+        http_response_code(400); json_error('FILE_TOO_LARGE');
     }
 
     $uploads = __DIR__ . '/../../uploads';
     if (!is_dir($uploads)) { @mkdir($uploads, 0777, true); }
     $ficheiro_nome = 'comprovativo_' . time() . '_' . mt_rand(1000,9999) . '.' . $ext;
     if (!move_uploaded_file($tmp, $uploads . '/' . $ficheiro_nome)) {
-        http_response_code(500); echo json_encode(["ok"=>false,"code"=>"FILE_MOVE_ERROR"]); exit;
+        http_response_code(500); json_error('FILE_MOVE_ERROR');
     }
 }
 
@@ -116,5 +115,4 @@ try {
     ]);
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(["ok"=>false,"code"=>"DB_ERROR"]);
-}
+    json_error('DB_ERROR', 500);}
